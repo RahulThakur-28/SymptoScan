@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "300095275046",
+    "project_id": "symptoscan-789fd",
+    "storage_bucket": "symptoscan-789fd.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:300095275046:android:bc78075f68f0ed9ad7a6e7",
+        "android_client_info": {
+          "package_name": "com.example.rahul.symptoscan"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAc79ApD9a1JErYslJ6QIuc6EAo-8t-OrU"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
