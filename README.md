@@ -18,9 +18,9 @@ SymptoScan is an Android app that helps users analyze symptoms using AI and get 
 
 ## 📱 Screenshots
 <p align="center">
-  <img src="screenshots/home.jpeg" width="250"/>
-  <img src="screenshots/chat.jpeg" width="250"/>
-  <img src="screenshots/history.jpeg" width="250"/>
+  <img src="screenshots/homescreen.jpeg" width="250"/>
+  <img src="screenshots/chatscreen.jpeg" width="250"/>
+  <img src="screenshots/hiatory.jpeg" width="250"/>
 </p>
 
 ---
