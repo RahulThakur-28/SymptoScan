@@ -15,7 +15,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-//  UI STATE
+// UI STATE
 sealed class UiState {
     object Idle : UiState()
     object Loading : UiState()
@@ -25,7 +25,7 @@ sealed class UiState {
 
 class SymptomViewModel : ViewModel() {
 
-    //  Repository Initialization
+    // Repository
     private val repository = SymptomRepository(
         symptomDao = AppDatabase.getDatabase(MyApp.context).symptomDao(),
         apiService = RetrofitInstance.api,
@@ -33,12 +33,11 @@ class SymptomViewModel : ViewModel() {
         firestore = FirebaseFirestore.getInstance()
     )
 
-    //  HOME STATE
+    // STATE
     private val _uiState = MutableStateFlow<UiState>(UiState.Idle)
     val uiState: StateFlow<UiState> = _uiState
 
     val history: Flow<List<SymptomEntity>> = repository.getAllHistory()
-
 
     private val _chatMessages = MutableStateFlow<List<ChatMessage>>(emptyList())
     val chatMessages: StateFlow<List<ChatMessage>> = _chatMessages
@@ -47,6 +46,7 @@ class SymptomViewModel : ViewModel() {
     val isLoading: StateFlow<Boolean> = _isLoading
 
 
+    // ================= ANALYZE =================
     fun analyzeSymptoms(symptoms: String) {
 
         if (symptoms.isBlank()) {
@@ -61,7 +61,7 @@ class SymptomViewModel : ViewModel() {
             try {
                 val result = repository.analyzeSymptoms(symptoms)
 
-                // Save in DB
+                // SAVE
                 repository.saveSymptomResult(
                     SymptomEntity(
                         symptoms = symptoms,
@@ -80,19 +80,19 @@ class SymptomViewModel : ViewModel() {
         }
     }
 
-    //  RESET STATE
     fun resetState() {
         _uiState.value = UiState.Idle
     }
 
-    // CHAT FUNCTION
+
+    // ================= CHAT =================
     fun sendMessage(message: String) {
 
         if (message.isBlank()) return
 
         viewModelScope.launch(Dispatchers.IO) {
 
-            // Add user message
+            // User message
             _chatMessages.value =
                 _chatMessages.value + ChatMessage(message, true)
 
@@ -101,9 +101,34 @@ class SymptomViewModel : ViewModel() {
             try {
                 val reply = repository.getChatResponse(message)
 
-                // Add AI reply
+                // AI reply
                 _chatMessages.value =
                     _chatMessages.value + ChatMessage(reply, false)
+
+                // 🔥 CLEAN TEXT
+                val cleanReply = reply
+                    .replace("###", "")
+                    .replace("**", "")
+                    .replace("*", "")
+                    .replace("\n", " ")
+
+                // 🔥 EXTRACT RISK
+                val risk = when {
+                    reply.contains("high", true) -> "High"
+                    reply.contains("medium", true) -> "Medium"
+                    reply.contains("low", true) -> "Low"
+                    else -> "Unknown"
+                }
+
+                // 🔥 SAVE TO DB (MAIN FIX)
+                repository.saveSymptomResult(
+                    SymptomEntity(
+                        symptoms = message,
+                        result = cleanReply,
+                        riskLevel = risk,
+                        date = System.currentTimeMillis()
+                    )
+                )
 
             } catch (e: Exception) {
                 e.printStackTrace()

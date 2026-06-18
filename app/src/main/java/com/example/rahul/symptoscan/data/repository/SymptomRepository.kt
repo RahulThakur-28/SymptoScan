@@ -16,7 +16,7 @@ class SymptomRepository(
     private val firestore: FirebaseFirestore
 ) {
 
-    private val apiKey = "AIzaSyBvsgR-KnwDxTLWY4aF5OdQXnktixMZ8Uc"
+    private val apiKey = "AIzaSyBmWmI_a6Czl4Cwr_VWxtQ6e7KLbyPp5p0"
 
     fun getAllHistory(): Flow<List<SymptomEntity>> =
         symptomDao.getAllSymptoms()
