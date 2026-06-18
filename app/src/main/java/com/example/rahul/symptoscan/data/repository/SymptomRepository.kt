@@ -16,7 +16,7 @@ class SymptomRepository(
     private val firestore: FirebaseFirestore
 ) {
 
-    private val apiKey = "AIzaSyBvsgR-KnwDxTLWY4aF5OdQXnktixMZ8Uc"
+    private val apiKey = "add your gemini api key here"
 
     fun getAllHistory(): Flow<List<SymptomEntity>> =
         symptomDao.getAllSymptoms()

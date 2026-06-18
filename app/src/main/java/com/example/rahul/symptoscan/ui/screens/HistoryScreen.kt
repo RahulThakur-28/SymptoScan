@@ -11,6 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.navigation.NavController
@@ -108,6 +109,24 @@ fun HistoryItem(item: SymptomEntity) {
     val sdf = SimpleDateFormat("dd MMM yyyy, hh:mm a", Locale.getDefault())
     val dateString = sdf.format(Date(item.date))
 
+    //CLEAN FULL TEXT
+    val cleanResult = item.result
+        .replace("```json", "")
+        .replace("```", "")
+        .replace("###", "")
+        .replace("**", "")
+        .replace("*", "")
+        .replace("\n", " ")
+        .replace("  ", " ")
+        .trim()
+
+    //  TAKE ONLY FIRST SENTENCE (BEST UX)
+    val shortText = cleanResult
+        .split(".")
+        .firstOrNull()
+        ?.take(80)
+        ?: cleanResult.take(80)
+
     AppCard {
 
         Row(
@@ -118,31 +137,38 @@ fun HistoryItem(item: SymptomEntity) {
 
             Column(modifier = Modifier.weight(1f)) {
 
+                // 📅 DATE
                 Text(
                     text = dateString,
                     fontSize = 12.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
 
-                Spacer(modifier = Modifier.height(4.dp))
+                Spacer(modifier = Modifier.height(6.dp))
 
+                //  SHORT RESULT (CLEAN + LIMITED)
                 Text(
-                    text = item.result,
-                    fontSize = 16.sp,
+                    text = shortText,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis
                 )
 
                 Spacer(modifier = Modifier.height(4.dp))
 
+                // 🧠 SYMPTOMS
                 Text(
                     text = "Symptoms: ${item.symptoms}",
-                    fontSize = 14.sp,
+                    fontSize = 13.sp,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
-                    maxLines = 2
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
                 )
             }
 
+            //  RISK BADGE
             RiskBadge(item.riskLevel)
         }
     }
