@@ -8,7 +8,7 @@
 </p>
 
 <p align="center">
-  <b>AI-powered Android Health Assistant built using Kotlin, Jetpack Compose, Firebase, Room Database, and Gemini AI.</b>
+  <b>AI-powered Android Health Assistant built using Kotlin, Jetpack Compose, Firebase, Room Database and Gemini AI.</b>
 </p>
 
 ---
