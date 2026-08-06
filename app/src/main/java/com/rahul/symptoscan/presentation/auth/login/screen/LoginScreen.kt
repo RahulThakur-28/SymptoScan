@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.login.component.*
 import com.rahul.symptoscan.presentation.auth.login.event.LoginEvent
 import com.rahul.symptoscan.presentation.auth.login.viewmodel.LoginViewModel
@@ -25,20 +26,35 @@ import com.rahul.symptoscan.ui.theme.Dimens
 @Composable
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
+    onEmailNotVerified: () -> Unit,
     onRegisterClick: () -> Unit,
     onForgotPassword: () -> Unit,
     onGoogleLogin: () -> Unit,
     viewModel: LoginViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var visible by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         visible = true
     }
 
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is AuthUiState.Success -> onLoginSuccess()
+            is AuthUiState.EmailNotVerified -> onEmailNotVerified()
+            is AuthUiState.Error -> {
+                snackbarHostState.showSnackbar((uiState as AuthUiState.Error).message)
+            }
+            else -> {}
+        }
+    }
+
     Scaffold(
-        containerColor = Color.White
+        containerColor = Color.White,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         AnimatedVisibility(
             visible = visible,

@@ -4,17 +4,45 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rahul.symptoscan.presentation.auth.common.AuthViewModel
 import com.rahul.symptoscan.ui.theme.Dimens
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun HomeScreen() {
-    Scaffold(containerColor = Color.White) { paddingValues ->
+fun HomeScreen(
+    onLogout: () -> Unit,
+    viewModel: AuthViewModel = viewModel()
+) {
+    LaunchedEffect(Unit) {
+        viewModel.navigationEvent.collect { event ->
+            if (event is AuthViewModel.AuthNavigation.NavigateToLogin) {
+                onLogout()
+            }
+        }
+    }
+
+    Scaffold(
+        containerColor = Color.White,
+        topBar = {
+            TopAppBar(
+                title = { Text("SymptoScan") },
+                actions = {
+                    TextButton(onClick = { viewModel.logout() }) {
+                        Text("Logout", color = MaterialTheme.colorScheme.error)
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        }
+    ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()

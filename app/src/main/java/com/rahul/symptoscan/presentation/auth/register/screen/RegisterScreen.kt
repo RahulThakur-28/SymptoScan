@@ -16,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.login.component.HeaderSection
 import com.rahul.symptoscan.presentation.auth.login.component.PasswordTextField
 import com.rahul.symptoscan.presentation.auth.register.event.RegisterEvent
@@ -31,13 +32,28 @@ fun RegisterScreen(
     viewModel: RegisterViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var visible by remember { mutableStateOf(false) }
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(Unit) {
         visible = true
     }
 
-    Scaffold(containerColor = Color.White) { paddingValues ->
+    LaunchedEffect(uiState) {
+        when (uiState) {
+            is AuthUiState.Success -> onNavigateToVerification()
+            is AuthUiState.Error -> {
+                snackbarHostState.showSnackbar((uiState as AuthUiState.Error).message)
+            }
+            else -> {}
+        }
+    }
+
+    Scaffold(
+        containerColor = Color.White,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
+    ) { paddingValues ->
         AnimatedVisibility(
             visible = visible,
             enter = fadeIn() + slideInVertically(initialOffsetY = { 40 })
@@ -102,7 +118,6 @@ fun RegisterScreen(
                     text = "Continue",
                     onClick = { 
                         viewModel.onEvent(RegisterEvent.RegisterClicked)
-                        onNavigateToVerification() 
                     },
                     enabled = state.isRegisterEnabled,
                     isLoading = state.isLoading

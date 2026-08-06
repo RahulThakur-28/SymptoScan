@@ -1,6 +1,7 @@
 package com.rahul.symptoscan.presentation.auth.emailverification.screen
 
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material3.*
@@ -14,10 +15,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.rahul.symptoscan.components.AppLogo
-import com.rahul.symptoscan.presentation.auth.emailverification.component.OTPBox
+import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.emailverification.event.EmailVerificationEvent
 import com.rahul.symptoscan.presentation.auth.emailverification.viewmodel.EmailVerificationViewModel
+import com.rahul.symptoscan.ui.components.AppLogo
 import com.rahul.symptoscan.ui.components.PrimaryButton
 import com.rahul.symptoscan.ui.theme.Dimens
 
@@ -29,15 +30,20 @@ fun EmailVerificationScreen(
     viewModel: EmailVerificationViewModel = viewModel()
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(state.isVerified) {
-        if (state.isVerified) {
+    LaunchedEffect(uiState) {
+        if (uiState is AuthUiState.Success) {
             onVerificationSuccess()
+        } else if (uiState is AuthUiState.Error) {
+            snackbarHostState.showSnackbar((uiState as AuthUiState.Error).message)
         }
     }
 
     Scaffold(
         containerColor = Color.White,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {},
@@ -77,7 +83,7 @@ fun EmailVerificationScreen(
             Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
             
             Text(
-                text = "We've sent a verification link to\n${state.email}",
+                text = "We've sent a verification link to your email. Please check your inbox and verify your account.",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
@@ -85,17 +91,23 @@ fun EmailVerificationScreen(
             
             Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
             
-            OTPBox(
-                otpValue = state.otp,
-                onValueChange = { viewModel.onEvent(EmailVerificationEvent.OtpChanged(it)) }
-            )
+            Button(
+                onClick = { /* In production, open email app via intent */ },
+                modifier = Modifier.fillMaxWidth().height(56.dp),
+                shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFFF1F5F9),
+                    contentColor = Color(0xFF1E293B)
+                )
+            ) {
+                Text(text = "Open Email App", fontWeight = FontWeight.SemiBold)
+            }
             
-            Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
+            Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
             
             PrimaryButton(
-                text = "Verify & Continue",
+                text = "I've Verified",
                 onClick = { viewModel.onEvent(EmailVerificationEvent.VerifyClicked) },
-                enabled = state.isVerifyEnabled,
                 isLoading = state.isLoading
             )
             

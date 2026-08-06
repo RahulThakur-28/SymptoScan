@@ -11,6 +11,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.splash.components.*
 import com.rahul.symptoscan.presentation.splash.viewmodel.SplashNavigationState
 import com.rahul.symptoscan.presentation.splash.viewmodel.SplashViewModel
+import com.rahul.symptoscan.ui.components.GradientBackground
 import com.rahul.symptoscan.ui.theme.Dimens
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch

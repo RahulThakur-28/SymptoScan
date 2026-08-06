@@ -2,18 +2,23 @@ package com.rahul.symptoscan.presentation.auth.login.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.rahul.symptoscan.core.di.Injection
+import com.rahul.symptoscan.data.repository.AuthRepository
+import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.login.event.LoginEvent
 import com.rahul.symptoscan.presentation.auth.login.state.LoginState
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
-class LoginViewModel : ViewModel() {
+class LoginViewModel(
+    private val repository: AuthRepository = Injection.authRepository
+) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginState())
     val state: StateFlow<LoginState> = _state.asStateFlow()
+
+    private val _uiState = MutableStateFlow<AuthUiState<Unit>>(AuthUiState.Idle)
+    val uiState: StateFlow<AuthUiState<Unit>> = _uiState.asStateFlow()
 
     fun onEvent(event: LoginEvent) {
         when (event) {
@@ -26,7 +31,7 @@ class LoginViewModel : ViewModel() {
             is LoginEvent.PasswordChanged -> {
                 _state.update { it.copy(
                     password = event.password,
-                    passwordError = if (event.password.length >= 6) null else "Password must be at least 6 characters"
+                    passwordError = if (event.password.length >= 8) null else "Password must be at least 8 characters"
                 ) }
             }
             is LoginEvent.TogglePasswordVisibility -> {
@@ -35,7 +40,7 @@ class LoginViewModel : ViewModel() {
             is LoginEvent.LoginClicked -> {
                 login()
             }
-            else -> { /* Handle other events if needed */ }
+            else -> {}
         }
     }
 
@@ -43,10 +48,22 @@ class LoginViewModel : ViewModel() {
         if (!_state.value.isSignInEnabled) return
         
         viewModelScope.launch {
+            _uiState.value = AuthUiState.Loading
             _state.update { it.copy(isLoading = true) }
-            // Simulate network call
-            kotlinx.coroutines.delay(2000)
+            
+            val result = repository.login(_state.value.email, _state.value.password)
+            
             _state.update { it.copy(isLoading = false) }
+            
+            result.onSuccess {
+                if (repository.isEmailVerified()) {
+                    _uiState.value = AuthUiState.Success(Unit)
+                } else {
+                    _uiState.value = AuthUiState.EmailNotVerified
+                }
+            }.onFailure { error ->
+                _uiState.value = AuthUiState.Error(error.message ?: "Unknown error occurred")
+            }
         }
     }
 

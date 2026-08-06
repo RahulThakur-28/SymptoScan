@@ -1,4 +1,4 @@
-package com.rahul.symptoscan.components
+package com.rahul.symptoscan.ui.components
 
 import androidx.compose.animation.core.*
 import androidx.compose.foundation.Canvas

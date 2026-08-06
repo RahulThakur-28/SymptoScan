@@ -9,7 +9,10 @@ plugins {
 
 
 val localProperties = Properties().apply {
-    load(rootProject.file("local.properties").inputStream())
+    val file = rootProject.file("local.properties")
+    if (file.exists()) {
+        load(file.inputStream())
+    }
 }
 android {
     namespace = "com.rahul.symptoscan"
@@ -27,13 +30,13 @@ android {
         buildConfigField(
             "String",
             "SUPABASE_URL",
-            "\"${localProperties["SUPABASE_URL"]}\""
+            "\"${localProperties["SUPABASE_URL"] ?: ""}\""
         )
 
         buildConfigField(
             "String",
-            "SUPABASE_PUBLISHABLE_KEY",
-            "\"${localProperties["SUPABASE_PUBLISHABLE_KEY"]}\""
+            "SUPABASE_ANON_KEY",
+            "\"${localProperties["SUPABASE_ANON_KEY"] ?: ""}\""
         )
     }
 
@@ -87,4 +90,6 @@ dependencies {
     implementation(libs.supabase.storage)
 
     implementation(libs.ktor.client.android)
+
+
 }

@@ -5,6 +5,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.rahul.symptoscan.presentation.auth.emailverification.screen.EmailVerificationScreen
+import com.rahul.symptoscan.presentation.auth.forgotpassword.screen.ForgotPasswordScreen
 import com.rahul.symptoscan.presentation.auth.login.screen.LoginScreen
 import com.rahul.symptoscan.presentation.auth.profile.screen.BasicProfileScreen
 import com.rahul.symptoscan.presentation.auth.register.screen.RegisterScreen
@@ -18,6 +19,7 @@ sealed class Screen(val route: String) {
     object Onboarding : Screen("onboarding")
     object Login : Screen("login")
     object Register : Screen("register")
+    object ForgotPassword : Screen("forgot_password")
     object EmailVerification : Screen("email_verification")
     object BasicProfile : Screen("basic_profile")
     object Home : Screen("home")
@@ -40,6 +42,21 @@ fun AppNavGraph(navController: NavHostController) {
                         }
                         is SplashNavigationState.NavigateToLogin -> {
                             navController.navigate(Screen.Login.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        }
+                        is SplashNavigationState.NavigateToVerification -> {
+                            navController.navigate(Screen.EmailVerification.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        }
+                        is SplashNavigationState.NavigateToProfile -> {
+                            navController.navigate(Screen.BasicProfile.route) {
+                                popUpTo(Screen.Splash.route) { inclusive = true }
+                            }
+                        }
+                        is SplashNavigationState.NavigateToHome -> {
+                            navController.navigate(Screen.Home.route) {
                                 popUpTo(Screen.Splash.route) { inclusive = true }
                             }
                         }
@@ -66,11 +83,24 @@ fun AppNavGraph(navController: NavHostController) {
                         popUpTo(Screen.Login.route) { inclusive = true }
                     }
                 },
+                onEmailNotVerified = {
+                    navController.navigate(Screen.EmailVerification.route)
+                },
                 onRegisterClick = {
                     navController.navigate(Screen.Register.route)
                 },
-                onForgotPassword = { /* Placeholder */ },
+                onForgotPassword = {
+                    navController.navigate(Screen.ForgotPassword.route)
+                },
                 onGoogleLogin = { /* Placeholder */ }
+            )
+        }
+
+        composable(route = Screen.ForgotPassword.route) {
+            ForgotPasswordScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
 
@@ -109,7 +139,13 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable(route = Screen.Home.route) {
-            HomeScreen()
+            HomeScreen(
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
         }
     }
 }
