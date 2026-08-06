@@ -15,31 +15,6 @@ import com.rahul.symptoscan.ui.theme.BluePrimary
 import com.rahul.symptoscan.ui.theme.Dimens
 
 @Composable
-fun PrimaryButton(
-    text: String,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Button(
-        onClick = onClick,
-        modifier = modifier
-            .fillMaxWidth()
-            .height(56.dp),
-        shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
-        colors = ButtonDefaults.buttonColors(
-            containerColor = BluePrimary,
-            contentColor = Color.White
-        )
-    ) {
-        Text(
-            text = text,
-            fontSize = 16.sp,
-            fontWeight = FontWeight.Bold
-        )
-    }
-}
-
-@Composable
 fun SkipButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier

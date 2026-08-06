@@ -1,14 +1,14 @@
 package com.rahul.symptoscan.navigation
 
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import com.rahul.symptoscan.presentation.auth.emailverification.screen.EmailVerificationScreen
+import com.rahul.symptoscan.presentation.auth.login.screen.LoginScreen
+import com.rahul.symptoscan.presentation.auth.profile.screen.BasicProfileScreen
+import com.rahul.symptoscan.presentation.auth.register.screen.RegisterScreen
+import com.rahul.symptoscan.presentation.home.screen.HomeScreen
 import com.rahul.symptoscan.presentation.onboarding.screen.OnboardingScreen
 import com.rahul.symptoscan.presentation.splash.screen.SplashScreen
 import com.rahul.symptoscan.presentation.splash.viewmodel.SplashNavigationState
@@ -17,6 +17,10 @@ sealed class Screen(val route: String) {
     object Splash : Screen("splash")
     object Onboarding : Screen("onboarding")
     object Login : Screen("login")
+    object Register : Screen("register")
+    object EmailVerification : Screen("email_verification")
+    object BasicProfile : Screen("basic_profile")
+    object Home : Screen("home")
 }
 
 @Composable
@@ -56,17 +60,56 @@ fun AppNavGraph(navController: NavHostController) {
         }
         
         composable(route = Screen.Login.route) {
-            PlaceholderScreen(name = "Login")
+            LoginScreen(
+                onLoginSuccess = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
+                },
+                onRegisterClick = {
+                    navController.navigate(Screen.Register.route)
+                },
+                onForgotPassword = { /* Placeholder */ },
+                onGoogleLogin = { /* Placeholder */ }
+            )
         }
-    }
-}
 
-@Composable
-fun PlaceholderScreen(name: String) {
-    Box(
-        modifier = Modifier.fillMaxSize(),
-        contentAlignment = Alignment.Center
-    ) {
-        Text(text = "$name Screen")
+        composable(route = Screen.Register.route) {
+            RegisterScreen(
+                onNavigateToLogin = {
+                    navController.popBackStack()
+                },
+                onNavigateToVerification = {
+                    navController.navigate(Screen.EmailVerification.route)
+                }
+            )
+        }
+
+        composable(route = Screen.EmailVerification.route) {
+            EmailVerificationScreen(
+                onNavigateBack = {
+                    navController.popBackStack()
+                },
+                onVerificationSuccess = {
+                    navController.navigate(Screen.BasicProfile.route) {
+                        popUpTo(Screen.Register.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(route = Screen.BasicProfile.route) {
+            BasicProfileScreen(
+                onProfileComplete = {
+                    navController.navigate(Screen.Home.route) {
+                        popUpTo(Screen.EmailVerification.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+
+        composable(route = Screen.Home.route) {
+            HomeScreen()
+        }
     }
 }

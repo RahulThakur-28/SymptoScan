@@ -13,6 +13,7 @@ import com.rahul.symptoscan.presentation.onboarding.component.*
 import com.rahul.symptoscan.presentation.onboarding.event.OnboardingEvent
 import com.rahul.symptoscan.presentation.onboarding.model.OnboardingData
 import com.rahul.symptoscan.presentation.onboarding.viewmodel.OnboardingViewModel
+import com.rahul.symptoscan.ui.components.PrimaryButton
 import com.rahul.symptoscan.ui.theme.Dimens
 import kotlinx.coroutines.launch
 

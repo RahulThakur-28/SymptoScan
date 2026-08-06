@@ -1,0 +1,131 @@
+package com.rahul.symptoscan.presentation.auth.register.screen
+
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.slideInVertically
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rahul.symptoscan.presentation.auth.login.component.HeaderSection
+import com.rahul.symptoscan.presentation.auth.login.component.PasswordTextField
+import com.rahul.symptoscan.presentation.auth.register.event.RegisterEvent
+import com.rahul.symptoscan.presentation.auth.register.viewmodel.RegisterViewModel
+import com.rahul.symptoscan.ui.components.AppTextField
+import com.rahul.symptoscan.ui.components.PrimaryButton
+import com.rahul.symptoscan.ui.theme.Dimens
+
+@Composable
+fun RegisterScreen(
+    onNavigateToLogin: () -> Unit,
+    onNavigateToVerification: () -> Unit,
+    viewModel: RegisterViewModel = viewModel()
+) {
+    val state by viewModel.state.collectAsStateWithLifecycle()
+    var visible by remember { mutableStateOf(false) }
+
+    LaunchedEffect(Unit) {
+        visible = true
+    }
+
+    Scaffold(containerColor = Color.White) { paddingValues ->
+        AnimatedVisibility(
+            visible = visible,
+            enter = fadeIn() + slideInVertically(initialOffsetY = { 40 })
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(paddingValues)
+                    .verticalScroll(rememberScrollState())
+                    .padding(horizontal = Dimens.PaddingExtraLarge, vertical = Dimens.PaddingLarge),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                HeaderSection()
+                
+                Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
+                
+                AppTextField(
+                    value = state.fullName,
+                    onValueChange = { viewModel.onEvent(RegisterEvent.FullNameChanged(it)) },
+                    label = "Full Name",
+                    placeholder = "John Doe",
+                    error = state.fullNameError
+                )
+                
+                Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
+                
+                AppTextField(
+                    value = state.email,
+                    onValueChange = { viewModel.onEvent(RegisterEvent.EmailChanged(it)) },
+                    label = "Email Address",
+                    placeholder = "you@example.com",
+                    error = state.emailError
+                )
+                
+                Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
+                
+                PasswordTextField(
+                    value = state.password,
+                    onValueChange = { viewModel.onEvent(RegisterEvent.PasswordChanged(it)) },
+                    label = "Password",
+                    placeholder = "••••••••••",
+                    isVisible = state.isPasswordVisible,
+                    onToggleVisibility = { viewModel.onEvent(RegisterEvent.TogglePasswordVisibility) },
+                    error = state.passwordError
+                )
+                
+                Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
+                
+                PasswordTextField(
+                    value = state.confirmPassword,
+                    onValueChange = { viewModel.onEvent(RegisterEvent.ConfirmPasswordChanged(it)) },
+                    label = "Confirm Password",
+                    placeholder = "••••••••••",
+                    isVisible = state.isConfirmPasswordVisible,
+                    onToggleVisibility = { viewModel.onEvent(RegisterEvent.ToggleConfirmPasswordVisibility) },
+                    error = state.confirmPasswordError
+                )
+                
+                Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
+                
+                PrimaryButton(
+                    text = "Continue",
+                    onClick = { 
+                        viewModel.onEvent(RegisterEvent.RegisterClicked)
+                        onNavigateToVerification() 
+                    },
+                    enabled = state.isRegisterEnabled,
+                    isLoading = state.isLoading
+                )
+                
+                Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
+                
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.Center,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Text(text = "Already have an account? ", color = Color.Gray, fontSize = 14.sp)
+                    TextButton(onClick = onNavigateToLogin) {
+                        Text(
+                            text = "Sign In",
+                            color = MaterialTheme.colorScheme.primary,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
