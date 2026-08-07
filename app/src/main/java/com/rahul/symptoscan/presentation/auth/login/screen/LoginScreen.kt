@@ -27,6 +27,8 @@ import com.rahul.symptoscan.ui.theme.Dimens
 fun LoginScreen(
     onLoginSuccess: () -> Unit,
     onEmailNotVerified: () -> Unit,
+    onNavigateToResetPassword: () -> Unit,
+    onNavigateToProfile: () -> Unit,
     onRegisterClick: () -> Unit,
     onForgotPassword: () -> Unit,
     onGoogleLogin: () -> Unit,
@@ -36,19 +38,52 @@ fun LoginScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var visible by remember { mutableStateOf(false) }
     val snackbarHostState = remember { SnackbarHostState() }
+    
+    val context = androidx.compose.ui.platform.LocalContext.current
+
+    DisposableEffect(context) {
+        val activity = context as? android.app.Activity
+        val listener = androidx.core.util.Consumer<android.content.Intent> { intent ->
+            intent.data?.let { uri ->
+                if (uri.scheme == "symptoscan" && uri.host == "auth") {
+                    viewModel.handleDeepLink(uri.toString())
+                }
+            }
+        }
+        
+        // Handle current intent
+        activity?.intent?.data?.let { uri ->
+            if (uri.scheme == "symptoscan" && uri.host == "auth") {
+                viewModel.handleDeepLink(uri.toString())
+                // Clear intent to avoid duplicate processing
+                activity.intent.data = null
+            }
+        }
+
+        activity?.let {
+            if (it is androidx.activity.ComponentActivity) {
+                it.addOnNewIntentListener(listener)
+            }
+        }
+        onDispose {
+            activity?.let {
+                if (it is androidx.activity.ComponentActivity) {
+                    it.removeOnNewIntentListener(listener)
+                }
+            }
+        }
+    }
 
     LaunchedEffect(Unit) {
         visible = true
-    }
 
-    LaunchedEffect(uiState) {
-        when (uiState) {
-            is AuthUiState.Success -> onLoginSuccess()
-            is AuthUiState.EmailNotVerified -> onEmailNotVerified()
-            is AuthUiState.Error -> {
-                snackbarHostState.showSnackbar((uiState as AuthUiState.Error).message)
+        viewModel.navigationEvent.collect { event ->
+            when (event) {
+                is LoginViewModel.LoginNavigation.NavigateToHome -> onLoginSuccess()
+                is LoginViewModel.LoginNavigation.NavigateToVerification -> onEmailNotVerified()
+                is LoginViewModel.LoginNavigation.NavigateToResetPassword -> onNavigateToResetPassword()
+                is LoginViewModel.LoginNavigation.NavigateToProfile -> onNavigateToProfile()
             }
-            else -> {}
         }
     }
 

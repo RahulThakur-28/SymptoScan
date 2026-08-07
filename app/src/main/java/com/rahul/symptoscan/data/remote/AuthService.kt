@@ -1,5 +1,6 @@
 package com.rahul.symptoscan.data.remote
 
+import io.github.jan.supabase.auth.parseSessionFromUrl
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.exceptions.RestException
@@ -69,6 +70,7 @@ class AuthService {
     fun getCurrentUser(): UserInfo? {
         return auth.currentUserOrNull()
     }
+
     /**
      * Refreshes the current session and fetches the latest user data from the server.
      * This is essential to detect changes in email verification status.
@@ -89,12 +91,59 @@ class AuthService {
     }
 
     /**
+     * Updates the password for the current authenticated user.
+     */
+    suspend fun updatePassword(password: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            auth.updateUser {
+                this.password = password
+            }
+            Unit
+        }.onFailure { it.printStackTrace() }
+            .mapError()
+    }
+
+    /**
+     * Handles deep links by parsing session data from the provided URL.
+     */
+    suspend fun handleDeepLink(url: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            val session = auth.parseSessionFromUrl(url)
+            auth.importSession(session)
+            // Fetch the user data associated with the session to ensure metadata is fresh
+            auth.retrieveUserForCurrentSession(updateSession = true)
+            Unit
+        }.onFailure { it.printStackTrace() }
+            .mapError()
+    }
+
+    /**
      * Extension to map Throwable into a more readable Result error.
      */
     private fun <T> Result<T>.mapError(): Result<T> {
         return if (isFailure) {
-            val message = when (val exception = exceptionOrNull()) {
-                is RestException -> exception.error
+            val exception = exceptionOrNull()
+            val message = when (exception) {
+                is RestException -> {
+                    val errorBody = exception.error
+                    when {
+                        errorBody.contains("user_already_exists", ignoreCase = true) || 
+                        errorBody.contains("already registered", ignoreCase = true) -> 
+                            "An account with this email already exists."
+                        
+                        errorBody.contains("invalid_credentials", ignoreCase = true) || 
+                        errorBody.contains("Invalid login credentials", ignoreCase = true) -> 
+                            "Incorrect email or password."
+                        
+                        errorBody.contains("Email not confirmed", ignoreCase = true) -> 
+                            "Please verify your email before logging in."
+                            
+                        errorBody.contains("signup_disabled", ignoreCase = true) -> 
+                            "Sign up is currently disabled."
+                            
+                        else -> exception.localizedMessage ?: "Server error: ${exception.error}"
+                    }
+                }
                 is HttpRequestException -> "Network error. Please check your internet connection."
                 else -> exception?.localizedMessage ?: "An unknown error occurred"
             }
@@ -104,3 +153,4 @@ class AuthService {
         }
     }
 }
+

@@ -32,7 +32,7 @@ class SplashViewModel(
         }
     }
 
-    private fun checkSession() {
+    private suspend fun checkSession() {
         if (!repository.isLoggedIn()) {
             val isFirstLaunch = checkFirstLaunch()
             _navigationState.value = if (isFirstLaunch) {
@@ -50,7 +50,7 @@ class SplashViewModel(
         }
 
         // Verified, check profile completion
-        if (!isProfileCompleted()) {
+        if (!repository.isProfileCompleted()) {
             _navigationState.value = SplashNavigationState.NavigateToProfile
             return
         }
@@ -61,11 +61,6 @@ class SplashViewModel(
 
     private fun checkFirstLaunch(): Boolean {
         // Mocking for now. In production, use DataStore/SharedPreferences
-        return false
-    }
-
-    private fun isProfileCompleted(): Boolean {
-        // Mocking for now. In production, check if user has a record in 'profiles' table
         return false
     }
 }

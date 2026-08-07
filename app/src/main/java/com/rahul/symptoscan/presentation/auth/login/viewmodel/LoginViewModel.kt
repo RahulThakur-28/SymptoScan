@@ -20,6 +20,9 @@ class LoginViewModel(
     private val _uiState = MutableStateFlow<AuthUiState<Unit>>(AuthUiState.Idle)
     val uiState: StateFlow<AuthUiState<Unit>> = _uiState.asStateFlow()
 
+    private val _navigationEvent = MutableSharedFlow<LoginNavigation>()
+    val navigationEvent = _navigationEvent.asSharedFlow()
+
     fun onEvent(event: LoginEvent) {
         when (event) {
             is LoginEvent.EmailChanged -> {
@@ -44,7 +47,33 @@ class LoginViewModel(
         }
     }
 
+    fun handleDeepLink(url: String) {
+        viewModelScope.launch {
+            _uiState.value = AuthUiState.Loading
+            val result = repository.handleDeepLink(url)
+            _uiState.value = AuthUiState.Idle
+            
+            result.onSuccess {
+                // Check if it's a recovery link
+                if (url.contains("type=recovery")) {
+                    _navigationEvent.emit(LoginNavigation.NavigateToResetPassword)
+                } else if (repository.isEmailVerified()) {
+                    if (repository.isProfileCompleted()) {
+                        _navigationEvent.emit(LoginNavigation.NavigateToHome)
+                    } else {
+                        _navigationEvent.emit(LoginNavigation.NavigateToProfile)
+                    }
+                } else {
+                    _navigationEvent.emit(LoginNavigation.NavigateToVerification)
+                }
+            }.onFailure { error ->
+                _uiState.value = AuthUiState.Error(error.message ?: "Invalid or expired link")
+            }
+        }
+    }
+
     private fun login() {
+// ... (existing login code)
         if (!_state.value.isSignInEnabled) return
         
         viewModelScope.launch {
@@ -69,5 +98,12 @@ class LoginViewModel(
 
     private fun validateEmail(email: String): Boolean {
         return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
+    }
+
+    sealed class LoginNavigation {
+        object NavigateToHome : LoginNavigation()
+        object NavigateToVerification : LoginNavigation()
+        object NavigateToResetPassword : LoginNavigation()
+        object NavigateToProfile : LoginNavigation()
     }
 }

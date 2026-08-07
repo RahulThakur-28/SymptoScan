@@ -4,11 +4,13 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
+import androidx.navigation.navDeepLink
 import com.rahul.symptoscan.presentation.auth.emailverification.screen.EmailVerificationScreen
 import com.rahul.symptoscan.presentation.auth.forgotpassword.screen.ForgotPasswordScreen
 import com.rahul.symptoscan.presentation.auth.login.screen.LoginScreen
 import com.rahul.symptoscan.presentation.auth.profile.screen.BasicProfileScreen
 import com.rahul.symptoscan.presentation.auth.register.screen.RegisterScreen
+import com.rahul.symptoscan.presentation.auth.resetpassword.screen.ResetPasswordScreen
 import com.rahul.symptoscan.presentation.home.screen.HomeScreen
 import com.rahul.symptoscan.presentation.onboarding.screen.OnboardingScreen
 import com.rahul.symptoscan.presentation.splash.screen.SplashScreen
@@ -20,6 +22,7 @@ sealed class Screen(val route: String) {
     object Login : Screen("login")
     object Register : Screen("register")
     object ForgotPassword : Screen("forgot_password")
+    object ResetPassword : Screen("reset_password")
     object EmailVerification : Screen("email_verification")
     object BasicProfile : Screen("basic_profile")
     object Home : Screen("home")
@@ -31,6 +34,10 @@ fun AppNavGraph(navController: NavHostController) {
         navController = navController,
         startDestination = Screen.Splash.route
     ) {
+        val authDeepLink = navDeepLink {
+            uriPattern = "symptoscan://auth"
+        }
+
         composable(route = Screen.Splash.route) {
             SplashScreen(
                 onNavigate = { state ->
@@ -76,7 +83,10 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
         
-        composable(route = Screen.Login.route) {
+        composable(
+            route = Screen.Login.route,
+            deepLinks = listOf(authDeepLink)
+        ) {
             LoginScreen(
                 onLoginSuccess = {
                     navController.navigate(Screen.Home.route) {
@@ -85,6 +95,14 @@ fun AppNavGraph(navController: NavHostController) {
                 },
                 onEmailNotVerified = {
                     navController.navigate(Screen.EmailVerification.route)
+                },
+                onNavigateToResetPassword = {
+                    navController.navigate(Screen.ResetPassword.route)
+                },
+                onNavigateToProfile = {
+                    navController.navigate(Screen.BasicProfile.route) {
+                        popUpTo(Screen.Login.route) { inclusive = true }
+                    }
                 },
                 onRegisterClick = {
                     navController.navigate(Screen.Register.route)
@@ -100,6 +118,21 @@ fun AppNavGraph(navController: NavHostController) {
             ForgotPasswordScreen(
                 onNavigateBack = {
                     navController.popBackStack()
+                }
+            )
+        }
+
+        composable(route = Screen.ResetPassword.route) {
+            ResetPasswordScreen(
+                onNavigateBack = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.ResetPassword.route) { inclusive = true }
+                    }
+                },
+                onUpdateSuccess = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.ResetPassword.route) { inclusive = true }
+                    }
                 }
             )
         }

@@ -25,6 +25,14 @@ class AuthRepository(private val authService: AuthService) {
         return authService.sendPasswordReset(email)
     }
 
+    suspend fun updatePassword(password: String): Result<Unit> {
+        return authService.updatePassword(password)
+    }
+
+    suspend fun handleDeepLink(url: String): Result<Unit> {
+        return authService.handleDeepLink(url)
+    }
+
     fun getCurrentUser(): UserInfo? {
         return authService.getCurrentUser()
     }
@@ -40,9 +48,21 @@ class AuthRepository(private val authService: AuthService) {
     /**
      * Checks if the user's email is verified.
      * Uses emailConfirmedAt which is specifically for email verification.
+     * Fallback to confirmedAt for broader confirmation status.
      */
     @OptIn(kotlin.time.ExperimentalTime::class)
     fun isEmailVerified(): Boolean {
-        return authService.getCurrentUser()?.emailConfirmedAt != null
+        val user = authService.getCurrentUser()
+        return (user?.emailConfirmedAt != null) || (user?.confirmedAt != null)
+    }
+
+    /**
+     * Checks if the user has completed their health profile.
+     * In production, this would query a database. For now, it uses a simplified check.
+     */
+    suspend fun isProfileCompleted(): Boolean {
+        // This is a placeholder. In a real app, you'd check if a profile row exists in DB.
+        // For this task, we assume false if we want to show the profile screen after verification.
+        return false
     }
 }
