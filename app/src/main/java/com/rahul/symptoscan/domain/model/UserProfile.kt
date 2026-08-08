@@ -15,7 +15,10 @@ data class UserProfile(
     val bloodGroup: String? = null,
     val height: Int? = null, // in cm
     val weight: Int? = null, // in kg
-    val allergies: List<String> = emptyList()
+    val allergies: List<String> = emptyList(),
+    val conditions: List<String> = emptyList(),
+    val medications: String? = null,
+    val emergencyContact: EmergencyContact? = null
 ) {
     val initials: String
         get() = fullName.split(" ")
@@ -41,3 +44,9 @@ data class UserProfile(
             }
         }
 }
+
+data class EmergencyContact(
+    val name: String,
+    val relationship: String,
+    val phoneNumber: String
+)

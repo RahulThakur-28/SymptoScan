@@ -1,0 +1,163 @@
+package com.rahul.symptoscan.presentation.rating.screen
+
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Star
+import androidx.compose.material.icons.filled.StarBorder
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import com.rahul.symptoscan.ui.components.PrimaryButton
+import com.rahul.symptoscan.ui.theme.BackgroundLight
+import com.rahul.symptoscan.ui.theme.BluePrimary
+import com.rahul.symptoscan.ui.theme.TextDark
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun RateSymptoScanScreen(
+    onNavigateBack: () -> Unit
+) {
+    var rating by remember { mutableStateOf(0) }
+    var feedback by remember { mutableStateOf("") }
+    var isSubmitted by remember { mutableStateOf(false) }
+
+    Scaffold(
+        containerColor = BackgroundLight,
+        topBar = {
+            TopAppBar(
+                title = { Text("Rate SymptomScan", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+            )
+        }
+    ) { paddingValues ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(paddingValues)
+                .padding(24.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.Center
+        ) {
+            if (!isSubmitted) {
+                Text(
+                    "How would you rate SymptomScan?",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark,
+                    textAlign = TextAlign.Center
+                )
+                
+                Spacer(modifier = Modifier.height(32.dp))
+                
+                RatingStars(
+                    rating = rating,
+                    onRatingChange = { rating = it }
+                )
+                
+                Spacer(modifier = Modifier.height(48.dp))
+                
+                Text(
+                    "Tell us what you think",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark,
+                    modifier = Modifier.fillMaxWidth()
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                OutlinedTextField(
+                    value = feedback,
+                    onValueChange = { feedback = it },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(150.dp),
+                    placeholder = { Text("Share your feedback...", color = Color.Gray) },
+                    shape = RoundedCornerShape(16.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedContainerColor = Color.White,
+                        unfocusedContainerColor = Color.White
+                    )
+                )
+                
+                Spacer(modifier = Modifier.height(48.dp))
+                
+                PrimaryButton(
+                    text = "Submit Feedback",
+                    onClick = { isSubmitted = true },
+                    enabled = rating > 0
+                )
+            } else {
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(BluePrimary.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("❤️", fontSize = 40.sp)
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+                Text(
+                    "Thank you for your feedback!",
+                    fontSize = 20.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    "Your input helps us improve SymptomScan for everyone.",
+                    fontSize = 14.sp,
+                    color = Color.Gray,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(modifier = Modifier.height(48.dp))
+                Button(
+                    onClick = onNavigateBack,
+                    modifier = Modifier.fillMaxWidth().height(56.dp),
+                    shape = RoundedCornerShape(16.dp)
+                ) {
+                    Text("Return to Profile")
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun RatingStars(
+    rating: Int,
+    onRatingChange: (Int) -> Unit
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.Center
+    ) {
+        for (i in 1..5) {
+            Icon(
+                imageVector = if (i <= rating) Icons.Default.Star else Icons.Default.StarBorder,
+                contentDescription = null,
+                tint = if (i <= rating) Color(0xFFFFB800) else Color.LightGray,
+                modifier = Modifier
+                    .size(48.dp)
+                    .clickable { onRatingChange(i) }
+                    .padding(4.dp)
+            )
+        }
+    }
+}

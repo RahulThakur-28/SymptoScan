@@ -26,6 +26,7 @@ import com.rahul.symptoscan.ui.theme.SymptoScanTheme
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
+    onNavigate: (String) -> Unit,
     onNavigateBack: () -> Unit,
     onAccountDeleted: () -> Unit,
     viewModel: SettingsViewModel = viewModel(),
@@ -66,7 +67,7 @@ fun SettingsScreen(
                     title = "Language",
                     subtitle = uiState.currentLanguage,
                     icon = Icons.Outlined.Language,
-                    onClick = { /* Navigate to language selection */ }
+                    onClick = { onNavigate("language") }
                 )
             }
 
@@ -100,13 +101,13 @@ fun SettingsScreen(
                 SettingsItem(
                     title = "Privacy Policy",
                     icon = Icons.Outlined.PrivacyTip,
-                    onClick = { /* Open URL */ }
+                    onClick = { onNavigate("privacy_policy") }
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
                 SettingsItem(
                     title = "Terms of Service",
                     icon = Icons.Outlined.Description,
-                    onClick = { /* Open URL */ }
+                    onClick = { onNavigate("terms_of_service") }
                 )
             }
 
@@ -174,6 +175,6 @@ fun SettingsScreen(
 @Composable
 fun SettingsScreenPreview() {
     SymptoScanTheme {
-        SettingsScreen(onNavigateBack = {}, onAccountDeleted = {})
+        SettingsScreen(onNavigate = {}, onNavigateBack = {}, onAccountDeleted = {})
     }
 }

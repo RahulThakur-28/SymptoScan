@@ -32,7 +32,14 @@ class ProfileRepository {
                 bloodGroup = "O+",
                 height = 165,
                 weight = 62,
-                allergies = listOf("Penicillin", "Peanuts")
+                allergies = listOf("Penicillin", "Peanuts"),
+                conditions = listOf("Type 2 Diabetes", "Mild Hypertension"),
+                medications = "Metformin 500mg daily",
+                emergencyContact = com.rahul.symptoscan.domain.model.EmergencyContact(
+                    name = "James Johnson",
+                    relationship = "Spouse",
+                    phoneNumber = "+1 (555) 123-4567"
+                )
             )
         )
     }

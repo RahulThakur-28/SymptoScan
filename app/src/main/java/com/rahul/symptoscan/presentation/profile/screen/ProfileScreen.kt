@@ -165,7 +165,7 @@ fun ProfileScreen(
                             icon = Icons.Default.StarOutline,
                             title = "Rate SymptoScan",
                             subtitle = "Share your experience",
-                            onClick = { }
+                            onClick = { onNavigate("rate_app") }
                         )
                         
                         Spacer(modifier = Modifier.height(24.dp))

@@ -9,10 +9,16 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.navigation.navDeepLink
+import com.rahul.symptoscan.presentation.healthprofile.screen.HealthProfileScreen
+import com.rahul.symptoscan.presentation.helpsupport.screen.HelpSupportScreen
+import com.rahul.symptoscan.presentation.rating.screen.RateSymptoScanScreen
+import com.rahul.symptoscan.presentation.language.screen.LanguageSelectionScreen
+import com.rahul.symptoscan.presentation.privacy.screen.PrivacySecurityScreen
+import com.rahul.symptoscan.presentation.legal.screen.PrivacyPolicyScreen
+import com.rahul.symptoscan.presentation.legal.screen.TermsOfServiceScreen
 import com.rahul.symptoscan.presentation.auth.emailverification.screen.EmailVerificationScreen
 import com.rahul.symptoscan.presentation.auth.forgotpassword.screen.ForgotPasswordScreen
 import com.rahul.symptoscan.presentation.auth.login.screen.LoginScreen
-import com.rahul.symptoscan.presentation.auth.profile.screen.BasicProfileScreen
 import com.rahul.symptoscan.presentation.auth.register.screen.RegisterScreen
 import com.rahul.symptoscan.presentation.auth.resetpassword.screen.ResetPasswordScreen
 import androidx.navigation.compose.navigation
@@ -54,6 +60,9 @@ sealed class Screen(val route: String) {
     object PrivacySecurity : Screen("privacy_security")
     object Language : Screen("language")
     object HelpSupport : Screen("help_support")
+    object RateApp : Screen("rate_app")
+    object PrivacyPolicy : Screen("privacy_policy")
+    object TermsOfService : Screen("terms_of_service")
     object Emergency : Screen("emergency")
 }
 
@@ -191,10 +200,10 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable(route = Screen.BasicProfile.route) {
-            BasicProfileScreen(
-                onProfileComplete = {
+            HealthProfileScreen(
+                onComplete = {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.EmailVerification.route) { inclusive = true }
+                        popUpTo(Screen.BasicProfile.route) { inclusive = true }
                     }
                 }
             )
@@ -292,7 +301,10 @@ fun AppNavGraph(navController: NavHostController) {
         }
         composable(route = Screen.Profile.route) {
             ProfileScreen(
-                onNavigate = { navController.navigate(it) },
+                onNavigate = { route ->
+                    if (route == "rate_app") navController.navigate(Screen.RateApp.route)
+                    else navController.navigate(route)
+                },
                 onLogout = {
                     navController.navigate(Screen.Login.route) {
                         popUpTo(Screen.Home.route) { inclusive = true }
@@ -307,6 +319,7 @@ fun AppNavGraph(navController: NavHostController) {
         }
         composable(route = Screen.Settings.route) {
             SettingsScreen(
+                onNavigate = { navController.navigate(it) },
                 onNavigateBack = { navController.popBackStack() },
                 onAccountDeleted = {
                     navController.navigate(Screen.Login.route) {
@@ -316,9 +329,40 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
         composable(route = Screen.Notifications.route) { PlaceholderScreen(name = "Notifications") }
-        composable(route = Screen.PrivacySecurity.route) { PlaceholderScreen(name = "Privacy & Security") }
-        composable(route = Screen.Language.route) { PlaceholderScreen(name = "Language") }
-        composable(route = Screen.HelpSupport.route) { PlaceholderScreen(name = "Help & Support") }
+        composable(route = Screen.PrivacySecurity.route) {
+            PrivacySecurityScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
+                onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) },
+                onNavigateToDeleteAccount = { /* Handled in settings usually */ }
+            )
+        }
+        composable(route = Screen.Language.route) {
+            LanguageSelectionScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(route = Screen.HelpSupport.route) {
+            HelpSupportScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToEmergency = { navController.navigate(Screen.Emergency.route) }
+            )
+        }
+        composable(route = Screen.RateApp.route) {
+            RateSymptoScanScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(route = Screen.PrivacyPolicy.route) {
+            PrivacyPolicyScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(route = Screen.TermsOfService.route) {
+            TermsOfServiceScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
         composable(route = Screen.Emergency.route) { PlaceholderScreen(name = "Emergency Guidance") }
         composable(route = "assessment_details/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: return@composable
