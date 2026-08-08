@@ -22,6 +22,11 @@ import com.rahul.symptoscan.presentation.history.screen.HistoryScreen
 import com.rahul.symptoscan.presentation.history.viewmodel.HistoryViewModel
 import com.rahul.symptoscan.presentation.home.screen.HomeScreen
 import androidx.navigation.compose.navigation
+import com.rahul.symptoscan.presentation.profile.screen.ProfileScreen
+import com.rahul.symptoscan.presentation.profile.screen.EditProfileScreen
+import com.rahul.symptoscan.presentation.settings.screen.SettingsScreen
+import com.rahul.symptoscan.presentation.ai.screen.AiAssistantScreen
+import com.rahul.symptoscan.presentation.ai.viewmodel.AiAssistantViewModel
 import com.rahul.symptoscan.presentation.assessment.screen.*
 import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentViewModel
 import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentReportViewModel
@@ -43,7 +48,12 @@ sealed class Screen(val route: String) {
     object History : Screen("history")
     object AI : Screen("ai")
     object Profile : Screen("profile")
+    object EditProfile : Screen("edit_profile")
+    object Settings : Screen("settings")
     object Notifications : Screen("notifications")
+    object PrivacySecurity : Screen("privacy_security")
+    object Language : Screen("language")
+    object HelpSupport : Screen("help_support")
     object Emergency : Screen("emergency")
 }
 
@@ -275,9 +285,40 @@ fun AppNavGraph(navController: NavHostController) {
                 }
             )
         }
-        composable(route = Screen.AI.route) { PlaceholderScreen(name = "AI Assistant") }
-        composable(route = Screen.Profile.route) { PlaceholderScreen(name = "Profile") }
+        composable(route = Screen.AI.route) {
+            AiAssistantScreen(
+                onNavigate = { navController.navigate(it) }
+            )
+        }
+        composable(route = Screen.Profile.route) {
+            ProfileScreen(
+                onNavigate = { navController.navigate(it) },
+                onLogout = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
+        composable(route = Screen.EditProfile.route) {
+            EditProfileScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(route = Screen.Settings.route) {
+            SettingsScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onAccountDeleted = {
+                    navController.navigate(Screen.Login.route) {
+                        popUpTo(Screen.Home.route) { inclusive = true }
+                    }
+                }
+            )
+        }
         composable(route = Screen.Notifications.route) { PlaceholderScreen(name = "Notifications") }
+        composable(route = Screen.PrivacySecurity.route) { PlaceholderScreen(name = "Privacy & Security") }
+        composable(route = Screen.Language.route) { PlaceholderScreen(name = "Language") }
+        composable(route = Screen.HelpSupport.route) { PlaceholderScreen(name = "Help & Support") }
         composable(route = Screen.Emergency.route) { PlaceholderScreen(name = "Emergency Guidance") }
         composable(route = "assessment_details/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: return@composable
