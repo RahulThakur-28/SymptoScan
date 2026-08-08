@@ -7,6 +7,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.splash.components.*
 import com.rahul.symptoscan.presentation.splash.viewmodel.SplashNavigationState
@@ -24,7 +25,7 @@ fun SplashScreen(
     onNavigate: (SplashNavigationState) -> Unit,
     viewModel: SplashViewModel = viewModel()
 ) {
-    val navigationState by viewModel.navigationState.collectAsState()
+    val navigationState by viewModel.navigationState.collectAsStateWithLifecycle()
     
     // Animation States
     val bgAlpha = remember { Animatable(0f) }

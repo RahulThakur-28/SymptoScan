@@ -73,7 +73,6 @@ class LoginViewModel(
     }
 
     private fun login() {
-// ... (existing login code)
         if (!_state.value.isSignInEnabled) return
         
         viewModelScope.launch {
@@ -86,7 +85,11 @@ class LoginViewModel(
             
             result.onSuccess {
                 if (repository.isEmailVerified()) {
-                    _uiState.value = AuthUiState.Success(Unit)
+                    if (repository.isProfileCompleted()) {
+                        _navigationEvent.emit(LoginNavigation.NavigateToHome)
+                    } else {
+                        _navigationEvent.emit(LoginNavigation.NavigateToProfile)
+                    }
                 } else {
                     _uiState.value = AuthUiState.EmailNotVerified
                 }

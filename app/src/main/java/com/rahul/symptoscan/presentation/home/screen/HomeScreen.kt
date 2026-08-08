@@ -1,28 +1,36 @@
 package com.rahul.symptoscan.presentation.home.screen
 
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.ui.Alignment
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.auth.common.AuthViewModel
-import com.rahul.symptoscan.ui.theme.Dimens
+import com.rahul.symptoscan.presentation.home.component.*
+import com.rahul.symptoscan.presentation.home.viewmodel.HomeViewModel
+import com.rahul.symptoscan.ui.theme.BackgroundLight
 
-@OptIn(ExperimentalMaterial3Api::class)
+
+
 @Composable
 fun HomeScreen(
+    onNavigate: (String) -> Unit,
     onLogout: () -> Unit,
-    viewModel: AuthViewModel = viewModel()
+    homeViewModel: HomeViewModel = viewModel(),
+    authViewModel: AuthViewModel = viewModel()
 ) {
+    val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
+
     LaunchedEffect(Unit) {
-        viewModel.navigationEvent.collect { event ->
+        authViewModel.navigationEvent.collect { event ->
             if (event is AuthViewModel.AuthNavigation.NavigateToLogin) {
                 onLogout()
             }
@@ -30,16 +38,11 @@ fun HomeScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
-        topBar = {
-            TopAppBar(
-                title = { Text("SymptoScan") },
-                actions = {
-                    TextButton(onClick = { viewModel.logout() }) {
-                        Text("Logout", color = MaterialTheme.colorScheme.error)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+        containerColor = BackgroundLight,
+        bottomBar = {
+            HomeBottomNavigation(
+                currentRoute = "home",
+                onNavigate = onNavigate
             )
         }
     ) { paddingValues ->
@@ -47,50 +50,55 @@ fun HomeScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
-                .padding(Dimens.PaddingExtraLarge),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.Center
+                .verticalScroll(rememberScrollState())
         ) {
-            Text(
-                text = "Welcome to SymptoScan",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B)
-            )
-            
-            Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
-            
-            Card(
-                modifier = Modifier.fillMaxWidth(),
-                shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC))
-            ) {
-                Column(modifier = Modifier.padding(Dimens.PaddingLarge)) {
-                    Text(
-                        text = "Complete Health Profile",
-                        fontWeight = FontWeight.SemiBold,
-                        fontSize = 16.sp
+            Box(modifier = Modifier.fillMaxWidth()) {
+                HomeHeader(
+                    userName = uiState.userName,
+                    initials = uiState.initials,
+                    notificationCount = uiState.notificationCount,
+                    onProfileClick = { onNavigate("profile") },
+                    onNotificationClick = { onNavigate("notifications") }
+                )
+                
+                Column {
+                    Spacer(modifier = Modifier.height(130.dp))
+                    HealthScoreCard(
+                        score = uiState.healthScore,
+                        status = uiState.healthStatus,
+                        bmi = uiState.bmi,
+                        lastCheck = uiState.lastCheck,
+                        assessmentCount = uiState.assessmentCount
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    LinearProgressIndicator(
-                        progress = { 0.5f },
-                        modifier = Modifier.fillMaxWidth().height(8.dp),
-                        color = MaterialTheme.colorScheme.primary,
-                        trackColor = Color(0xFFE2E8F0),
-                        strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(text = "Progress: 50%", color = Color.Gray, fontSize = 12.sp)
-                    Spacer(modifier = Modifier.height(Dimens.PaddingMedium))
-                    Button(
-                        onClick = { },
-                        modifier = Modifier.align(Alignment.End),
-                        shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
-                    ) {
-                        Text(text = "Complete Now")
-                    }
                 }
             }
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            QuickActionsGrid(
+                onNewAssessment = { onNavigate("assess") },
+                onViewHistory = { onNavigate("history") },
+                onAskAI = { onNavigate("ai") },
+                onEmergency = { onNavigate("emergency") }
+            )
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            DailyHealthTipCard(tip = uiState.dailyHealthTip)
+
+            Spacer(modifier = Modifier.height(24.dp))
+
+            RecentAssessmentsSection(
+                assessments = uiState.recentAssessments,
+                onSeeAllClick = { onNavigate("history") },
+                onAssessmentClick = { id -> onNavigate("assessment_details/$id") }
+            )
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            EmergencySosCard(onClick = { onNavigate("emergency") })
+
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }

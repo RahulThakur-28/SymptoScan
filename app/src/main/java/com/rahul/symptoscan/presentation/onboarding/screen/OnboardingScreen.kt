@@ -8,6 +8,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.onboarding.component.*
 import com.rahul.symptoscan.presentation.onboarding.event.OnboardingEvent
@@ -22,7 +23,7 @@ fun OnboardingScreen(
     onNavigateToLogin: () -> Unit,
     viewModel: OnboardingViewModel = viewModel()
 ) {
-    val state by viewModel.state.collectAsState()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val pagerState = rememberPagerState(pageCount = { OnboardingData.pages.size })
     val scope = rememberCoroutineScope()
 

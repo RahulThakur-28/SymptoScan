@@ -87,6 +87,12 @@ fun LoginScreen(
         }
     }
 
+    LaunchedEffect(uiState) {
+        if (uiState is AuthUiState.Error) {
+            snackbarHostState.showSnackbar((uiState as AuthUiState.Error).message)
+        }
+    }
+
     Scaffold(
         containerColor = Color.White,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
