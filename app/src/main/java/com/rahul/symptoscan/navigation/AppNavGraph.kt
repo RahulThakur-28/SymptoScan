@@ -18,10 +18,13 @@ import com.rahul.symptoscan.presentation.auth.resetpassword.screen.ResetPassword
 import androidx.navigation.compose.navigation
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rahul.symptoscan.presentation.history.screen.HistoryScreen
+import com.rahul.symptoscan.presentation.history.viewmodel.HistoryViewModel
 import com.rahul.symptoscan.presentation.home.screen.HomeScreen
 import androidx.navigation.compose.navigation
 import com.rahul.symptoscan.presentation.assessment.screen.*
 import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentViewModel
+import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentReportViewModel
 import com.rahul.symptoscan.presentation.onboarding.screen.OnboardingScreen
 import com.rahul.symptoscan.presentation.splash.screen.SplashScreen
 import com.rahul.symptoscan.presentation.splash.viewmodel.SplashNavigationState
@@ -253,6 +256,10 @@ fun AppNavGraph(navController: NavHostController) {
                 val viewModel: AssessmentViewModel = viewModel(
                     remember(entry) { navController.getBackStackEntry(Screen.Assess.route) }
                 )
+                // Using the assessment index or some ID if available. 
+                // For the "just completed" flow, we might need a different approach if it's not saved yet.
+                // But assuming it's saved, we can pass "latest" or something.
+                // For now, let's keep it as is or redirect to the common Report screen.
                 FullReportScreen(
                     onNavigateBack = { navController.popBackStack() },
                     viewModel = viewModel
@@ -260,14 +267,24 @@ fun AppNavGraph(navController: NavHostController) {
             }
         }
 
-        composable(route = Screen.History.route) { PlaceholderScreen(name = "History") }
+        composable(route = Screen.History.route) {
+            HistoryScreen(
+                onNavigate = { navController.navigate(it) },
+                onAssessmentClick = { id ->
+                    navController.navigate("assessment_details/$id")
+                }
+            )
+        }
         composable(route = Screen.AI.route) { PlaceholderScreen(name = "AI Assistant") }
         composable(route = Screen.Profile.route) { PlaceholderScreen(name = "Profile") }
         composable(route = Screen.Notifications.route) { PlaceholderScreen(name = "Notifications") }
         composable(route = Screen.Emergency.route) { PlaceholderScreen(name = "Emergency Guidance") }
         composable(route = "assessment_details/{id}") { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("id")
-            PlaceholderScreen(name = "Assessment Details for $id")
+            val id = backStackEntry.arguments?.getString("id") ?: return@composable
+            AssessmentReportScreen(
+                assessmentId = id,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
     }
 }

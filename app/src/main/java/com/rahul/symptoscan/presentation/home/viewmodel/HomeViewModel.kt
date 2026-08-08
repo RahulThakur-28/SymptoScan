@@ -1,8 +1,8 @@
 package com.rahul.symptoscan.presentation.home.viewmodel
 
 import androidx.lifecycle.ViewModel
-import com.rahul.symptoscan.presentation.home.model.AssessmentStatus
-import com.rahul.symptoscan.presentation.home.model.AssessmentSummary
+import com.rahul.symptoscan.domain.model.AssessmentStatus
+import com.rahul.symptoscan.domain.model.AssessmentSummary
 import com.rahul.symptoscan.presentation.home.model.HomeUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow

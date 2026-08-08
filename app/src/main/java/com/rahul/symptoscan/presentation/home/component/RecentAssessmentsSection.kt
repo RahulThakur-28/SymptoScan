@@ -7,7 +7,6 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.*
@@ -19,8 +18,8 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rahul.symptoscan.presentation.home.model.AssessmentStatus
-import com.rahul.symptoscan.presentation.home.model.AssessmentSummary
+import com.rahul.symptoscan.domain.model.AssessmentStatus
+import com.rahul.symptoscan.domain.model.AssessmentSummary
 import com.rahul.symptoscan.ui.theme.DangerRed
 import com.rahul.symptoscan.ui.theme.SuccessGreen
 import com.rahul.symptoscan.ui.theme.WarningAmber
@@ -54,7 +53,7 @@ fun RecentAssessmentsSection(
         }
         Spacer(modifier = Modifier.height(8.dp))
         assessments.forEach { assessment ->
-            AssessmentHistoryCard(
+            AssessmentSmallCard(
                 assessment = assessment,
                 onClick = { onAssessmentClick(assessment.id) }
             )
@@ -64,7 +63,7 @@ fun RecentAssessmentsSection(
 }
 
 @Composable
-private fun AssessmentHistoryCard(
+private fun AssessmentSmallCard(
     assessment: AssessmentSummary,
     onClick: () -> Unit
 ) {

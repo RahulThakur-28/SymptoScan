@@ -1,5 +1,7 @@
 package com.rahul.symptoscan.presentation.home.model
 
+import com.rahul.symptoscan.domain.model.AssessmentSummary
+
 data class HomeUiState(
     val userName: String = "",
     val initials: String = "",
@@ -12,15 +14,3 @@ data class HomeUiState(
     val recentAssessments: List<AssessmentSummary> = emptyList(),
     val notificationCount: Int = 0
 )
-
-data class AssessmentSummary(
-    val id: String,
-    val title: String,
-    val time: String,
-    val status: AssessmentStatus,
-    val score: Int
-)
-
-enum class AssessmentStatus {
-    Low, Moderate, High
-}
