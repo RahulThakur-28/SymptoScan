@@ -10,9 +10,12 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 
+import androidx.compose.foundation.layout.size
+import androidx.compose.ui.unit.dp
+
 /**
  * Animated medical wave circles for the splash background.
- * Extremely smooth infinite animation.
+ * redesigned proportionally around a larger 260dp logo.
  */
 @Composable
 fun AnimatedWaveBackground(
@@ -21,39 +24,47 @@ fun AnimatedWaveBackground(
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "WaveTransition")
     
+    // Extremely subtle scale pulse
     val scale by infiniteTransition.animateFloat(
         initialValue = 1.0f,
-        targetValue = 1.08f,
+        targetValue = 1.02f,
         animationSpec = infiniteRepeatable(
-            animation = tween(5000, easing = LinearOutSlowInEasing),
+            animation = tween(6000, easing = LinearOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "WaveScale"
     )
 
-    val alpha by infiniteTransition.animateFloat(
-        initialValue = 0.05f,
-        targetValue = 0.12f,
+    // Extremely subtle opacity pulse
+    val alphaPulse by infiniteTransition.animateFloat(
+        initialValue = 0.7f,
+        targetValue = 1.0f,
         animationSpec = infiniteRepeatable(
-            animation = tween(5000, easing = LinearOutSlowInEasing),
+            animation = tween(6000, easing = LinearOutSlowInEasing),
             repeatMode = RepeatMode.Reverse
         ),
         label = "WaveAlpha"
     )
 
-    Canvas(modifier = modifier.fillMaxSize()) {
+    Canvas(modifier = modifier) {
         if (!isVisible) return@Canvas
         
         val center = Offset(size.width / 2, size.height / 2)
-        val baseRadius = size.width * 0.4f
         
-        // Multiple circles for a premium medical wave effect
-        for (i in 1..3) {
+        // Final ring sizes for 260dp logo
+        val ringSizes = listOf(300.dp, 360.dp, 430.dp, 520.dp, 620.dp, 720.dp)
+        // High opacity for inner, very low for outer
+        val baseOpacities = listOf(0.08f, 0.06f, 0.04f, 0.03f, 0.02f, 0.01f)
+
+        ringSizes.forEachIndexed { index, sizeDp ->
+            val radius = (sizeDp.toPx() / 2f) * scale
+            val opacity = baseOpacities[index] * alphaPulse
+            
             drawCircle(
-                color = Color.White.copy(alpha = alpha / (i * 0.8f)),
-                radius = (baseRadius * i * 0.5f) * scale,
+                color = Color.White.copy(alpha = opacity),
+                radius = radius,
                 center = center,
-                style = Stroke(width = 2f)
+                style = Stroke(width = 1.2.dp.toPx())
             )
         }
     }

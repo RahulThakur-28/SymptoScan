@@ -18,6 +18,7 @@ import com.rahul.symptoscan.ui.theme.BluePrimary
 @Composable
 fun GradientBackground(
     modifier: Modifier = Modifier,
+    showDecorations: Boolean = true,
     content: @Composable () -> Unit
 ) {
     val infiniteTransition = rememberInfiniteTransition(label = "BackgroundTransition")
@@ -42,31 +43,33 @@ fun GradientBackground(
                 )
             )
     ) {
-        // Subtle medical wave patterns (Circles)
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val canvasWidth = size.width
-            val canvasHeight = size.height
-            
-            drawCircle(
-                color = Color.White.copy(alpha = 0.05f),
-                radius = 400f + offsetAnim,
-                center = Offset(canvasWidth * 0.8f, canvasHeight * 0.2f),
-                style = Stroke(width = 2f)
-            )
-            
-            drawCircle(
-                color = Color.White.copy(alpha = 0.03f),
-                radius = 600f - (offsetAnim * 0.5f),
-                center = Offset(canvasWidth * 0.1f, canvasHeight * 0.7f),
-                style = Stroke(width = 1.5f)
-            )
-            
-            drawCircle(
-                color = Color.White.copy(alpha = 0.04f),
-                radius = 300f + (offsetAnim * 1.5f),
-                center = Offset(canvasWidth * 0.5f, canvasHeight * 0.5f),
-                style = Stroke(width = 1f)
-            )
+        if (showDecorations) {
+            // Subtle medical wave patterns (Circles)
+            Canvas(modifier = Modifier.fillMaxSize()) {
+                val canvasWidth = size.width
+                val canvasHeight = size.height
+                
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.05f),
+                    radius = 400f + offsetAnim,
+                    center = Offset(canvasWidth * 0.8f, canvasHeight * 0.2f),
+                    style = Stroke(width = 2f)
+                )
+                
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.03f),
+                    radius = 600f - (offsetAnim * 0.5f),
+                    center = Offset(canvasWidth * 0.1f, canvasHeight * 0.7f),
+                    style = Stroke(width = 1.5f)
+                )
+                
+                drawCircle(
+                    color = Color.White.copy(alpha = 0.04f),
+                    radius = 300f + (offsetAnim * 1.5f),
+                    center = Offset(canvasWidth * 0.5f, canvasHeight * 0.5f),
+                    style = Stroke(width = 1f)
+                )
+            }
         }
         
         content()

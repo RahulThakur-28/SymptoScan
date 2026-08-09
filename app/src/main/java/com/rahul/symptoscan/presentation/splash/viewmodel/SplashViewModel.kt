@@ -8,6 +8,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 /**
@@ -20,49 +21,66 @@ class SplashViewModel(
     private val _navigationState = MutableStateFlow<SplashNavigationState>(SplashNavigationState.Idle)
     val navigationState: StateFlow<SplashNavigationState> = _navigationState.asStateFlow()
 
+    private val _uiState = MutableStateFlow<SplashUiState>(SplashUiState.Loading)
+    val uiState: StateFlow<SplashUiState> = _uiState.asStateFlow()
+
     init {
-        startSplashTimer()
+        startStartupSequence()
     }
 
-    private fun startSplashTimer() {
+    private fun startStartupSequence() {
         viewModelScope.launch {
-            // Minimum branding visibility
-            delay(2000)
-            checkSession()
+            // Branding visibility window
+            delay(1000) 
+            checkAuthentication()
         }
     }
 
-    private suspend fun checkSession() {
-        if (!repository.isLoggedIn()) {
-            val isFirstLaunch = checkFirstLaunch()
-            _navigationState.value = if (isFirstLaunch) {
-                SplashNavigationState.NavigateToOnboarding
-            } else {
-                SplashNavigationState.NavigateToLogin
+    private suspend fun checkAuthentication() {
+        try {
+            if (!repository.isLoggedIn()) {
+                _uiState.update { SplashUiState.NoSession }
+                _navigationState.update { SplashNavigationState.NavigateToLogin }
+                return
             }
-            return
-        }
 
-        // Session exists, check verification
-        if (!repository.isEmailVerified()) {
-            _navigationState.value = SplashNavigationState.NavigateToVerification
-            return
-        }
+            // Refresh session to ensure we have the latest user data (like verification status)
+            repository.refreshSession()
 
-        // Verified, check profile completion
-        if (!repository.isProfileCompleted()) {
-            _navigationState.value = SplashNavigationState.NavigateToProfile
-            return
-        }
+            // Session exists, check verification
+            if (!repository.isEmailVerified()) {
+                _uiState.update { SplashUiState.Unverified }
+                _navigationState.update { SplashNavigationState.NavigateToVerification }
+                return
+            }
 
-        // Everything ready
-        _navigationState.value = SplashNavigationState.NavigateToHome
+            // Verified, check profile completion
+            if (!repository.isProfileCompleted()) {
+                _uiState.update { SplashUiState.ProfileIncomplete }
+                _navigationState.update { SplashNavigationState.NavigateToProfile }
+                return
+            }
+
+            // Everything ready
+            _uiState.update { SplashUiState.Authenticated }
+            _navigationState.update { SplashNavigationState.NavigateToHome }
+        } catch (e: Exception) {
+            _uiState.update { SplashUiState.Error(e.message ?: "Startup Error") }
+        }
     }
 
-    private fun checkFirstLaunch(): Boolean {
-        // Mocking for now. In production, use DataStore/SharedPreferences
-        return false
+    fun onNavigationHandled() {
+        _navigationState.update { SplashNavigationState.Idle }
     }
+}
+
+sealed class SplashUiState {
+    data object Loading : SplashUiState()
+    data object NoSession : SplashUiState()
+    data object Unverified : SplashUiState()
+    data object ProfileIncomplete : SplashUiState()
+    data object Authenticated : SplashUiState()
+    data class Error(val message: String) : SplashUiState()
 }
 
 sealed class SplashNavigationState {
