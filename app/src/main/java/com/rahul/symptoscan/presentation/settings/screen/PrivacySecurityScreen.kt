@@ -1,4 +1,4 @@
-package com.rahul.symptoscan.presentation.privacy.screen
+package com.rahul.symptoscan.presentation.settings.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState

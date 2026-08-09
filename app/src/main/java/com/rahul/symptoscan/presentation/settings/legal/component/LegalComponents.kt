@@ -1,4 +1,4 @@
-package com.rahul.symptoscan.presentation.legal.component
+package com.rahul.symptoscan.presentation.settings.legal.component
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.material3.Text

@@ -1,5 +1,6 @@
-package com.rahul.symptoscan.presentation.language.screen
+package com.rahul.symptoscan.presentation.settings.screen
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -82,7 +83,7 @@ private fun LanguageOption(
         colors = CardDefaults.cardColors(
             containerColor = if (isSelected) BluePrimary.copy(alpha = 0.05f) else Color.White
         ),
-        border = androidx.compose.foundation.BorderStroke(
+        border = BorderStroke(
             width = 1.dp,
             color = if (isSelected) BluePrimary else Color.LightGray.copy(alpha = 0.2f)
         ),

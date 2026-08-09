@@ -1,4 +1,4 @@
-package com.rahul.symptoscan.presentation.rating.screen
+package com.rahul.symptoscan.presentation.settings.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable

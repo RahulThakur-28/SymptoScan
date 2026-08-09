@@ -1,4 +1,4 @@
-package com.rahul.symptoscan.presentation.legal.screen
+package com.rahul.symptoscan.presentation.settings.legal.screen
 
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
@@ -12,9 +12,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rahul.symptoscan.presentation.legal.component.LegalBulletList
-import com.rahul.symptoscan.presentation.legal.component.LegalParagraph
-import com.rahul.symptoscan.presentation.legal.component.LegalSection
+import com.rahul.symptoscan.presentation.settings.legal.component.LegalBulletList
+import com.rahul.symptoscan.presentation.settings.legal.component.LegalParagraph
+import com.rahul.symptoscan.presentation.settings.legal.component.LegalSection
 import com.rahul.symptoscan.ui.theme.BackgroundLight
 
 @OptIn(ExperimentalMaterial3Api::class)
