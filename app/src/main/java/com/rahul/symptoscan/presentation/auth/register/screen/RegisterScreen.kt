@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.login.component.HeaderSection
 import com.rahul.symptoscan.presentation.auth.login.component.PasswordTextField
+import com.rahul.symptoscan.presentation.auth.register.component.PasswordRequirementsSection
 import com.rahul.symptoscan.presentation.auth.register.event.RegisterEvent
 import com.rahul.symptoscan.presentation.auth.register.viewmodel.RegisterViewModel
 import com.rahul.symptoscan.ui.components.AppTextField
@@ -99,6 +100,11 @@ fun RegisterScreen(
                     onToggleVisibility = { viewModel.onEvent(RegisterEvent.TogglePasswordVisibility) },
                     error = state.passwordError
                 )
+
+                if (state.password.isNotEmpty()) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    PasswordRequirementsSection(password = state.password)
+                }
                 
                 Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
                 

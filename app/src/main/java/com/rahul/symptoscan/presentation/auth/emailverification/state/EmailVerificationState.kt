@@ -1,11 +1,10 @@
 package com.rahul.symptoscan.presentation.auth.emailverification.state
 
 data class EmailVerificationState(
-    val email: String = "email@example.com",
-    val otp: String = "",
-    val timer: String = "15:00",
+    val email: String = "",
+    val resendCooldown: Int = 0,
     val isLoading: Boolean = false,
     val isVerified: Boolean = false
 ) {
-    val isVerifyEnabled: Boolean get() = otp.length == 6
+    val canResend: Boolean get() = resendCooldown == 0
 }

@@ -7,6 +7,8 @@ import io.github.jan.supabase.exceptions.RestException
 import io.github.jan.supabase.exceptions.HttpRequestException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
 /**
  * Service class to handle all authentication operations using Supabase.
@@ -19,11 +21,14 @@ class AuthService {
     /**
      * Registers a new user with email and password.
      */
-    suspend fun register(email: String, password: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun register(email: String, password: String, fullName: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
+                data = buildJsonObject {
+                    put("full_name", fullName)
+                }
             }
             Unit
         }.onFailure { it.printStackTrace() }

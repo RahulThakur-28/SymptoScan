@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.AuthRepository
+import com.rahul.symptoscan.core.utils.AuthValidator
 import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.login.event.LoginEvent
 import com.rahul.symptoscan.presentation.auth.login.state.LoginState
@@ -26,15 +27,16 @@ class LoginViewModel(
     fun onEvent(event: LoginEvent) {
         when (event) {
             is LoginEvent.EmailChanged -> {
+                val email = event.email.trim()
                 _state.update { it.copy(
-                    email = event.email,
-                    emailError = if (validateEmail(event.email)) null else "Invalid email address"
+                    email = email,
+                    emailError = if (AuthValidator.validateEmail(email)) null else "Invalid email address"
                 ) }
             }
             is LoginEvent.PasswordChanged -> {
                 _state.update { it.copy(
                     password = event.password,
-                    passwordError = if (event.password.length >= 8) null else "Password must be at least 8 characters"
+                    passwordError = null // Only show on submit if necessary, but here we can just clear it
                 ) }
             }
             is LoginEvent.TogglePasswordVisibility -> {
@@ -73,17 +75,30 @@ class LoginViewModel(
     }
 
     private fun login() {
-        if (!_state.value.isSignInEnabled) return
-        
+        val email = _state.value.email.trim()
+        val password = _state.value.password
+
+        if (!AuthValidator.validateEmail(email)) {
+            _state.update { it.copy(emailError = "Invalid email address") }
+            return
+        }
+        if (password.isEmpty()) {
+            _state.update { it.copy(passwordError = "Password cannot be empty") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
             _state.update { it.copy(isLoading = true) }
             
-            val result = repository.login(_state.value.email, _state.value.password)
+            val result = repository.login(email, password)
             
             _state.update { it.copy(isLoading = false) }
             
             result.onSuccess {
+                // Important: retrieve user to get fresh metadata (like email_confirmed_at)
+                repository.refreshSession()
+                
                 if (repository.isEmailVerified()) {
                     if (repository.isProfileCompleted()) {
                         _navigationEvent.emit(LoginNavigation.NavigateToHome)
@@ -94,14 +109,11 @@ class LoginViewModel(
                     _uiState.value = AuthUiState.EmailNotVerified
                 }
             }.onFailure { error ->
-                _uiState.value = AuthUiState.Error(error.message ?: "Unknown error occurred")
+                _uiState.value = AuthUiState.Error(error.message ?: "Incorrect email or password.")
             }
         }
     }
 
-    private fun validateEmail(email: String): Boolean {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    }
 
     sealed class LoginNavigation {
         object NavigateToHome : LoginNavigation()

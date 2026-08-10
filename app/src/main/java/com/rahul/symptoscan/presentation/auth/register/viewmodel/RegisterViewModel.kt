@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.AuthRepository
+import com.rahul.symptoscan.core.utils.AuthValidator
 import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.register.event.RegisterEvent
 import com.rahul.symptoscan.presentation.auth.register.state.RegisterState
@@ -23,31 +24,33 @@ class RegisterViewModel(
     fun onEvent(event: RegisterEvent) {
         when (event) {
             is RegisterEvent.FullNameChanged -> {
+                val name = event.name.trim()
                 _state.update { it.copy(
-                    fullName = event.name,
-                    fullNameError = if (event.name.isNotBlank()) null else "Name is required"
+                    fullName = name,
+                    fullNameError = if (name.length >= 2) null else "Enter your full name"
                 ) }
             }
             is RegisterEvent.EmailChanged -> {
+                val email = event.email.trim()
                 _state.update { it.copy(
-                    email = event.email,
-                    emailError = if (validateEmail(event.email)) null else "Valid email is required"
+                    email = email,
+                    emailError = if (AuthValidator.validateEmail(email)) null else "Valid email is required"
                 ) }
             }
             is RegisterEvent.PasswordChanged -> {
                 _state.update { 
-                    val error = if (event.password.length >= 8) null else "Password must be at least 8 characters"
+                    val validation = AuthValidator.validatePassword(event.password)
                     it.copy(
                         password = event.password,
-                        passwordError = error,
-                        confirmPasswordError = if (it.confirmPassword.isEmpty() || event.password == it.confirmPassword) null else "Passwords must match"
+                        passwordError = if (validation.isValid) null else "Password does not meet requirements",
+                        confirmPasswordError = if (it.confirmPassword.isEmpty() || event.password == it.confirmPassword) null else "Passwords do not match"
                     )
                 }
             }
             is RegisterEvent.ConfirmPasswordChanged -> {
                 _state.update { it.copy(
                     confirmPassword = event.password,
-                    confirmPasswordError = if (event.password == it.password) null else "Passwords must match"
+                    confirmPasswordError = if (event.password == it.password) null else "Passwords do not match"
                 ) }
             }
             is RegisterEvent.TogglePasswordVisibility -> {
@@ -64,13 +67,35 @@ class RegisterViewModel(
     }
 
     private fun register() {
-        if (!_state.value.isRegisterEnabled) return
-        
+        val fullName = _state.value.fullName.trim()
+        val email = _state.value.email.trim()
+        val password = _state.value.password
+        val confirmPassword = _state.value.confirmPassword
+
+        if (fullName.length < 2) {
+            _state.update { it.copy(fullNameError = "Enter your full name") }
+            return
+        }
+        if (!AuthValidator.validateEmail(email)) {
+            _state.update { it.copy(emailError = "Valid email is required") }
+            return
+        }
+        val passValidation = AuthValidator.validatePassword(password)
+        if (!passValidation.isValid) {
+            _state.update { it.copy(passwordError = "Password does not meet requirements") }
+            return
+        }
+        if (password != confirmPassword) {
+            _state.update { it.copy(confirmPasswordError = "Passwords do not match") }
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
             _state.update { it.copy(isLoading = true) }
             
-            val result = repository.register(_state.value.email, _state.value.password)
+            // Pass fullName during registration
+            val result = repository.register(email, password, fullName)
             
             _state.update { it.copy(isLoading = false) }
             
@@ -82,7 +107,4 @@ class RegisterViewModel(
         }
     }
 
-    private fun validateEmail(email: String): Boolean {
-        return android.util.Patterns.EMAIL_ADDRESS.matcher(email).matches()
-    }
 }

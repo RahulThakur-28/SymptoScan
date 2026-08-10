@@ -22,6 +22,20 @@ object AuthValidator {
         )
     }
 
+    fun maskEmail(email: String): String {
+        if (email.isEmpty()) return ""
+        val parts = email.split("@")
+        if (parts.size != 2) return email
+        val name = parts[0]
+        val domain = parts[1]
+        val maskedName = if (name.length > 1) {
+            name.first() + "***"
+        } else {
+            "***"
+        }
+        return "$maskedName@$domain"
+    }
+
     data class PasswordValidationResult(
         val hasMinLength: Boolean,
         val hasUppercase: Boolean,

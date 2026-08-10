@@ -15,6 +15,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rahul.symptoscan.core.utils.AuthValidator
 import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.emailverification.event.EmailVerificationEvent
 import com.rahul.symptoscan.presentation.auth.emailverification.viewmodel.EmailVerificationViewModel
@@ -83,7 +84,7 @@ fun EmailVerificationScreen(
             Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
             
             Text(
-                text = "We've sent a verification link to your email. Please check your inbox and verify your account.",
+                text = "We've sent a verification link to\n${AuthValidator.maskEmail(state.email)}",
                 style = MaterialTheme.typography.bodyLarge,
                 color = Color.Gray,
                 textAlign = TextAlign.Center
@@ -113,10 +114,13 @@ fun EmailVerificationScreen(
             
             Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
             
-            TextButton(onClick = { viewModel.onEvent(EmailVerificationEvent.ResendEmailClicked) }) {
+            TextButton(
+                onClick = { viewModel.onEvent(EmailVerificationEvent.ResendEmailClicked) },
+                enabled = state.canResend
+            ) {
                 Text(
-                    text = "Resend Email",
-                    color = MaterialTheme.colorScheme.primary,
+                    text = if (state.canResend) "Resend Email" else "Resend available in ${state.resendCooldown}s",
+                    color = if (state.canResend) MaterialTheme.colorScheme.primary else Color.Gray,
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -124,7 +128,7 @@ fun EmailVerificationScreen(
             Spacer(modifier = Modifier.weight(1f))
             
             Text(
-                text = "Link expires in ${state.timer}",
+                text = "Check your spam folder if you don't see it.",
                 color = Color.Gray,
                 fontSize = 14.sp
             )

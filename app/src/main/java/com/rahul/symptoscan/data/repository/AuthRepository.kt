@@ -9,8 +9,8 @@ import io.github.jan.supabase.auth.user.UserInfo
  */
 class AuthRepository(private val authService: AuthService) {
 
-    suspend fun register(email: String, password: String): Result<Unit> {
-        return authService.register(email, password)
+    suspend fun register(email: String, password: String, fullName: String): Result<Unit> {
+        return authService.register(email, password, fullName)
     }
 
     suspend fun login(email: String, password: String): Result<Unit> {

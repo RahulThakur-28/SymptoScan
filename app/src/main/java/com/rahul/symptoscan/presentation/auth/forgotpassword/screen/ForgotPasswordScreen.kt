@@ -32,7 +32,7 @@ fun ForgotPasswordScreen(
 
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
-            snackbarHostState.showSnackbar("Reset link sent to your email")
+            snackbarHostState.showSnackbar("If an account exists for this email, a reset link has been sent.")
         } else if (uiState is AuthUiState.Error) {
             snackbarHostState.showSnackbar((uiState as AuthUiState.Error).message)
         }

@@ -19,6 +19,7 @@ import com.rahul.symptoscan.presentation.settings.legal.screen.TermsOfServiceScr
 import com.rahul.symptoscan.presentation.auth.emailverification.screen.EmailVerificationScreen
 import com.rahul.symptoscan.presentation.auth.forgotpassword.screen.ForgotPasswordScreen
 import com.rahul.symptoscan.presentation.auth.login.screen.LoginScreen
+import com.rahul.symptoscan.presentation.auth.profile.screen.BasicProfileScreen
 import com.rahul.symptoscan.presentation.auth.register.screen.RegisterScreen
 import com.rahul.symptoscan.presentation.auth.resetpassword.screen.ResetPasswordScreen
 import androidx.navigation.compose.navigation
@@ -196,10 +197,10 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable(route = Screen.BasicProfile.route) {
-            HealthProfileScreen(
-                onComplete = {
+            BasicProfileScreen(
+                onProfileComplete = {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.BasicProfile.route) { inclusive = true }
+                        popUpTo(Screen.EmailVerification.route) { inclusive = true }
                     }
                 }
             )

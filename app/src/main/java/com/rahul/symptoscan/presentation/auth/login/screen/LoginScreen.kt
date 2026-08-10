@@ -88,8 +88,14 @@ fun LoginScreen(
     }
 
     LaunchedEffect(uiState) {
-        if (uiState is AuthUiState.Error) {
-            snackbarHostState.showSnackbar((uiState as AuthUiState.Error).message)
+        when (uiState) {
+            is AuthUiState.Error -> {
+                snackbarHostState.showSnackbar((uiState as AuthUiState.Error).message)
+            }
+            is AuthUiState.EmailNotVerified -> {
+                onEmailNotVerified()
+            }
+            else -> {}
         }
     }
 
