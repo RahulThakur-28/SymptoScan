@@ -39,9 +39,11 @@ import com.rahul.symptoscan.ui.theme.SuccessGreen
 @Composable
 fun HealthProfileScreen(
     onComplete: () -> Unit,
+    isBasicMode: Boolean = false,
     viewModel: HealthProfileViewModel = viewModel()
 ) {
     val state by viewModel.uiState.collectAsStateWithLifecycle()
+    val snackbarHostState = remember { SnackbarHostState() }
 
     LaunchedEffect(state.isComplete) {
         if (state.isComplete) {
@@ -49,13 +51,69 @@ fun HealthProfileScreen(
         }
     }
 
+    LaunchedEffect(state.error) {
+        state.error?.let {
+            snackbarHostState.showSnackbar(it)
+        }
+    }
+
     Scaffold(
-        containerColor = Color.White
+        containerColor = Color.White,
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        bottomBar = {
+            Surface(
+                color = Color.White,
+                tonalElevation = 4.dp,
+                shadowElevation = 8.dp
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .navigationBarsPadding()
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    if (state.currentStep > 1) {
+                        OutlinedButton(
+                            onClick = { viewModel.onEvent(HealthProfileEvent.Back) },
+                            modifier = Modifier.weight(1f).height(56.dp),
+                            shape = RoundedCornerShape(16.dp)
+                        ) {
+                            Text("Back")
+                        }
+                    }
+                    
+                    PrimaryButton(
+                        text = if (isBasicMode && state.currentStep == 2) {
+                            "Save & Continue to Home"
+                        } else if (state.currentStep == 4) {
+                            "Complete Profile"
+                        } else {
+                            "Continue"
+                        },
+                        onClick = { 
+                            android.util.Log.d("HealthProfile", "[HEALTH-CLICK-1] Save & Continue clicked. Step: ${state.currentStep}, BasicMode: $isBasicMode")
+                            if (isBasicMode && state.currentStep == 2) {
+                                viewModel.onEvent(HealthProfileEvent.SaveBasic)
+                            } else if (state.currentStep == 4) {
+                                viewModel.onEvent(HealthProfileEvent.Complete)
+                            } else {
+                                viewModel.onEvent(HealthProfileEvent.Continue)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        isLoading = state.isLoading,
+                        enabled = isStepValid(state)
+                    )
+                }
+            }
+        }
     ) { paddingValues ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
@@ -76,35 +134,6 @@ fun HealthProfileScreen(
                     3 -> MedicalStep(state, viewModel)
                     4 -> EmergencyStep(state, viewModel)
                 }
-            }
-
-            Spacer(modifier = Modifier.weight(1f))
-            Spacer(modifier = Modifier.height(32.dp))
-
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                if (state.currentStep > 1) {
-                    OutlinedButton(
-                        onClick = { viewModel.onEvent(HealthProfileEvent.Back) },
-                        modifier = Modifier.weight(1f).height(56.dp),
-                        shape = RoundedCornerShape(16.dp)
-                    ) {
-                        Text("Back")
-                    }
-                }
-                
-                PrimaryButton(
-                    text = if (state.currentStep == 4) "Complete Profile" else "Continue",
-                    onClick = { 
-                        if (state.currentStep == 4) viewModel.onEvent(HealthProfileEvent.Complete)
-                        else viewModel.onEvent(HealthProfileEvent.Continue)
-                    },
-                    modifier = Modifier.weight(1f),
-                    isLoading = state.isLoading,
-                    enabled = isStepValid(state)
-                )
             }
         }
     }

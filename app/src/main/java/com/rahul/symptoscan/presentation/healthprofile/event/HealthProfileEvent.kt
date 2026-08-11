@@ -28,4 +28,5 @@ sealed class HealthProfileEvent {
     object Back : HealthProfileEvent()
     object Continue : HealthProfileEvent()
     object Complete : HealthProfileEvent()
+    object SaveBasic : HealthProfileEvent()
 }

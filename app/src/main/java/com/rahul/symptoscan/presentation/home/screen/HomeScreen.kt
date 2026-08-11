@@ -75,6 +75,11 @@ fun HomeScreen(
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            if (!uiState.isProfileComplete) {
+                CompleteProfilePrompt(onClick = { onNavigate(com.rahul.symptoscan.navigation.Screen.CompleteProfile.route) })
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
             QuickActionsGrid(
                 onNewAssessment = { onNavigate("assess") },
                 onViewHistory = { onNavigate("history") },

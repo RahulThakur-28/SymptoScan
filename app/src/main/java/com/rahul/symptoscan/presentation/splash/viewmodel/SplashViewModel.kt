@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.AuthRepository
+import com.rahul.symptoscan.data.repository.ProfileRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -15,7 +16,8 @@ import kotlinx.coroutines.launch
  * SplashViewModel handles the initial routing logic based on session and profile status.
  */
 class SplashViewModel(
-    private val repository: AuthRepository = Injection.authRepository
+    private val repository: AuthRepository = Injection.authRepository,
+    private val profileRepository: ProfileRepository = Injection.profileRepository
 ) : ViewModel() {
 
     private val _navigationState = MutableStateFlow<SplashNavigationState>(SplashNavigationState.Idle)
@@ -54,7 +56,14 @@ class SplashViewModel(
                 return
             }
 
-            // Verified, check profile completion
+            // Verified, ensure public.profiles row exists
+            val profileResult = profileRepository.ensureUserProfile()
+            if (profileResult.isFailure) {
+                _uiState.update { SplashUiState.Error("Profile Error: ${profileResult.exceptionOrNull()?.message}") }
+                return
+            }
+
+            // Check health profile completion
             if (!repository.isProfileCompleted()) {
                 _uiState.update { SplashUiState.ProfileIncomplete }
                 _navigationState.update { SplashNavigationState.NavigateToProfile }

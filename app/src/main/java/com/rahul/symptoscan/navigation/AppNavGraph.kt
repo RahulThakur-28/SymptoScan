@@ -19,7 +19,6 @@ import com.rahul.symptoscan.presentation.settings.legal.screen.TermsOfServiceScr
 import com.rahul.symptoscan.presentation.auth.emailverification.screen.EmailVerificationScreen
 import com.rahul.symptoscan.presentation.auth.forgotpassword.screen.ForgotPasswordScreen
 import com.rahul.symptoscan.presentation.auth.login.screen.LoginScreen
-import com.rahul.symptoscan.presentation.auth.profile.screen.BasicProfileScreen
 import com.rahul.symptoscan.presentation.auth.register.screen.RegisterScreen
 import com.rahul.symptoscan.presentation.auth.resetpassword.screen.ResetPasswordScreen
 import androidx.navigation.compose.navigation
@@ -46,6 +45,7 @@ sealed class Screen(val route: String) {
     object ResetPassword : Screen("reset_password")
     object EmailVerification : Screen("email_verification")
     object BasicProfile : Screen("basic_profile")
+    object CompleteProfile : Screen("complete_profile")
     object Home : Screen("home")
     object Assess : Screen("assess")
     object History : Screen("history")
@@ -197,11 +197,21 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable(route = Screen.BasicProfile.route) {
-            BasicProfileScreen(
-                onProfileComplete = {
+            HealthProfileScreen(
+                isBasicMode = true,
+                onComplete = {
                     navController.navigate(Screen.Home.route) {
-                        popUpTo(Screen.EmailVerification.route) { inclusive = true }
+                        popUpTo(Screen.BasicProfile.route) { inclusive = true }
                     }
+                }
+            )
+        }
+
+        composable(route = Screen.CompleteProfile.route) {
+            HealthProfileScreen(
+                isBasicMode = false,
+                onComplete = {
+                    navController.popBackStack()
                 }
             )
         }

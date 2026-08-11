@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.AuthRepository
+import com.rahul.symptoscan.data.repository.ProfileRepository
 import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.emailverification.event.EmailVerificationEvent
 import com.rahul.symptoscan.presentation.auth.emailverification.state.EmailVerificationState
@@ -13,7 +14,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class EmailVerificationViewModel(
-    private val repository: AuthRepository = Injection.authRepository
+    private val repository: AuthRepository = Injection.authRepository,
+    private val profileRepository: ProfileRepository = Injection.profileRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(EmailVerificationState())
@@ -60,6 +62,17 @@ class EmailVerificationViewModel(
             _state.update { it.copy(isLoading = false) }
 
             if (repository.isEmailVerified()) {
+                val profileResult = profileRepository.ensureUserProfile()
+                if (profileResult.isFailure) {
+                    val detailedError = profileResult.exceptionOrNull()?.message ?: "Unknown Error"
+                    if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                        _uiState.value = AuthUiState.Error("Profile Error: $detailedError")
+                    } else {
+                        _uiState.value = AuthUiState.Error("Unable to create your profile. Please try again.")
+                    }
+                    return@launch
+                }
+                
                 _uiState.value = AuthUiState.Success(Unit)
                 _state.update { it.copy(isVerified = true) }
             } else {
@@ -74,10 +87,6 @@ class EmailVerificationViewModel(
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
             
-            // In Supabase, resending verification is usually done via another signUp call 
-            // or specific reset password for email if already exists.
-            // For now we'll just try to refresh session as a placeholder action
-            // Or ideally call a resend function if available.
             val result = repository.forgotPassword(_state.value.email)
             
             _uiState.value = AuthUiState.Idle

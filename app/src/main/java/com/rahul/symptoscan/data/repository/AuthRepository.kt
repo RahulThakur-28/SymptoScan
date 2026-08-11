@@ -2,6 +2,7 @@ package com.rahul.symptoscan.data.repository
 
 import com.rahul.symptoscan.data.remote.AuthService
 import io.github.jan.supabase.auth.user.UserInfo
+import kotlinx.coroutines.flow.firstOrNull
 
 /**
  * Repository implementation for Authentication.
@@ -57,12 +58,14 @@ class AuthRepository(private val authService: AuthService) {
     }
 
     /**
-     * Checks if the user has completed their health profile.
-     * In production, this would query a database. For now, it uses a simplified check.
+     * Checks if the user has completed the basic health profile.
      */
     suspend fun isProfileCompleted(): Boolean {
-        // This is a placeholder. In a real app, you'd check if a profile row exists in DB.
-        // For this task, we assume false if we want to show the profile screen after verification.
-        return false
+        val user = authService.getCurrentUser() ?: return false
+        val healthProfile = com.rahul.symptoscan.core.di.Injection.healthProfileRepository.getHealthProfile(user.id)
+            .firstOrNull()
+        
+        // Basic profile is complete if the row exists and has minimal info
+        return healthProfile != null && healthProfile.dateOfBirth != null
     }
 }

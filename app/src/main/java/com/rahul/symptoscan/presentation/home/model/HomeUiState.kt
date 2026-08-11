@@ -12,5 +12,6 @@ data class HomeUiState(
     val healthStatus: String = "",
     val dailyHealthTip: String = "",
     val recentAssessments: List<AssessmentSummary> = emptyList(),
-    val notificationCount: Int = 0
+    val notificationCount: Int = 0,
+    val isProfileComplete: Boolean = true
 )

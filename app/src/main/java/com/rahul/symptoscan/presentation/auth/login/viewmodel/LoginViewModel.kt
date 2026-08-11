@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.AuthRepository
 import com.rahul.symptoscan.core.utils.AuthValidator
+import com.rahul.symptoscan.data.repository.ProfileRepository
 import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.login.event.LoginEvent
 import com.rahul.symptoscan.presentation.auth.login.state.LoginState
@@ -12,7 +13,8 @@ import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class LoginViewModel(
-    private val repository: AuthRepository = Injection.authRepository
+    private val repository: AuthRepository = Injection.authRepository,
+    private val profileRepository: ProfileRepository = Injection.profileRepository
 ) : ViewModel() {
 
     private val _state = MutableStateFlow(LoginState())
@@ -36,7 +38,7 @@ class LoginViewModel(
             is LoginEvent.PasswordChanged -> {
                 _state.update { it.copy(
                     password = event.password,
-                    passwordError = null // Only show on submit if necessary, but here we can just clear it
+                    passwordError = null
                 ) }
             }
             is LoginEvent.TogglePasswordVisibility -> {
@@ -53,9 +55,21 @@ class LoginViewModel(
         viewModelScope.launch {
             _uiState.value = AuthUiState.Loading
             val result = repository.handleDeepLink(url)
-            _uiState.value = AuthUiState.Idle
             
             result.onSuccess {
+                val profileResult = profileRepository.ensureUserProfile()
+                if (profileResult.isFailure) {
+                    val detailedError = profileResult.exceptionOrNull()?.message ?: "Unknown Error"
+                    if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                        _uiState.value = AuthUiState.Error("Profile Error: $detailedError")
+                    } else {
+                        _uiState.value = AuthUiState.Error("Unable to create your profile. Please try again.")
+                    }
+                    return@launch
+                }
+
+                _uiState.value = AuthUiState.Idle
+                
                 // Check if it's a recovery link
                 if (url.contains("type=recovery")) {
                     _navigationEvent.emit(LoginNavigation.NavigateToResetPassword)
@@ -100,6 +114,17 @@ class LoginViewModel(
                 repository.refreshSession()
                 
                 if (repository.isEmailVerified()) {
+                    val profileResult = profileRepository.ensureUserProfile()
+                    if (profileResult.isFailure) {
+                        val detailedError = profileResult.exceptionOrNull()?.message ?: "Unknown Error"
+                        if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                            _uiState.value = AuthUiState.Error("Profile Error: $detailedError")
+                        } else {
+                            _uiState.value = AuthUiState.Error("Unable to create your profile. Please try again.")
+                        }
+                        return@launch
+                    }
+
                     if (repository.isProfileCompleted()) {
                         _navigationEvent.emit(LoginNavigation.NavigateToHome)
                     } else {

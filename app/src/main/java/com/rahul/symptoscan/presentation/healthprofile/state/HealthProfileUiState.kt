@@ -27,6 +27,7 @@ data class HealthProfileUiState(
     val emergencyRelationship: String = "",
     val emergencyPhone: String = "",
     
+    val profileCompleted: Boolean = false,
     val isLoading: Boolean = false,
     val error: String? = null,
     val isComplete: Boolean = false
