@@ -178,7 +178,7 @@ private fun AssessmentLevelInfo(
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text("Body Temperature", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
-            
+
             val tempStatus = when {
                 temperature < 36.5 -> "Low"
                 temperature > 37.5 -> "High (Fever)"

@@ -1,9 +1,9 @@
 package com.rahul.symptoscan.presentation.assessment.state
 
-import com.rahul.symptoscan.domain.model.FullAssessmentReport
+import com.rahul.symptoscan.data.remote.model.DbAssessmentResult
 
 data class AssessmentReportUiState(
     val isLoading: Boolean = false,
-    val report: FullAssessmentReport? = null,
+    val report: DbAssessmentResult? = null,
     val error: String? = null
 )

@@ -54,12 +54,12 @@ class HistoryViewModel(
     private fun applyFilters() {
         _uiState.update { state ->
             val filtered = state.assessments.filter { assessment ->
-                val matchesSearch = state.searchQuery.isEmpty() || 
+                val matchesSearch = state.searchQuery.isEmpty() ||
                     assessment.title.contains(state.searchQuery, ignoreCase = true) ||
                     assessment.symptoms.any { it.contains(state.searchQuery, ignoreCase = true) }
-                
+
                 val matchesFilter = state.selectedFilter == null || assessment.status == state.selectedFilter
-                
+
                 matchesSearch && matchesFilter
             }
             state.copy(filteredAssessments = filtered)

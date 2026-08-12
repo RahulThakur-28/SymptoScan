@@ -81,6 +81,5 @@ data class DbAssessmentResult(
 data class DbAssessmentWithResult(
     val id: String,
     @SerialName("created_at") val createdAt: String?,
-    @SerialName("body_temperature") val bodyTemperature: Double? = null,
     @SerialName("assessment_results") val result: DbAssessmentResult? = null
 )

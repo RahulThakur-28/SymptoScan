@@ -71,20 +71,10 @@ class AssessmentRepository {
     suspend fun generateQuestions(assessmentId: String): Result<List<DbAssessmentQuestion>> = withContext(Dispatchers.IO) {
         runCatching {
             android.util.Log.d("AssessmentRepository", "Generating questions for assessmentId = $assessmentId")
+            functions.invoke("generate-assessment-questions", body = buildJsonObject {
+                put("assessmentId", assessmentId)
+            })
             
-            try {
-                functions.invoke("generate-assessment-questions", body = buildJsonObject {
-                    put("assessmentId", assessmentId)
-                })
-            } catch (e: Exception) {
-                if (e.message?.contains("timeout", ignoreCase = true) == true || 
-                    e is io.ktor.client.plugins.HttpRequestTimeoutException) {
-                    throw Exception("Question generation is taking longer than expected. Please try again.")
-                }
-                throw e
-            }
-            
-            // Re-fetch from database as decoding FunctionResponse is currently blocked by API ambiguity
             val questions = postgrest.from("assessment_questions")
                 .select() {
                     filter { eq("assessment_id", assessmentId) }
@@ -92,7 +82,7 @@ class AssessmentRepository {
                 }
                 .decodeList<DbAssessmentQuestion>()
             
-            android.util.Log.d("AssessmentRepository", "Received ${questions.size} questions from database")
+            android.util.Log.d("AssessmentRepository", "Received ${questions.size} questions from Edge Function/DB")
             questions
         }
     }
@@ -112,19 +102,9 @@ class AssessmentRepository {
 
     suspend fun generateResult(assessmentId: String): Result<DbAssessmentResult> = withContext(Dispatchers.IO) {
         runCatching {
-            android.util.Log.d("AssessmentRepository", "Generating final result for assessmentId = $assessmentId")
-            
-            try {
-                functions.invoke("generate-assessment-result", body = buildJsonObject {
-                    put("assessmentId", assessmentId)
-                })
-            } catch (e: Exception) {
-                if (e.message?.contains("timeout", ignoreCase = true) == true || 
-                    e is io.ktor.client.plugins.HttpRequestTimeoutException) {
-                    throw Exception("Assessment result generation is taking longer than expected. Please try again.")
-                }
-                throw e
-            }
+            functions.invoke("generate-assessment-result", body = buildJsonObject {
+                put("assessmentId", assessmentId)
+            })
             
             postgrest.from("assessment_results")
                 .select() {
@@ -138,7 +118,7 @@ class AssessmentRepository {
         val userId = auth.currentUserOrNull()?.id ?: return@flow
         try {
             val assessments = postgrest.from("assessments")
-                .select(columns = Columns.raw("id, status, created_at, body_temperature, assessment_results(summary, urgency_level)")) {
+                .select(columns = Columns.raw("id, status, created_at, assessment_results(summary, urgency_level)")) {
                     filter { eq("user_id", userId); eq("status", "completed") }
                     order("created_at", Order.DESCENDING)
                 }
@@ -147,11 +127,11 @@ class AssessmentRepository {
             emit(assessments.map { 
                 AssessmentSummary(
                     id = it.id,
-                    title = it.result?.summary?.take(50)?.plus("...") ?: "Health Assessment",
+                    title = it.result?.summary?.take(30)?.plus("...") ?: "Health Assessment",
                     time = it.createdAt ?: "",
                     status = mapUrgency(it.result?.urgencyLevel),
                     score = 0,
-                    symptoms = emptyList() // For history list we can leave empty or fetch count
+                    symptoms = emptyList()
                 )
             })
         } catch (e: Exception) {
@@ -177,34 +157,5 @@ class AssessmentRepository {
             }
             .decodeSingle<DbAssessmentResult>()
         emit(result)
-    }
-
-    fun getFullAssessmentReport(id: String): Flow<FullAssessmentReport> = flow {
-        val assessment = postgrest.from("assessments")
-            .select() {
-                filter { eq("id", id) }
-            }
-            .decodeSingle<DbAssessment>()
-
-        val result = postgrest.from("assessment_results")
-            .select() {
-                filter { eq("assessment_id", id) }
-            }
-            .decodeSingle<DbAssessmentResult>()
-
-        val symptoms = postgrest.from("assessment_symptoms")
-            .select() {
-                filter { eq("assessment_id", id) }
-            }
-            .decodeList<DbAssessmentSymptom>()
-
-        val questions = postgrest.from("assessment_questions")
-            .select() {
-                filter { eq("assessment_id", id) }
-                order("question_order", Order.ASCENDING)
-            }
-            .decodeList<DbAssessmentQuestion>()
-
-        emit(FullAssessmentReport(assessment, result, symptoms, questions))
     }
 }

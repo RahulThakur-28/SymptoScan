@@ -93,7 +93,6 @@ class AssessmentViewModel(
     }
 
     fun startAssessment(onComplete: () -> Unit) {
-        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             
@@ -170,7 +169,6 @@ class AssessmentViewModel(
     }
 
     fun submitAnswers(onComplete: () -> Unit) {
-        if (_uiState.value.isLoading) return
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
             repository.saveAnswers(_uiState.value.questions).onSuccess {

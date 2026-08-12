@@ -277,9 +277,7 @@ fun AppNavGraph(navController: NavHostController) {
                             popUpTo(Screen.Home.route) { inclusive = true }
                         }
                     },
-                    onViewFullReport = { id ->
-                        navController.navigate("assessment_details/$id")
-                    },
+                    onViewFullReport = { /* Navigate to a detail view if needed */ },
                     onAskAI = { navController.navigate(Screen.AI.route) },
                     viewModel = viewModel
                 )
@@ -366,7 +364,7 @@ fun AppNavGraph(navController: NavHostController) {
         composable(route = Screen.Emergency.route) { PlaceholderScreen(name = "Emergency Guidance") }
         composable(route = "assessment_details/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: return@composable
-            AssessmentFullReportScreen(
+            AssessmentReportScreen(
                 assessmentId = id,
                 onNavigateBack = { navController.popBackStack() }
             )

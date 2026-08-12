@@ -123,6 +123,7 @@ Response format:
 }`
 
     // 6. Call Gemini (Migrated to Current Interactions API)
+    // Using gemini-3.6-flash and the interactions endpoint
     const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
       method: "POST",
       headers: {
@@ -141,43 +142,20 @@ Response format:
       throw new Error('Gemini API failed')
     }
 
-    const interactionData = await geminiResponse.ok ? await geminiResponse.json() : {}
-    console.log("Gemini result generation completed")
+    const interactionData = await geminiResponse.json()
+    let aiOutputText = ""
 
-    // Find the model_output step
-    const modelOutputStep = interactionData.steps?.find(
-        (step: any) => step.type === "model_output"
-    )
-
-    if (!modelOutputStep) {
-      console.error("No model_output found in Gemini response")
-      throw new Error("Invalid AI response format")
+    // Extract text from model_output step
+    if (interactionData.steps && Array.isArray(interactionData.steps)) {
+      const modelOutputStep = [...interactionData.steps].reverse().find(step => step.type === "model_output")
+      if (modelOutputStep && modelOutputStep.text) {
+        aiOutputText = modelOutputStep.text
+      }
     }
 
-    // Find the text item in content
-    const textContent = modelOutputStep.content?.find(
-        (item: any) => item.type === "text"
-    )
-
-    let aiOutputText = textContent?.text
-    if (!aiOutputText || typeof aiOutputText !== "string") {
-      console.error("Invalid Gemini model output text")
-      throw new Error("Invalid Gemini model output")
-    }
-
-    // JSON CLEANING
-    aiOutputText = aiOutputText.trim()
-    if (aiOutputText.startsWith("```")) {
-      aiOutputText = aiOutputText.replace(/^```json\s*/, "").replace(/```$/, "").trim()
-    }
-
-    // Fallback cleaning if needed
-    if (!aiOutputText.startsWith("{")) {
-       const start = aiOutputText.indexOf("{")
-       const end = aiOutputText.lastIndexOf("}")
-       if (start !== -1 && end !== -1 && end > start) {
-         aiOutputText = aiOutputText.substring(start, end + 1)
-       }
+    if (!aiOutputText) {
+      console.error('No model_output found in Gemini response:', interactionData)
+      throw new Error('Invalid AI response format')
     }
 
     let aiResult
@@ -201,22 +179,17 @@ Response format:
     }
 
     // 8. Save result (Upsert for idempotency)
-    const { data: savedResult, error: resultError } = await supabaseClient
+    const { error: resultError } = await supabaseClient
       .from('assessment_results')
-      .upsert(
-        {
-          assessment_id: assessmentId,
-          summary: aiResult.summary.trim(),
-          possible_causes: aiResult.possible_causes,
-          recommendations: aiResult.recommendations,
-          warning_signs: aiResult.warning_signs,
-          urgency_level: aiResult.urgency_level,
-          disclaimer: aiResult.disclaimer.trim()
-        },
-        { onConflict: 'assessment_id' }
-      )
-      .select()
-      .single()
+      .upsert({
+        assessment_id: assessmentId,
+        summary: aiResult.summary,
+        possible_causes: aiResult.possible_causes,
+        recommendations: aiResult.recommendations,
+        warning_signs: aiResult.warning_signs,
+        urgency_level: aiResult.urgency_level,
+        disclaimer: aiResult.disclaimer
+      })
 
     if (resultError) {
         console.error('Database result save error:', resultError)
@@ -237,7 +210,7 @@ Response format:
         throw new Error('Failed to update assessment status')
     }
 
-    return new Response(JSON.stringify(savedResult), {
+    return new Response(JSON.stringify(aiResult), {
       headers: { 'Content-Type': 'application/json' },
     })
 

@@ -11,8 +11,6 @@ import io.github.jan.supabase.postgrest.postgrest
 import io.github.jan.supabase.serializer.KotlinXSerializer
 import io.github.jan.supabase.storage.Storage
 import io.github.jan.supabase.storage.storage
-import io.github.jan.supabase.annotations.SupabaseInternal
-import io.ktor.client.plugins.HttpTimeout
 import kotlinx.serialization.json.Json
 
 /**
@@ -26,7 +24,6 @@ object SupabaseClient {
         explicitNulls = false
     }
 
-    @OptIn(SupabaseInternal::class)
     val supabase = createSupabaseClient(
         supabaseUrl = BuildConfig.SUPABASE_URL,
         supabaseKey = BuildConfig.SUPABASE_ANON_KEY,
@@ -42,15 +39,6 @@ object SupabaseClient {
         install(Functions)
 
         install(Storage)
-
-        // Configure global HTTP timeout to 30 seconds for stable Edge Function execution
-        httpConfig {
-            install(HttpTimeout) {
-                requestTimeoutMillis = 30000L
-                connectTimeoutMillis = 30000L
-                socketTimeoutMillis = 30000L
-            }
-        }
 
         defaultSerializer = KotlinXSerializer(json)
     }

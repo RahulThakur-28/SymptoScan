@@ -52,7 +52,7 @@ serve(async (req) => {
     // 3. Fetch symptoms
     const { data: symptoms, error: symptomsError } = await supabaseClient
       .from('assessment_symptoms')
-      .select('symptom_name, severity, pain_level, duration, frequency, onset')
+      .select('*')
       .eq('assessment_id', assessmentId)
 
     if (symptomsError || !symptoms || symptoms.length === 0) {
@@ -89,7 +89,8 @@ Response format:
   "questions": ["Question 1", "Question 2", ...]
 }`
 
-    // 5. Call Gemini
+    // 5. Call Gemini (Migrated to Current Interactions API)
+    // Using gemini-3.6-flash and the interactions endpoint
     const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
       method: "POST",
       headers: {
@@ -108,56 +109,40 @@ Response format:
       throw new Error('Gemini API failed')
     }
 
-    const geminiData = await geminiResponse.json()
-    console.log("Gemini question generation completed")
+    const interactionData = await geminiResponse.json()
+    let aiOutputText = ""
 
-    // Find the model_output step
-    const modelOutputStep = geminiData.steps?.find(
-        (step: any) => step.type === "model_output"
-    )
-
-    if (!modelOutputStep) {
-      console.error("No model_output found in Gemini response")
-      throw new Error("Invalid AI response format")
+    // Extract text from model_output step
+    if (interactionData.steps && Array.isArray(interactionData.steps)) {
+      const modelOutputStep = [...interactionData.steps].reverse().find(step => step.type === "model_output")
+      if (modelOutputStep && modelOutputStep.text) {
+        aiOutputText = modelOutputStep.text
+      }
     }
 
-    const textContent = modelOutputStep.content?.find(
-        (item: any) => item.type === "text"
-    )
-
-    let aiText = textContent?.text
-    if (!aiText || typeof aiText !== "string") {
-      console.error("Invalid Gemini model output text")
-      throw new Error("Invalid Gemini model output")
-    }
-
-    aiText = aiText.trim()
-    if (aiText.startsWith("```")) {
-      aiText = aiText.replace(/^```json\s*/, "").replace(/```$/, "").trim()
-    }
-
-    if (!aiText.startsWith("{")) {
-       const start = aiText.indexOf("{")
-       const end = aiText.lastIndexOf("}")
-       if (start !== -1 && end !== -1 && end > start) {
-         aiText = aiText.substring(start, end + 1)
-       }
+    if (!aiOutputText) {
+      console.error('No model_output found in Gemini response:', interactionData)
+      throw new Error('Invalid AI response format')
     }
 
     let aiOutput
     try {
-      aiOutput = JSON.parse(aiText)
+      aiOutput = JSON.parse(aiOutputText)
     } catch (e) {
-      console.error('Failed to parse Gemini JSON:', e, aiText)
+      console.error('Failed to parse Gemini JSON:', e, aiOutputText)
       throw new Error('Invalid AI response format')
     }
 
     const questionsList = aiOutput.questions
-    console.log(`Parsed question count: ${questionsList?.length || 0}`)
-
     if (!Array.isArray(questionsList) || questionsList.length < 3 || questionsList.length > 5) {
       console.error('AI questions validation failed:', questionsList)
-      throw new Error("AI returned an invalid number of questions")
+      throw new Error('AI failed to generate valid questions')
+    }
+
+    // Validate that every question is a non-empty string
+    if (questionsList.some((q: any) => typeof q !== 'string' || q.trim().length === 0)) {
+       console.error('One or more AI questions are invalid:', questionsList)
+       throw new Error('AI failed to generate valid questions')
     }
 
     // 6. Cleanup old questions (Idempotency)
@@ -168,11 +153,9 @@ Response format:
 
     const questionsToInsert = questionsList.map((q: string, i: number) => ({
       assessment_id: assessmentId,
-      question: q.trim(),
+      question: q,
       question_order: i + 1
     }))
-
-    console.log(`Database insertion started for ${questionsToInsert.length} questions`)
 
     // 7. Insert new questions
     const { data: insertedQuestions, error: insertError } = await supabaseClient
@@ -184,9 +167,6 @@ Response format:
       console.error('Database insert error:', insertError)
       throw new Error('Failed to save questions')
     }
-
-    console.log("Database insertion completed")
-    console.log("Response returned")
 
     return new Response(JSON.stringify({ questions: insertedQuestions }), {
       headers: { 'Content-Type': 'application/json' },
