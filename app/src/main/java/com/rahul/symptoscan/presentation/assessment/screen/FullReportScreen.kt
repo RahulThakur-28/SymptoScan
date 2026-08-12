@@ -62,11 +62,9 @@ fun FullReportScreen(
                 colors = CardDefaults.cardColors(containerColor = Color.White)
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
-                    ReportRow(label = "Date", value = result.date)
+                    ReportRow(label = "Risk Level", value = result.urgencyLevel ?: "Unknown")
                     HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    ReportRow(label = "Risk Level", value = result.riskLevel)
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
-                    ReportRow(label = "Risk Score", value = "${result.riskScore}/100")
+                    ReportRow(label = "Summary", value = result.summary ?: "")
                 }
             }
 
@@ -90,14 +88,16 @@ fun FullReportScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Detailed Analysis", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text("Recommendations", fontSize = 16.sp, fontWeight = FontWeight.Bold)
             Spacer(modifier = Modifier.height(12.dp))
-            Text(
-                text = result.aiExplanation,
-                fontSize = 14.sp,
-                lineHeight = 22.sp,
-                color = Color.Gray
-            )
+            result.recommendations?.forEach { rec ->
+                Text(
+                    text = "• $rec",
+                    fontSize = 14.sp,
+                    lineHeight = 22.sp,
+                    color = Color.Gray
+                )
+            }
             
             Spacer(modifier = Modifier.height(32.dp))
             

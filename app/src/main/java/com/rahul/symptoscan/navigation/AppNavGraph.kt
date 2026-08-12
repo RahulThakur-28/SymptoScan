@@ -272,22 +272,15 @@ fun AppNavGraph(navController: NavHostController) {
                     remember(entry) { navController.getBackStackEntry(Screen.Assess.route) }
                 )
                 AssessmentResultScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onViewFullReport = { navController.navigate("report") },
+                    onNavigateBack = { 
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = true }
+                        }
+                    },
+                    onViewFullReport = { id ->
+                        navController.navigate("assessment_details/$id")
+                    },
                     onAskAI = { navController.navigate(Screen.AI.route) },
-                    viewModel = viewModel
-                )
-            }
-            composable(route = "report") { entry ->
-                val viewModel: AssessmentViewModel = viewModel(
-                    remember(entry) { navController.getBackStackEntry(Screen.Assess.route) }
-                )
-                // Using the assessment index or some ID if available. 
-                // For the "just completed" flow, we might need a different approach if it's not saved yet.
-                // But assuming it's saved, we can pass "latest" or something.
-                // For now, let's keep it as is or redirect to the common Report screen.
-                FullReportScreen(
-                    onNavigateBack = { navController.popBackStack() },
                     viewModel = viewModel
                 )
             }
@@ -373,7 +366,7 @@ fun AppNavGraph(navController: NavHostController) {
         composable(route = Screen.Emergency.route) { PlaceholderScreen(name = "Emergency Guidance") }
         composable(route = "assessment_details/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: return@composable
-            AssessmentReportScreen(
+            AssessmentFullReportScreen(
                 assessmentId = id,
                 onNavigateBack = { navController.popBackStack() }
             )

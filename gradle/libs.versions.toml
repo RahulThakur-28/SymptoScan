@@ -39,6 +39,7 @@ androidx-compose-material-icons-extended = { group = "androidx.compose.material"
 
 supabase-bom = { module = "io.github.jan-tennert.supabase:bom", version.ref = "supabase" }
 supabase-auth = { module = "io.github.jan-tennert.supabase:auth-kt" }
+supabase-functions = { module = "io.github.jan-tennert.supabase:functions-kt" }
 supabase-postgrest = { module = "io.github.jan-tennert.supabase:postgrest-kt" }
 supabase-storage = { module = "io.github.jan-tennert.supabase:storage-kt" }
 

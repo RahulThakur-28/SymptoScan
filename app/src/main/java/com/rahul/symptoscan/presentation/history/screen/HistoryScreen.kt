@@ -15,6 +15,7 @@ import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -42,6 +43,10 @@ fun HistoryScreen(
     viewModel: HistoryViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    LaunchedEffect(Unit) {
+        viewModel.loadHistory()
+    }
 
     Scaffold(
         containerColor = BackgroundLight,

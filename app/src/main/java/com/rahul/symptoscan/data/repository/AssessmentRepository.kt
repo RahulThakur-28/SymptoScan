@@ -1,105 +1,210 @@
 package com.rahul.symptoscan.data.repository
 
+import com.rahul.symptoscan.data.remote.SupabaseClient
+import com.rahul.symptoscan.data.remote.model.*
 import com.rahul.symptoscan.domain.model.*
-import kotlinx.coroutines.delay
+import io.github.jan.supabase.functions.functions
+import io.github.jan.supabase.postgrest.from
+import io.github.jan.supabase.postgrest.query.Columns
+import io.github.jan.supabase.postgrest.query.Order
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.withContext
+import kotlinx.serialization.json.buildJsonObject
+import kotlinx.serialization.json.put
 
-/**
- * Repository to manage health assessment data.
- */
 class AssessmentRepository {
 
-    /**
-     * Fetches assessment history from Supabase/DB.
-     */
-    fun getAssessmentHistory(): Flow<List<AssessmentSummary>> = flow {
-        // ... (existing history code)
-        delay(1000)
-        emit(
-            listOf(
-                AssessmentSummary(
-                    id = "1",
-                    title = "Headache & Fatigue",
-                    time = "Today, 11:30 AM",
-                    status = AssessmentStatus.Low,
-                    score = 28,
-                    symptoms = listOf("Headache", "Fatigue")
-                ),
-                AssessmentSummary(
-                    id = "2",
-                    title = "Chest Discomfort",
-                    time = "Aug 2, 2:15 PM",
-                    status = AssessmentStatus.Moderate,
-                    score = 54,
-                    symptoms = listOf("Chest Pain", "Shortness of Breath")
-                ),
-                AssessmentSummary(
-                    id = "3",
-                    title = "Seasonal Allergies",
-                    time = "1 week ago",
-                    status = AssessmentStatus.Low,
-                    score = 22,
-                    symptoms = listOf("Cough", "Sore Throat", "Sneezing")
-                ),
-                AssessmentSummary(
-                    id = "4",
-                    title = "Severe Migraine",
-                    time = "2 weeks ago",
-                    status = AssessmentStatus.High,
-                    score = 85,
-                    symptoms = listOf("Headache", "Nausea", "Dizziness")
-                ),
-                AssessmentSummary(
-                    id = "5",
-                    title = "Minor Fever",
-                    time = "Aug 10, 9:00 AM",
-                    status = AssessmentStatus.Low,
-                    score = 15,
-                    symptoms = listOf("Fever")
-                ),
-                AssessmentSummary(
-                    id = "6",
-                    title = "Back Strain",
-                    time = "Aug 5, 4:45 PM",
-                    status = AssessmentStatus.Moderate,
-                    score = 42,
-                    symptoms = listOf("Back Pain")
-                )
+    private val postgrest = SupabaseClient.database
+    private val auth = SupabaseClient.auth
+    private val functions = SupabaseClient.supabase.functions
+
+    suspend fun createAssessment(temperature: Double, notes: String): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val userId = auth.currentUserOrNull()?.id ?: throw IllegalStateException("User not authenticated")
+            val assessment = DbAssessment(
+                userId = userId,
+                bodyTemperature = temperature,
+                additionalNotes = notes
             )
-        )
+            
+            android.util.Log.d("AssessmentRepository", "Creating assessment for user: $userId")
+            
+            val result = postgrest.from("assessments").insert(assessment) {
+                select()
+            }.decodeSingle<DbAssessment>()
+            
+            val id = result.id ?: throw IllegalStateException("Failed to get assessment ID")
+            android.util.Log.d("AssessmentRepository", "Assessment created successfully. assessmentId = $id")
+            id
+        }
     }
 
-    /**
-     * Fetches a detailed assessment report by ID.
-     */
-    fun getAssessmentReport(id: String): Flow<AssessmentReport> = flow {
-        delay(1000)
-        // Simulating fetching a specific report
-        emit(
-            AssessmentReport(
-                id = id,
-                assessmentTitle = "Headache & Fatigue",
-                riskScore = 34,
-                riskLevel = "Low Risk",
-                confidence = 78,
-                patientInfo = PatientInfo(
-                    name = "Sarah Johnson",
-                    dob = "March 15, 1992",
-                    age = 32,
-                    bloodGroup = "O+",
-                    gender = "Female"
-                ),
-                assessmentDate = "Sat, Aug 8, 2026",
-                duration = "~12 minutes",
-                symptomsAssessedCount = 3,
-                reportedSymptoms = listOf(
-                    ReportedSymptom("s1", "Headache", "🤕", "2–3 days", 5, "Moderate"),
-                    ReportedSymptom("s2", "Fatigue", "😴", "2–3 days", 3, "Mild"),
-                    ReportedSymptom("s3", "Fever", "🤒", "Today", 2, "Mild")
-                ),
-                clinicalInsights = "The presented symptom cluster — headache with associated fatigue and mild low-grade fever — demonstrates a pattern consistent with tension-type headache with possible early viral illness. The gradual onset (2–3 days), intermittent pattern, and mild severity (5/10) suggest a self-limiting condition without immediate red flags.\n\nKey reassuring factors include the absence of sudden severe onset (\"thunderclap\"), neurological symptoms, or constitutional symptoms such as significant weight loss or night sweats."
-            )
-        )
+    suspend fun updateAssessmentContext(assessmentId: String, temperature: Double, notes: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            android.util.Log.d("AssessmentRepository", "Updating context for assessmentId = $assessmentId")
+            postgrest.from("assessments").update(buildJsonObject {
+                put("body_temperature", temperature)
+                put("additional_notes", notes)
+            }) {
+                filter { eq("id", assessmentId) }
+            }
+            Unit
+        }
+    }
+
+    suspend fun saveSymptoms(assessmentId: String, symptoms: List<DbAssessmentSymptom>): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            android.util.Log.d("AssessmentRepository", "Saving ${symptoms.size} symptoms for assessmentId = $assessmentId")
+            // Clear existing symptoms to prevent duplicates on retry
+            postgrest.from("assessment_symptoms").delete {
+                filter { eq("assessment_id", assessmentId) }
+            }
+            // Insert new symptoms
+            postgrest.from("assessment_symptoms").insert(symptoms)
+            android.util.Log.d("AssessmentRepository", "Symptoms saved successfully")
+            Unit
+        }
+    }
+
+    suspend fun generateQuestions(assessmentId: String): Result<List<DbAssessmentQuestion>> = withContext(Dispatchers.IO) {
+        runCatching {
+            android.util.Log.d("AssessmentRepository", "Generating questions for assessmentId = $assessmentId")
+            
+            try {
+                functions.invoke("generate-assessment-questions", body = buildJsonObject {
+                    put("assessmentId", assessmentId)
+                })
+            } catch (e: Exception) {
+                if (e.message?.contains("timeout", ignoreCase = true) == true || 
+                    e is io.ktor.client.plugins.HttpRequestTimeoutException) {
+                    throw Exception("Question generation is taking longer than expected. Please try again.")
+                }
+                throw e
+            }
+            
+            // Re-fetch from database as decoding FunctionResponse is currently blocked by API ambiguity
+            val questions = postgrest.from("assessment_questions")
+                .select() {
+                    filter { eq("assessment_id", assessmentId) }
+                    order("question_order", Order.ASCENDING)
+                }
+                .decodeList<DbAssessmentQuestion>()
+            
+            android.util.Log.d("AssessmentRepository", "Received ${questions.size} questions from database")
+            questions
+        }
+    }
+
+    suspend fun saveAnswers(questions: List<DbAssessmentQuestion>): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            questions.forEach { question ->
+                postgrest.from("assessment_questions").update(buildJsonObject {
+                    put("answer", question.answer)
+                }) {
+                    filter { eq("id", question.id!!) }
+                }
+            }
+            Unit
+        }
+    }
+
+    suspend fun generateResult(assessmentId: String): Result<DbAssessmentResult> = withContext(Dispatchers.IO) {
+        runCatching {
+            android.util.Log.d("AssessmentRepository", "Generating final result for assessmentId = $assessmentId")
+            
+            try {
+                functions.invoke("generate-assessment-result", body = buildJsonObject {
+                    put("assessmentId", assessmentId)
+                })
+            } catch (e: Exception) {
+                if (e.message?.contains("timeout", ignoreCase = true) == true || 
+                    e is io.ktor.client.plugins.HttpRequestTimeoutException) {
+                    throw Exception("Assessment result generation is taking longer than expected. Please try again.")
+                }
+                throw e
+            }
+            
+            postgrest.from("assessment_results")
+                .select() {
+                    filter { eq("assessment_id", assessmentId) }
+                }
+                .decodeSingle<DbAssessmentResult>()
+        }
+    }
+
+    fun getAssessmentHistory(): Flow<List<AssessmentSummary>> = flow {
+        val userId = auth.currentUserOrNull()?.id ?: return@flow
+        try {
+            val assessments = postgrest.from("assessments")
+                .select(columns = Columns.raw("id, status, created_at, body_temperature, assessment_results(summary, urgency_level)")) {
+                    filter { eq("user_id", userId); eq("status", "completed") }
+                    order("created_at", Order.DESCENDING)
+                }
+                .decodeList<DbAssessmentWithResult>()
+            
+            emit(assessments.map { 
+                AssessmentSummary(
+                    id = it.id,
+                    title = it.result?.summary?.take(50)?.plus("...") ?: "Health Assessment",
+                    time = it.createdAt ?: "",
+                    status = mapUrgency(it.result?.urgencyLevel),
+                    score = 0,
+                    symptoms = emptyList() // For history list we can leave empty or fetch count
+                )
+            })
+        } catch (e: Exception) {
+            e.printStackTrace()
+            emit(emptyList())
+        }
+    }
+
+    private fun mapUrgency(urgency: String?): AssessmentStatus {
+        return when (urgency?.lowercase()) {
+            "emergency" -> AssessmentStatus.High
+            "urgent" -> AssessmentStatus.High
+            "routine" -> AssessmentStatus.Low
+            "self_care" -> AssessmentStatus.Low
+            else -> AssessmentStatus.Moderate
+        }
+    }
+
+    fun getAssessmentReport(id: String): Flow<DbAssessmentResult> = flow {
+        val result = postgrest.from("assessment_results")
+            .select() {
+                filter { eq("assessment_id", id) }
+            }
+            .decodeSingle<DbAssessmentResult>()
+        emit(result)
+    }
+
+    fun getFullAssessmentReport(id: String): Flow<FullAssessmentReport> = flow {
+        val assessment = postgrest.from("assessments")
+            .select() {
+                filter { eq("id", id) }
+            }
+            .decodeSingle<DbAssessment>()
+
+        val result = postgrest.from("assessment_results")
+            .select() {
+                filter { eq("assessment_id", id) }
+            }
+            .decodeSingle<DbAssessmentResult>()
+
+        val symptoms = postgrest.from("assessment_symptoms")
+            .select() {
+                filter { eq("assessment_id", id) }
+            }
+            .decodeList<DbAssessmentSymptom>()
+
+        val questions = postgrest.from("assessment_questions")
+            .select() {
+                filter { eq("assessment_id", id) }
+                order("question_order", Order.ASCENDING)
+            }
+            .decodeList<DbAssessmentQuestion>()
+
+        emit(FullAssessmentReport(assessment, result, symptoms, questions))
     }
 }

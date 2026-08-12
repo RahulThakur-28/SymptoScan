@@ -18,7 +18,7 @@ class AssessmentReportViewModel(
     fun loadReport(assessmentId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
-            repository.getAssessmentReport(assessmentId)
+            repository.getFullAssessmentReport(assessmentId)
                 .catch { e ->
                     _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load report") }
                 }

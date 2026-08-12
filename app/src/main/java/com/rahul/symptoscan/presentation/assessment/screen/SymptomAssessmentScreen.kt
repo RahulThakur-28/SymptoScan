@@ -8,10 +8,12 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
@@ -24,7 +26,7 @@ import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentViewMode
 import com.rahul.symptoscan.presentation.home.component.HomeBottomNavigation
 import com.rahul.symptoscan.ui.components.PrimaryButton
 import com.rahul.symptoscan.ui.theme.BackgroundLight
-import com.rahul.symptoscan.ui.theme.Dimens
+import com.rahul.symptoscan.ui.theme.BluePrimary
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,6 +50,7 @@ fun SymptomAssessmentScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .imePadding()
                 .padding(horizontal = 24.dp)
         ) {
             Spacer(modifier = Modifier.height(24.dp))
@@ -75,47 +78,70 @@ fun SymptomAssessmentScreen(
                 trailingIcon = { IconButton(onClick = {}) { Icon(Icons.Rounded.Mic, contentDescription = "Voice search") } },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedBorderColor = BluePrimary,
                     unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f),
                     focusedContainerColor = Color.White,
                     unfocusedContainerColor = Color.White
                 )
             )
 
-            Spacer(modifier = Modifier.height(24.dp))
+            val showAddCustom = uiState.searchQuery.isNotBlank() && 
+                !uiState.symptoms.any { it.name.equals(uiState.searchQuery, ignoreCase = true) } &&
+                !uiState.selectedSymptoms.any { it.name.equals(uiState.searchQuery, ignoreCase = true) }
 
-            Text(
-                text = "Recent Symptoms",
-                fontSize = 16.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B)
-            )
-            
-            Spacer(modifier = Modifier.height(12.dp))
-            
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .horizontalScroll(rememberScrollState()),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                uiState.recentSymptoms.forEach { symptom ->
-                    FilterChip(
-                        selected = symptom.isSelected,
-                        onClick = { viewModel.onSymptomToggle(symptom.id) },
-                        label = { Text(symptom.name) },
-                        colors = FilterChipDefaults.filterChipColors(
-                            selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            selectedLabelColor = MaterialTheme.colorScheme.primary
-                        )
+            if (showAddCustom) {
+                Spacer(modifier = Modifier.height(16.dp))
+                Button(
+                    onClick = { viewModel.addCustomSymptom(uiState.searchQuery) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = BluePrimary.copy(alpha = 0.1f), 
+                        contentColor = BluePrimary
                     )
+                ) {
+                    Icon(Icons.Rounded.Add, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Add \"${uiState.searchQuery}\" as custom symptom")
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
+            if (uiState.recentSymptoms.isNotEmpty()) {
+                Text(
+                    text = "Recent Symptoms",
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color(0xFF1E293B)
+                )
+                
+                Spacer(modifier = Modifier.height(12.dp))
+                
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .horizontalScroll(rememberScrollState()),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    uiState.recentSymptoms.forEach { symptom ->
+                        val isSelected = uiState.selectedSymptoms.any { it.id == symptom.id }
+                        FilterChip(
+                            selected = isSelected,
+                            onClick = { viewModel.onSymptomToggle(symptom.id) },
+                            label = { Text(symptom.name) },
+                            colors = FilterChipDefaults.filterChipColors(
+                                selectedContainerColor = BluePrimary.copy(alpha = 0.1f),
+                                selectedLabelColor = BluePrimary
+                            )
+                        )
+                    }
+                }
+                Spacer(modifier = Modifier.height(24.dp))
+            }
+
             Text(
-                text = "Common Symptoms",
+                text = "Symptoms List",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
                 color = Color(0xFF1E293B)
@@ -129,9 +155,22 @@ fun SymptomAssessmentScreen(
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 modifier = Modifier.weight(1f)
             ) {
-                items(uiState.symptoms.filter { it.name.contains(uiState.searchQuery, ignoreCase = true) }) { symptom ->
+                val filteredSymptoms = uiState.symptoms.filter { 
+                    it.name.contains(uiState.searchQuery, ignoreCase = true) 
+                }
+                
+                items(filteredSymptoms) { symptom ->
+                    val isSelected = uiState.selectedSymptoms.any { it.id == symptom.id }
                     SymptomCard(
-                        symptom = symptom,
+                        symptom = symptom.copy(isSelected = isSelected),
+                        onClick = { viewModel.onSymptomToggle(symptom.id) }
+                    )
+                }
+                
+                // Show custom symptoms at the end if they are selected
+                items(uiState.selectedSymptoms.filter { it.category == "Custom" }) { symptom ->
+                    SymptomCard(
+                        symptom = symptom.copy(isSelected = true),
                         onClick = { viewModel.onSymptomToggle(symptom.id) }
                     )
                 }
@@ -140,7 +179,7 @@ fun SymptomAssessmentScreen(
             Spacer(modifier = Modifier.height(16.dp))
 
             PrimaryButton(
-                text = "Continue",
+                text = "Continue" + if(uiState.selectedSymptoms.isNotEmpty()) " (${uiState.selectedSymptoms.size})" else "",
                 onClick = onNavigateToDetails,
                 enabled = uiState.selectedSymptoms.isNotEmpty(),
                 modifier = Modifier.padding(bottom = 16.dp)
