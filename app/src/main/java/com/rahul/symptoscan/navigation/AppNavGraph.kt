@@ -29,7 +29,12 @@ import com.rahul.symptoscan.presentation.home.screen.HomeScreen
 import com.rahul.symptoscan.presentation.profile.screen.ProfileScreen
 import com.rahul.symptoscan.presentation.profile.screen.EditProfileScreen
 import com.rahul.symptoscan.presentation.settings.screen.SettingsScreen
-import com.rahul.symptoscan.presentation.ai.screen.AiAssistantScreen
+import androidx.navigation.navArgument
+import androidx.navigation.NavType
+import com.rahul.symptoscan.presentation.ai.screen.HealthAssistantScreen
+import com.rahul.symptoscan.presentation.ai.screen.HealthAssistantHistoryScreen
+import com.rahul.symptoscan.presentation.ai.viewmodel.HealthAssistantViewModel
+import androidx.compose.runtime.LaunchedEffect
 import com.rahul.symptoscan.presentation.assessment.screen.*
 import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentViewModel
 import com.rahul.symptoscan.presentation.onboarding.screen.OnboardingScreen
@@ -50,6 +55,7 @@ sealed class Screen(val route: String) {
     object Assess : Screen("assess")
     object History : Screen("history")
     object AI : Screen("ai")
+    object AIHistory : Screen("ai_history")
     object Profile : Screen("profile")
     object EditProfile : Screen("edit_profile")
     object Settings : Screen("settings")
@@ -292,9 +298,40 @@ fun AppNavGraph(navController: NavHostController) {
                 }
             )
         }
-        composable(route = Screen.AI.route) {
-            AiAssistantScreen(
-                onNavigate = { navController.navigate(it) }
+
+        composable(route = Screen.AIHistory.route) {
+            HealthAssistantHistoryScreen(
+                onBackClick = { navController.popBackStack() },
+                onConversationClick = { id ->
+                    navController.navigate(Screen.AI.route + "?conversationId=$id")
+                },
+                onNewChatClick = {
+                    navController.navigate(Screen.AI.route)
+                }
+            )
+        }
+
+        composable(
+            route = Screen.AI.route + "?conversationId={conversationId}",
+            arguments = listOf(
+                navArgument("conversationId") { 
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val conversationId = backStackEntry.arguments?.getString("conversationId")
+            val viewModel: HealthAssistantViewModel = viewModel()
+            
+            LaunchedEffect(conversationId) {
+                viewModel.initializeConversation(conversationId)
+            }
+
+            HealthAssistantScreen(
+                onBackClick = { navController.popBackStack() },
+                onHistoryClick = { navController.navigate(Screen.AIHistory.route) },
+                viewModel = viewModel
             )
         }
         composable(route = Screen.Profile.route) {
