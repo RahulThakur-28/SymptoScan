@@ -7,7 +7,6 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.HelpOutline
 import androidx.compose.material.icons.automirrored.filled.Logout
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material.icons.outlined.Settings
@@ -41,6 +40,10 @@ fun ProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showLogoutDialog by remember { mutableStateOf(false) }
 
+    LaunchedEffect(Unit) {
+        viewModel.loadProfileData()
+    }
+
     Scaffold(
         containerColor = BackgroundLight,
         bottomBar = {
@@ -65,6 +68,16 @@ fun ProfileScreen(
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 CircularProgressIndicator(color = BluePrimary)
             }
+        } else if (uiState.error != null) {
+            Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    Text(text = "Unable to load your profile.", color = Color.Gray)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Button(onClick = { viewModel.loadProfileData() }) {
+                        Text("Retry")
+                    }
+                }
+            }
         } else if (uiState.user != null) {
             val user = uiState.user!!
             
@@ -79,6 +92,33 @@ fun ProfileScreen(
                         user = user,
                         modifier = Modifier.padding(24.dp)
                     )
+                }
+
+                if (!user.isProfileComplete) {
+                    item {
+                        Card(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 24.dp)
+                                .padding(bottom = 24.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = CardDefaults.cardColors(containerColor = BluePrimary.copy(alpha = 0.1f)),
+                            onClick = { onNavigate("complete_profile") }
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(16.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(Icons.Default.HealthAndSafety, contentDescription = null, tint = BluePrimary)
+                                Spacer(modifier = Modifier.width(16.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text("Complete your health profile", fontWeight = FontWeight.Bold, color = BluePrimary)
+                                    Text("Provide more details for better AI accuracy", fontSize = 12.sp, color = BluePrimary.copy(alpha = 0.8f))
+                                }
+                                Icon(Icons.Default.ChevronRight, contentDescription = null, tint = BluePrimary)
+                            }
+                        }
+                    }
                 }
 
                 item {
@@ -129,7 +169,7 @@ fun ProfileScreen(
                         ProfileMenuItem(
                             icon = Icons.Default.Notifications,
                             title = "Notifications",
-                            subtitle = "3 active alerts",
+                            subtitle = "Manage alerts and preferences",
                             onClick = { onNavigate("notifications") }
                         )
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
@@ -141,21 +181,21 @@ fun ProfileScreen(
                         )
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                         ProfileMenuItem(
-                            icon = Icons.Default.Description,
+                            icon = Icons.Default.History,
                             title = "Medical Records",
-                            subtitle = "${user.assessmentCount} assessments stored",
+                            subtitle = "View saved assessment records",
                             onClick = { onNavigate("history") }
                         )
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                         ProfileMenuItem(
                             icon = Icons.Default.Language,
                             title = "Language",
-                            subtitle = "English (US)",
+                            subtitle = uiState.currentLanguage,
                             onClick = { onNavigate("language") }
                         )
                         HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
                         ProfileMenuItem(
-                            icon = Icons.AutoMirrored.Filled.HelpOutline,
+                            icon = Icons.Default.HelpOutline,
                             title = "Help & Support",
                             subtitle = "FAQ and contact",
                             onClick = { onNavigate("help_support") }
@@ -166,6 +206,13 @@ fun ProfileScreen(
                             title = "Rate SymptoScan",
                             subtitle = "Share your experience",
                             onClick = { onNavigate("rate_app") }
+                        )
+                        HorizontalDivider(color = Color.LightGray.copy(alpha = 0.2f))
+                        ProfileMenuItem(
+                            icon = Icons.Default.Info,
+                            title = "About SymptoScan",
+                            subtitle = "App information",
+                            onClick = { onNavigate("about") }
                         )
                         
                         Spacer(modifier = Modifier.height(24.dp))
@@ -218,7 +265,7 @@ private fun HealthSummaryCard(user: UserProfile) {
         border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            ProfileInfoRow(icon = Icons.Default.Cake, label = "Age", value = "${user.age ?: "--"} years")
+            ProfileInfoRow(icon = Icons.Default.Cake, label = "Age", value = if (user.age != null) "${user.age} years" else "--")
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.2f))
             ProfileInfoRow(icon = Icons.Default.Bloodtype, label = "Blood Group", value = user.bloodGroup ?: "Not provided")
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.2f))
@@ -230,7 +277,7 @@ private fun HealthSummaryCard(user: UserProfile) {
                 value = "${if (user.bmi != null) String.format(Locale.US, "%.1f", user.bmi) else "--"} (${user.bmiStatus})"
             )
             HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp), color = Color.LightGray.copy(alpha = 0.2f))
-            ProfileInfoRow(icon = Icons.Default.WarningAmber, label = "Allergies", value = if (user.allergies.isEmpty()) "None" else user.allergies.joinToString(", "))
+            ProfileInfoRow(icon = Icons.Default.WarningAmber, label = "Allergies", value = user.allergies ?: "None")
         }
     }
 }

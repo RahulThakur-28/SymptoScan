@@ -40,6 +40,7 @@ class HealthAssistantRepository {
     ): Result<HealthConversation> = withContext(Dispatchers.IO) {
         runCatching {
             val userId = auth.currentUserOrNull()?.id ?: throw IllegalStateException("User not authenticated")
+            android.util.Log.d("HealthAssistantRepo", "Creating new health conversation for userId = $userId")
             val conversation = DbHealthConversation(
                 userId = userId,
                 title = title,
@@ -48,7 +49,10 @@ class HealthAssistantRepository {
             val result = postgrest.from("health_conversations").insert(conversation) {
                 select()
             }.decodeSingle<DbHealthConversation>()
-            result.asDomain()
+            
+            val domain = result.asDomain()
+            android.util.Log.d("HealthAssistantRepo", "Created conversation ID = ${domain.id}")
+            domain
         }
     }
 
@@ -58,6 +62,7 @@ class HealthAssistantRepository {
         language: String
     ): Result<HealthAssistantResponseDto> = withContext(Dispatchers.IO) {
         runCatching {
+            android.util.Log.d("HealthAssistantRepo", "Edge Function request conversationId = $conversationId")
             val request = HealthAssistantRequest(
                 conversationId = conversationId,
                 message = message,
@@ -65,9 +70,13 @@ class HealthAssistantRepository {
             )
             // Use the non-generic invoke and manually decode with Ktor's body()
             val response = functions.invoke("health-assistant", body = request)
-            response.body<HealthAssistantResponseDto>()
+            val result = response.body<HealthAssistantResponseDto>()
+            android.util.Log.d("HealthAssistantRepo", "Received response for conversationId = ${result.conversationId}")
+            result
         }.recoverCatching { e ->
             val errorMessage = when {
+                e.message?.contains("NOT_FOUND", ignoreCase = true) == true || e.message?.contains("404") == true -> 
+                    "CONVERSATION_NOT_FOUND"
                 e.message?.contains("429") == true -> "AI service is temporarily unavailable. Please try again later."
                 e.message?.contains("401") == true || e.message?.contains("403") == true -> "Your session has expired. Please sign in again."
                 e.message?.contains("timeout", ignoreCase = true) == true || e is HttpRequestTimeoutException -> "Request timed out. Please try again."

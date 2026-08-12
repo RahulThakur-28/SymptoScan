@@ -18,7 +18,7 @@ fun NumberTextField(
     AppTextField(
         value = value,
         onValueChange = {
-            if (it.all { char -> char.isDigit() }) {
+            if (it.all { char -> char.isDigit() || char == '.' }) {
                 onValueChange(it)
             }
         },

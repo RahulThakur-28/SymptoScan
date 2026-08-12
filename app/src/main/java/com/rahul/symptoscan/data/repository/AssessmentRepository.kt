@@ -158,4 +158,16 @@ class AssessmentRepository {
             .decodeSingle<DbAssessmentResult>()
         emit(result)
     }
+
+    suspend fun getAssessmentCount(userId: String): Int = withContext(Dispatchers.IO) {
+        try {
+            val response = postgrest.from("assessments")
+                .select(columns = Columns.raw("id")) {
+                    filter { eq("user_id", userId); eq("status", "completed") }
+                }
+            response.decodeList<DbAssessment>().size
+        } catch (e: Exception) {
+            0
+        }
+    }
 }

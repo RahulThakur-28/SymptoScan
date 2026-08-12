@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.jsonPrimitive
+import kotlinx.serialization.json.put
 
 /**
  * Repository to manage user profile and settings data using Supabase Postgrest.
@@ -117,12 +118,11 @@ class ProfileRepository {
      */
     suspend fun updateProfile(profile: UserProfile): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            val dbProfile = DbProfile(
-                id = profile.id,
-                fullName = profile.fullName,
-                avatarUrl = null // Can be added later
-            )
-            postgrest.from("profiles").update(dbProfile) {
+            postgrest.from("profiles").update(
+                kotlinx.serialization.json.buildJsonObject {
+                    put("full_name", profile.fullName)
+                }
+            ) {
                 filter { eq("id", profile.id) }
             }
             Unit
@@ -135,24 +135,57 @@ class ProfileRepository {
             fullName = dbProfile.fullName,
             email = "", // Email comes from Auth, not public.profiles as per task scope
             isVerified = true,
-            memberSince = dbProfile.createdAt ?: "Recently",
+            memberSince = formatMemberSince(dbProfile.createdAt),
             healthScore = 0,
             assessmentCount = 0
         )
     }
 
+    private fun formatMemberSince(createdAt: String?): String {
+        if (createdAt == null) return "Recently"
+        return try {
+            // Typical ISO format from Supabase: 2026-08-12T10:00:00.123+00
+            val inputFormat = java.text.SimpleDateFormat("yyyy-MM-dd", java.util.Locale.US)
+            val date = inputFormat.parse(createdAt.substring(0, 10)) ?: return "Recently"
+            val outputFormat = java.text.SimpleDateFormat("MMM yyyy", java.util.Locale.US)
+            outputFormat.format(date)
+        } catch (_: Exception) {
+            "Recently"
+        }
+    }
+
     /**
-     * Fetches user achievements.
+     * Fetches user achievements based on real data.
      */
-    fun getAchievements(): Flow<List<Achievement>> = flow {
-        kotlinx.coroutines.delay(800)
-        emit(
-            listOf(
-                Achievement("1", "Health Tracker", "10 assessments", "📈", 100, true),
-                Achievement("2", "Hydration Hero", "7 day streak", "💧", 60, false),
-                Achievement("3", "Profile Complete", "100% filled", "✅", 100, true),
-                Achievement("4", "Safety First", "Emergency set", "🛡️", 100, true)
+    fun getAchievements(assessmentCount: Int, isProfileComplete: Boolean): Flow<List<Achievement>> = flow {
+        val achievements = mutableListOf<Achievement>()
+        
+        achievements.add(
+            Achievement(
+                id = "1", 
+                title = "Health Tracker", 
+                description = "$assessmentCount assessments", 
+                icon = "📈", 
+                progress = (assessmentCount * 10).coerceAtMost(100), 
+                isUnlocked = assessmentCount > 0
             )
         )
+        
+        achievements.add(
+            Achievement(
+                id = "3", 
+                title = "Profile Complete", 
+                description = if (isProfileComplete) "100% filled" else "Incomplete", 
+                icon = "✅", 
+                progress = if (isProfileComplete) 100 else 50, 
+                isUnlocked = isProfileComplete
+            )
+        )
+
+        // Mock others for UI polish as they aren't tracked yet
+        achievements.add(Achievement("2", "Hydration Hero", "Coming soon", "💧", 0, false))
+        achievements.add(Achievement("4", "Safety First", "Emergency set", "🛡️", 100, true))
+        
+        emit(achievements)
     }
 }

@@ -8,9 +8,12 @@ import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.getValue
 import androidx.core.splashscreen.SplashScreen.Companion.installSplashScreen
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.rememberNavController
+import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.navigation.AppNavGraph
 import com.rahul.symptoscan.ui.theme.SymptoScanTheme
 
@@ -22,8 +25,13 @@ class MainActivity : ComponentActivity() {
         installSplashScreen()
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
+        
+        val preferenceManager = Injection.preferenceManager
+        
         setContent {
-            SymptoScanTheme {
+            val isDarkMode by preferenceManager.isDarkMode.collectAsState()
+            
+            SymptoScanTheme(darkTheme = isDarkMode) {
                 navController = rememberNavController()
                 Surface(
                     modifier = Modifier.fillMaxSize(),

@@ -78,68 +78,72 @@ class HealthAssistantViewModel(
         }
     }
 
-    fun createConversation() {
-        if (_uiState.value.isLoading) return
-        _uiState.update { it.copy(isLoading = true, error = null) }
-        viewModelScope.launch {
-            repository.createConversation(
-                title = "New Health Conversation",
-                language = _uiState.value.language
-            ).onSuccess { conversation ->
-                _uiState.update { 
-                    it.copy(
-                        currentConversationId = conversation.id,
-                        isConversationCreated = true,
-                        messages = emptyList(),
-                        isLoading = false
-                    ) 
-                }
-            }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
-            }
-        }
-    }
-
     fun sendMessage() {
         val text = _uiState.value.inputText.trim()
         if (text.isBlank() || _uiState.value.isSendingMessage) return
 
         viewModelScope.launch {
-            var conversationId = _uiState.value.currentConversationId
+            _uiState.update { it.copy(isSendingMessage = true, error = null) }
+            
+            // 1. Resolve or Create Conversation ID
+            val activeConversationId = when (val currentId = _uiState.value.currentConversationId) {
+                null -> {
+                    android.util.Log.d("HealthAssistantVM", "currentConversationId is null, creating new")
+                    val result = repository.createConversation(
+                        title = text.take(30) + if (text.length > 30) "..." else "",
+                        language = _uiState.value.language
+                    )
+                    
+                    val newConv = result.getOrElse { e ->
+                        android.util.Log.e("HealthAssistantVM", "Failed to create conversation", e)
+                        _uiState.update { it.copy(isSendingMessage = false, error = e.message) }
+                        return@launch
+                    }
+                    
+                    if (newConv.id.isBlank()) {
+                        android.util.Log.e("HealthAssistantVM", "Created conversation ID is blank")
+                        _uiState.update { it.copy(isSendingMessage = false, error = "Failed to create conversation session.") }
+                        return@launch
+                    }
 
-            if (conversationId == null) {
-                _uiState.update { it.copy(isSendingMessage = true, error = null) }
-                val result = repository.createConversation(
-                    title = text.take(30) + if (text.length > 30) "..." else "",
-                    language = _uiState.value.language
-                )
-                
-                result.onSuccess { conversation ->
-                    conversationId = conversation.id
+                    android.util.Log.d("HealthAssistantVM", "Created conversation successfully with ID: ${newConv.id}")
                     _uiState.update { 
                         it.copy(
-                            currentConversationId = conversation.id,
+                            currentConversationId = newConv.id,
                             isConversationCreated = true
                         ) 
                     }
-                }.onFailure { e ->
-                    _uiState.update { it.copy(isSendingMessage = false, error = e.message) }
-                    return@launch
+                    newConv.id
                 }
-            } else {
-                _uiState.update { it.copy(isSendingMessage = true, error = null) }
+                else -> {
+                    android.util.Log.d("HealthAssistantVM", "Using existing conversation ID: $currentId")
+                    currentId
+                }
             }
 
-            conversationId?.let { id ->
-                repository.sendMessage(
-                    conversationId = id,
-                    message = text,
-                    language = _uiState.value.language
-                ).onSuccess {
-                    // Success, reload messages to get the latest state (user + assistant message)
-                    loadMessages(id)
-                    _uiState.update { it.copy(inputText = "", isSendingMessage = false) }
-                }.onFailure { e ->
+            android.util.Log.d("HealthAssistantVM", "Sending message with conversationId: $activeConversationId")
+
+            // 2. Send Message using the verified ID
+            repository.sendMessage(
+                conversationId = activeConversationId,
+                message = text,
+                language = _uiState.value.language
+            ).onSuccess {
+                // Success, reload messages to get the latest state (user + assistant message)
+                loadMessages(activeConversationId)
+                _uiState.update { it.copy(inputText = "", isSendingMessage = false) }
+            }.onFailure { e ->
+                if (e.message == "CONVERSATION_NOT_FOUND") {
+                    _uiState.update { 
+                        it.copy(
+                            isSendingMessage = false, 
+                            error = "Conversation could not be found. Please start a new chat.",
+                            currentConversationId = null,
+                            messages = emptyList(),
+                            isConversationCreated = false
+                        ) 
+                    }
+                } else {
                     _uiState.update { it.copy(isSendingMessage = false, error = e.message) }
                 }
             }

@@ -17,6 +17,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rahul.symptoscan.presentation.settings.viewmodel.SettingsViewModel
 import com.rahul.symptoscan.ui.theme.BackgroundLight
 import com.rahul.symptoscan.ui.theme.BluePrimary
 import com.rahul.symptoscan.ui.theme.TextDark
@@ -24,16 +27,14 @@ import com.rahul.symptoscan.ui.theme.TextDark
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LanguageSelectionScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    viewModel: SettingsViewModel = viewModel()
 ) {
-    var selectedLanguage by remember { mutableStateOf("English (United States)") }
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     val languages = listOf(
-        "English (United States)" to "English",
-        "Hindi" to "हिन्दी",
-        "Spanish" to "Español",
-        "French" to "Français",
-        "German" to "Deutsch"
+        "English" to "English",
+        "Hindi" to "हिन्दी"
     )
 
     Scaffold(
@@ -60,8 +61,8 @@ fun LanguageSelectionScreen(
                 LanguageOption(
                     display = display,
                     native = native,
-                    isSelected = selectedLanguage == display,
-                    onClick = { selectedLanguage = display }
+                    isSelected = uiState.currentLanguage == display,
+                    onClick = { viewModel.setLanguage(display) }
                 )
                 Spacer(modifier = Modifier.height(12.dp))
             }

@@ -90,14 +90,6 @@ fun SettingsScreen(
             }
 
             SettingsSection(title = "PRIVACY & SECURITY") {
-                SettingsSwitchItem(
-                    title = "Biometric Login",
-                    subtitle = "Face ID / Fingerprint",
-                    icon = Icons.Outlined.Fingerprint,
-                    checked = uiState.biometricEnabled,
-                    onCheckedChange = { viewModel.toggleBiometric(it) }
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
                 SettingsItem(
                     title = "Privacy Policy",
                     icon = Icons.Outlined.PrivacyTip,
@@ -123,18 +115,11 @@ fun SettingsScreen(
                 SettingsItem(
                     title = "Changelog",
                     icon = Icons.Outlined.History,
-                    onClick = { }
+                    onClick = { onNavigate("changelog") }
                 )
             }
 
-            SettingsSection(title = "DATA MANAGEMENT") {
-                SettingsItem(
-                    title = "Export My Data",
-                    subtitle = "Download all health records",
-                    icon = Icons.Outlined.Download,
-                    onClick = { }
-                )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
+            SettingsSection(title = "ACCOUNT") {
                 SettingsItem(
                     title = "Delete Account",
                     subtitle = "Permanently remove all data",

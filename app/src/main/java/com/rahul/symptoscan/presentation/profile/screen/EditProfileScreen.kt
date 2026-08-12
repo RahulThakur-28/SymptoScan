@@ -57,6 +57,7 @@ fun EditProfileScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
+                    .imePadding()
                     .verticalScroll(rememberScrollState())
                     .padding(24.dp)
             ) {
@@ -70,13 +71,10 @@ fun EditProfileScreen(
                 Spacer(modifier = Modifier.height(20.dp))
                 
                 AppTextField(
-                    value = profile!!.email,
-                    onValueChange = { },
-                    label = "Email",
-                    placeholder = "",
-                    modifier = Modifier.fillMaxWidth(),
-                    error = null,
-                    trailingIcon = null
+                    value = profile!!.dob ?: "",
+                    onValueChange = { viewModel.onDobChange(it) },
+                    label = "Date of Birth (YYYY-MM-DD)",
+                    placeholder = "1995-08-15"
                 )
                 
                 Spacer(modifier = Modifier.height(20.dp))
@@ -101,7 +99,7 @@ fun EditProfileScreen(
                 
                 Row(modifier = Modifier.fillMaxWidth()) {
                     NumberTextField(
-                        value = profile!!.height?.toString() ?: "",
+                        value = profile!!.height?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() } ?: "",
                         onValueChange = { viewModel.onHeightChange(it) },
                         label = "Height",
                         placeholder = "cm",
@@ -110,12 +108,30 @@ fun EditProfileScreen(
                     )
                     Spacer(modifier = Modifier.width(16.dp))
                     NumberTextField(
-                        value = profile!!.weight?.toString() ?: "",
+                        value = profile!!.weight?.let { if (it % 1.0 == 0.0) it.toInt().toString() else it.toString() } ?: "",
                         onValueChange = { viewModel.onWeightChange(it) },
                         label = "Weight",
                         placeholder = "kg",
                         suffix = "kg",
                         modifier = Modifier.weight(1f)
+                    )
+                }
+                
+                Spacer(modifier = Modifier.height(20.dp))
+
+                AppTextField(
+                    value = profile!!.allergies ?: "",
+                    onValueChange = { viewModel.onAllergiesChange(it) },
+                    label = "Allergies",
+                    placeholder = "e.g. Peanuts, Penicillin"
+                )
+
+                if (uiState is EditProfileViewModel.EditProfileUiState.Error) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text(
+                        text = (uiState as EditProfileViewModel.EditProfileUiState.Error).message,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp
                     )
                 }
                 

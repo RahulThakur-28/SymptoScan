@@ -70,28 +70,30 @@ fun ProfileHeaderCard(
                             color = Color.White.copy(alpha = 0.8f),
                             fontSize = 14.sp
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Surface(
-                            color = Color.White.copy(alpha = 0.2f),
-                            shape = CircleShape
-                        ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
-                                verticalAlignment = Alignment.CenterVertically
+                        if (user.isVerified) {
+                            Spacer(modifier = Modifier.height(8.dp))
+                            Surface(
+                                color = Color.White.copy(alpha = 0.2f),
+                                shape = CircleShape
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Verified,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(14.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text(
-                                    text = "Verified Account",
-                                    color = Color.White,
-                                    fontSize = 11.sp,
-                                    fontWeight = FontWeight.Medium
-                                )
+                                Row(
+                                    modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        imageVector = Icons.Default.Verified,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(14.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(4.dp))
+                                    Text(
+                                        text = "Verified Account",
+                                        color = Color.White,
+                                        fontSize = 11.sp,
+                                        fontWeight = FontWeight.Medium
+                                    )
+                                }
                             }
                         }
                     }
@@ -105,7 +107,7 @@ fun ProfileHeaderCard(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceBetween
                 ) {
-                    ProfileStatItem(label = "Health Score", value = user.healthScore.toString())
+                    ProfileStatItem(label = "Health Score", value = if (user.healthScore > 0) user.healthScore.toString() else "--")
                     ProfileStatItem(label = "Assessments", value = user.assessmentCount.toString())
                     ProfileStatItem(label = "Member Since", value = user.memberSince)
                 }

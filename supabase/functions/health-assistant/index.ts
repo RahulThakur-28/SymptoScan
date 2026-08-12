@@ -23,9 +23,20 @@ serve(async (req) => {
     }
 
     // 2. Request Validation
-    const { conversationId, message, language = 'en' } = await req.json()
+    const rawBody = await req.text()
+    console.log(`Received raw body: ${rawBody}`)
+
+    let body
+    try {
+      body = JSON.parse(rawBody)
+    } catch (e) {
+      return new Response(JSON.stringify({ error: 'BAD_REQUEST', message: 'Invalid JSON' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    const { conversationId, message, language = 'en' } = body
 
     if (!conversationId || !message || message.trim().length === 0) {
+      console.error(`Validation failed. conversationId: ${conversationId}, message length: ${message?.length}`)
       return new Response(JSON.stringify({ error: 'BAD_REQUEST', message: 'conversationId and message are required.' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
     }
 
@@ -33,14 +44,27 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'BAD_REQUEST', message: 'Language must be en or hi.' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
     }
 
+    console.log(`Processing health assistant request for conversationId: ${conversationId}, authenticated user: ${user.id}`)
+
     // 3. Conversation Ownership
     const { data: conversation, error: convError } = await supabaseClient
       .from('health_conversations')
       .select('user_id')
       .eq('id', conversationId)
-      .single()
+      .maybeSingle()
 
-    if (convError || !conversation || conversation.user_id !== user.id) {
+    if (convError) {
+      console.error(`Database error during conversation lookup: ${convError.message}`)
+      throw new Error('Database lookup failed')
+    }
+
+    if (!conversation) {
+      console.error(`Conversation not found in database for ID: ${conversationId}`)
+      return new Response(JSON.stringify({ error: 'NOT_FOUND', message: 'Conversation not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    }
+
+    if (conversation.user_id !== user.id) {
+      console.error(`Ownership mismatch. Conversation owner: ${conversation.user_id}, Authenticated user: ${user.id}`)
       return new Response(JSON.stringify({ error: 'NOT_FOUND', message: 'Conversation not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
 

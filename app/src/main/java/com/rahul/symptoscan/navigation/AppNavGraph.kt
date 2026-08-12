@@ -11,9 +11,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation.navDeepLink
 import com.rahul.symptoscan.presentation.healthprofile.screen.HealthProfileScreen
 import com.rahul.symptoscan.presentation.helpsupport.screen.HelpSupportScreen
-import com.rahul.symptoscan.presentation.settings.screen.RateSymptoScanScreen
-import com.rahul.symptoscan.presentation.settings.screen.LanguageSelectionScreen
-import com.rahul.symptoscan.presentation.settings.screen.PrivacySecurityScreen
+import com.rahul.symptoscan.presentation.settings.screen.*
 import com.rahul.symptoscan.presentation.settings.legal.screen.PrivacyPolicyScreen
 import com.rahul.symptoscan.presentation.settings.legal.screen.TermsOfServiceScreen
 import com.rahul.symptoscan.presentation.auth.emailverification.screen.EmailVerificationScreen
@@ -67,6 +65,8 @@ sealed class Screen(val route: String) {
     object PrivacyPolicy : Screen("privacy_policy")
     object TermsOfService : Screen("terms_of_service")
     object Emergency : Screen("emergency")
+    object About : Screen("about")
+    object Changelog : Screen("changelog")
 }
 
 @Composable
@@ -363,13 +363,17 @@ fun AppNavGraph(navController: NavHostController) {
                 }
             )
         }
-        composable(route = Screen.Notifications.route) { PlaceholderScreen(name = "Notifications") }
+        composable(route = Screen.Notifications.route) {
+            NotificationSettingsScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
         composable(route = Screen.PrivacySecurity.route) {
             PrivacySecurityScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
                 onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) },
-                onNavigateToDeleteAccount = { /* Handled in settings usually */ }
+                onNavigateToDeleteAccount = { }
             )
         }
         composable(route = Screen.Language.route) {
@@ -395,6 +399,19 @@ fun AppNavGraph(navController: NavHostController) {
         }
         composable(route = Screen.TermsOfService.route) {
             TermsOfServiceScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
+        composable(route = Screen.About.route) {
+            AboutScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onNavigateToPrivacy = { navController.navigate(Screen.PrivacyPolicy.route) },
+                onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) },
+                onNavigateToChangelog = { navController.navigate(Screen.Changelog.route) }
+            )
+        }
+        composable(route = Screen.Changelog.route) {
+            ChangelogScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
         }

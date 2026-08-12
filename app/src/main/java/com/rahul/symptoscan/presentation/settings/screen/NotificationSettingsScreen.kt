@@ -5,33 +5,36 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
-import androidx.compose.material.icons.outlined.Description
-import androidx.compose.material.icons.outlined.PrivacyTip
-import androidx.compose.material.icons.outlined.Security
+import androidx.compose.material.icons.outlined.Email
+import androidx.compose.material.icons.outlined.Notifications
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rahul.symptoscan.presentation.settings.component.SettingsItem
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.settings.component.SettingsSection
+import com.rahul.symptoscan.presentation.settings.component.SettingsSwitchItem
+import com.rahul.symptoscan.presentation.settings.viewmodel.SettingsViewModel
 import com.rahul.symptoscan.ui.theme.BackgroundLight
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun PrivacySecurityScreen(
+fun NotificationSettingsScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToPrivacyPolicy: () -> Unit,
-    onNavigateToTerms: () -> Unit,
-    onNavigateToDeleteAccount: () -> Unit
+    viewModel: SettingsViewModel = viewModel()
 ) {
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
     Scaffold(
         containerColor = BackgroundLight,
         topBar = {
             TopAppBar(
-                title = { Text("Privacy & Security", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Notifications", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
@@ -48,36 +51,28 @@ fun PrivacySecurityScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            SettingsSection(title = "LEGAL") {
-                SettingsItem(
-                    title = "Privacy Policy",
-                    subtitle = "How we protect your data",
-                    icon = Icons.Outlined.PrivacyTip,
-                    onClick = onNavigateToPrivacyPolicy
+            SettingsSection(title = "PREFERENCES") {
+                SettingsSwitchItem(
+                    title = "Push Notifications",
+                    subtitle = "Assessment reminders and health tips",
+                    icon = Icons.Outlined.Notifications,
+                    checked = uiState.pushNotifications,
+                    onCheckedChange = viewModel::togglePushNotifications
                 )
                 HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
-                SettingsItem(
-                    title = "Terms of Service",
-                    subtitle = "Usage agreement",
-                    icon = Icons.Outlined.Description,
-                    onClick = onNavigateToTerms
+                SettingsSwitchItem(
+                    title = "Email Reports",
+                    subtitle = "Weekly health digest and insights",
+                    icon = Icons.Outlined.Email,
+                    checked = uiState.emailReports,
+                    onCheckedChange = viewModel::toggleEmailReports
                 )
             }
             
-            SettingsSection(title = "DATA PROTECTION") {
-                SettingsItem(
-                    title = "AI Data Usage",
-                    subtitle = "Your reports are used to train AI",
-                    icon = Icons.Outlined.Security,
-                    onClick = { },
-                    showChevron = false
-                )
-            }
-
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(
-                text = "SymptoScan uses end-to-end encryption for your sensitive health data stored in Supabase. We do not share your personal identification with third parties.",
+                text = "Note: These preferences control how SymptoScan communicates with you. You can change these at any time.",
                 fontSize = 12.sp,
                 color = Color.Gray,
                 lineHeight = 18.sp

@@ -7,6 +7,7 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.outlined.Email
 import androidx.compose.material.icons.outlined.ReportProblem
 import androidx.compose.material.icons.rounded.Emergency
@@ -48,9 +49,27 @@ fun HelpSupportScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(paddingValues)
+                .imePadding()
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
+            OutlinedTextField(
+                value = "",
+                onValueChange = { },
+                modifier = Modifier.fillMaxWidth(),
+                placeholder = { Text("Search FAQ...") },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                shape = RoundedCornerShape(12.dp),
+                colors = OutlinedTextFieldDefaults.colors(
+                    focusedBorderColor = BluePrimary,
+                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f),
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
+                )
+            )
+            
+            Spacer(modifier = Modifier.height(24.dp))
+
             SectionTitle("FAQ")
             
             val faqs = listOf(

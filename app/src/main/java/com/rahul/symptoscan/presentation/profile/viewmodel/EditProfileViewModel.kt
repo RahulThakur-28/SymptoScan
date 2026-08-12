@@ -4,13 +4,16 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.AuthRepository
+import com.rahul.symptoscan.data.repository.HealthProfileRepository
 import com.rahul.symptoscan.data.repository.ProfileRepository
+import com.rahul.symptoscan.domain.model.HealthProfile
 import com.rahul.symptoscan.domain.model.UserProfile
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class EditProfileViewModel(
     private val profileRepository: ProfileRepository = Injection.profileRepository,
+    private val healthProfileRepository: HealthProfileRepository = Injection.healthProfileRepository,
     private val authRepository: AuthRepository = Injection.authRepository
 ) : ViewModel() {
 
@@ -25,10 +28,29 @@ class EditProfileViewModel(
     }
 
     private fun loadProfile() {
-        val userId = authRepository.getCurrentUser()?.id ?: return
+        val currentUser = authRepository.getCurrentUser() ?: return
+        val userId = currentUser.id
+        val email = currentUser.email ?: ""
+
         viewModelScope.launch {
-            profileRepository.getUserProfile(userId)
-                .collect { _profile.value = it }
+            combine(
+                profileRepository.getUserProfile(userId),
+                healthProfileRepository.getHealthProfile(userId)
+            ) { base, health ->
+                base?.copy(
+                    email = email,
+                    isVerified = true, // We assume verified if they can edit
+                    dob = health?.dateOfBirth,
+                    gender = health?.biologicalSex,
+                    bloodGroup = health?.bloodGroup,
+                    height = health?.heightCm,
+                    weight = health?.weightKg,
+                    allergies = health?.allergies,
+                    conditions = health?.medicalConditions,
+                    medications = health?.medications,
+                    isProfileComplete = health?.profileCompleted ?: false
+                )
+            }.collect { _profile.value = it }
         }
     }
 
@@ -45,23 +67,60 @@ class EditProfileViewModel(
     }
 
     fun onHeightChange(height: String) {
-        _profile.update { it?.copy(height = height.filter { char -> char.isDigit() }.toIntOrNull()) }
+        _profile.update { it?.copy(height = height.toDoubleOrNull()) }
     }
 
     fun onWeightChange(weight: String) {
-        _profile.update { it?.copy(weight = weight.filter { char -> char.isDigit() }.toIntOrNull()) }
+        _profile.update { it?.copy(weight = weight.toDoubleOrNull()) }
+    }
+
+    fun onDobChange(dob: String) {
+        _profile.update { it?.copy(dob = dob) }
+    }
+
+    fun onAllergiesChange(allergies: String) {
+        _profile.update { it?.copy(allergies = allergies) }
     }
 
     fun saveProfile(onSuccess: () -> Unit) {
         val currentProfile = _profile.value ?: return
+        
+        // Validation
+        if (currentProfile.fullName.isBlank()) {
+            _uiState.value = EditProfileUiState.Error("Name cannot be empty")
+            return
+        }
+
         viewModelScope.launch {
             _uiState.value = EditProfileUiState.Loading
-            val result = profileRepository.updateProfile(currentProfile)
-            if (result.isSuccess) {
+            
+            // 1. Update basic profile
+            val updateResult = profileRepository.updateProfile(currentProfile)
+            if (updateResult.isFailure) {
+                _uiState.value = EditProfileUiState.Error(updateResult.exceptionOrNull()?.message ?: "Update failed")
+                return@launch
+            }
+
+            // 2. Update health profile
+            val healthProfile = HealthProfile(
+                userId = currentProfile.id,
+                dateOfBirth = currentProfile.dob,
+                biologicalSex = currentProfile.gender,
+                heightCm = currentProfile.height,
+                weightKg = currentProfile.weight,
+                bloodGroup = currentProfile.bloodGroup,
+                allergies = currentProfile.allergies,
+                medications = currentProfile.medications,
+                medicalConditions = currentProfile.conditions,
+                profileCompleted = currentProfile.isProfileComplete
+            )
+            
+            val healthResult = healthProfileRepository.saveHealthProfile(healthProfile)
+            if (healthResult.isSuccess) {
                 _uiState.value = EditProfileUiState.Success
                 onSuccess()
             } else {
-                _uiState.value = EditProfileUiState.Error(result.exceptionOrNull()?.message ?: "Update failed")
+                _uiState.value = EditProfileUiState.Error(healthResult.exceptionOrNull()?.message ?: "Update failed")
             }
         }
     }
