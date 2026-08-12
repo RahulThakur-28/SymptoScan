@@ -65,6 +65,7 @@ sealed class Screen(val route: String) {
     object PrivacyPolicy : Screen("privacy_policy")
     object TermsOfService : Screen("terms_of_service")
     object Emergency : Screen("emergency")
+    object AddEmergencyContact : Screen("add_emergency_contact")
     object About : Screen("about")
     object Changelog : Screen("changelog")
 }
@@ -415,7 +416,18 @@ fun AppNavGraph(navController: NavHostController) {
                 onNavigateBack = { navController.popBackStack() }
             )
         }
-        composable(route = Screen.Emergency.route) { PlaceholderScreen(name = "Emergency Guidance") }
+        composable(route = Screen.Emergency.route) {
+            com.rahul.symptoscan.presentation.emergency.screen.EmergencyScreen(
+                onNavigateBack = { navController.popBackStack() },
+                onAddEmergencyContact = { navController.navigate(Screen.AddEmergencyContact.route) },
+                onEditEmergencyContact = { navController.navigate(Screen.AddEmergencyContact.route) }
+            )
+        }
+        composable(route = Screen.AddEmergencyContact.route) {
+            com.rahul.symptoscan.presentation.emergency.screen.AddEmergencyContactScreen(
+                onNavigateBack = { navController.popBackStack() }
+            )
+        }
         composable(route = "assessment_details/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: return@composable
             AssessmentReportScreen(

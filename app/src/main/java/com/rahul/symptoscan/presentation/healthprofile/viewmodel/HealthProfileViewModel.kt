@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.AuthRepository
+import com.rahul.symptoscan.data.repository.EmergencyContactRepository
 import com.rahul.symptoscan.data.repository.HealthProfileRepository
 import com.rahul.symptoscan.data.repository.ProfileRepository
 import com.rahul.symptoscan.domain.model.EmergencyContact
@@ -17,6 +18,7 @@ import kotlinx.coroutines.launch
 class HealthProfileViewModel(
     private val profileRepository: ProfileRepository = Injection.profileRepository,
     private val healthProfileRepository: HealthProfileRepository = Injection.healthProfileRepository,
+    private val emergencyRepository: EmergencyContactRepository = Injection.emergencyContactRepository,
     private val authRepository: AuthRepository = Injection.authRepository
 ) : ViewModel() {
 
@@ -32,8 +34,11 @@ class HealthProfileViewModel(
         viewModelScope.launch {
             combine(
                 profileRepository.getUserProfile(user.id).take(1),
-                healthProfileRepository.getHealthProfile(user.id).take(1)
-            ) { profile, healthProfile ->
+                healthProfileRepository.getHealthProfile(user.id).take(1),
+                flow { emit(emergencyRepository.getEmergencyContact().getOrNull()) }.take(1)
+            ) { profile: com.rahul.symptoscan.domain.model.UserProfile?, 
+                healthProfile: com.rahul.symptoscan.domain.model.HealthProfile?, 
+                emergencyContact: EmergencyContact? ->
                 profile?.let { p ->
                     _uiState.update { it.copy(
                         userProfile = p,
@@ -55,7 +60,7 @@ class HealthProfileViewModel(
                         currentStep = if (!hp.profileCompleted && hp.dateOfBirth != null) 3 else it.currentStep
                     ) }
                 }
-                profile?.emergencyContact?.let { ec ->
+                emergencyContact?.let { ec ->
                     _uiState.update { it.copy(
                         emergencyContactName = ec.name,
                         emergencyRelationship = ec.relationship,
@@ -151,12 +156,14 @@ class HealthProfileViewModel(
             email = user.email ?: "",
             memberSince = "Just now"
         )).copy(
-            fullName = currentState.fullName,
-            emergencyContact = EmergencyContact(
-                name = currentState.emergencyContactName,
-                relationship = currentState.emergencyRelationship,
-                phoneNumber = currentState.emergencyPhone
-            )
+            fullName = currentState.fullName
+        )
+
+        val emergencyContact = EmergencyContact(
+            userId = user.id,
+            name = currentState.emergencyContactName,
+            relationship = currentState.emergencyRelationship,
+            phoneNumber = currentState.emergencyPhone
         )
 
         val healthProfile = HealthProfile(
@@ -186,7 +193,14 @@ class HealthProfileViewModel(
             }
             android.util.Log.d("HealthProfile", "[HEALTH-SAVE-5.2] Health profile save task finished: ${healthTask.isSuccess}")
             
-            if (profileTask.isSuccess && healthTask.isSuccess) {
+            val emergencyTask = if (currentState.emergencyContactName.isNotBlank()) {
+                emergencyRepository.saveEmergencyContact(emergencyContact)
+            } else {
+                Result.success(Unit)
+            }
+            android.util.Log.d("HealthProfile", "[HEALTH-SAVE-5.3] Emergency contact save task finished: ${emergencyTask.isSuccess}")
+
+            if (profileTask.isSuccess && healthTask.isSuccess && emergencyTask.isSuccess) {
                 android.util.Log.d("HealthProfile", "[HEALTH-SAVE-6] Database save successful")
                 _uiState.update { it.copy(
                     isLoading = false, 
@@ -198,6 +212,7 @@ class HealthProfileViewModel(
                 val errorMsg = when {
                     profileTask.isFailure -> "Profile Error: ${profileTask.exceptionOrNull()?.message}"
                     healthTask.isFailure -> "Health Profile Error: ${healthTask.exceptionOrNull()?.message}"
+                    emergencyTask.isFailure -> "Emergency Contact Error: ${emergencyTask.exceptionOrNull()?.message}"
                     else -> "Unable to save your health profile. Please try again."
                 }
                 android.util.Log.e("HealthProfile", "[HEALTH-SAVE-ERROR] $errorMsg")

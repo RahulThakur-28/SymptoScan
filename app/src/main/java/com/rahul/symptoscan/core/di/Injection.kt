@@ -27,5 +27,7 @@ object Injection {
 
     val healthAssistantRepository by lazy { HealthAssistantRepository() }
 
+    val emergencyContactRepository by lazy { EmergencyContactRepository() }
+
     val preferenceManager by lazy { PreferenceManager(applicationContext) }
 }

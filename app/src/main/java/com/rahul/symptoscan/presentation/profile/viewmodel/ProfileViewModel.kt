@@ -6,8 +6,10 @@ import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.local.PreferenceManager
 import com.rahul.symptoscan.data.repository.AssessmentRepository
 import com.rahul.symptoscan.data.repository.AuthRepository
+import com.rahul.symptoscan.data.repository.EmergencyContactRepository
 import com.rahul.symptoscan.data.repository.HealthProfileRepository
 import com.rahul.symptoscan.data.repository.ProfileRepository
+import com.rahul.symptoscan.domain.model.EmergencyContact
 import com.rahul.symptoscan.presentation.profile.state.ProfileUiState
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.*
@@ -16,6 +18,7 @@ import kotlinx.coroutines.launch
 class ProfileViewModel(
     private val profileRepository: ProfileRepository = Injection.profileRepository,
     private val healthProfileRepository: HealthProfileRepository = Injection.healthProfileRepository,
+    private val emergencyRepository: EmergencyContactRepository = Injection.emergencyContactRepository,
     private val assessmentRepository: AssessmentRepository = Injection.assessmentRepository,
     private val authRepository: AuthRepository = Injection.authRepository,
     private val preferenceManager: PreferenceManager = Injection.preferenceManager
@@ -41,8 +44,11 @@ class ProfileViewModel(
             
             combine(
                 profileRepository.getUserProfile(userId),
-                healthProfileRepository.getHealthProfile(userId)
-            ) { baseProfile, healthProfile ->
+                healthProfileRepository.getHealthProfile(userId),
+                flow { emit(emergencyRepository.getEmergencyContact().getOrNull()) }
+            ) { baseProfile: com.rahul.symptoscan.domain.model.UserProfile?, 
+                healthProfile: com.rahul.symptoscan.domain.model.HealthProfile?, 
+                emergencyContact: EmergencyContact? ->
                 if (baseProfile == null) return@combine null
 
                 baseProfile.copy(
@@ -57,7 +63,8 @@ class ProfileViewModel(
                     allergies = healthProfile?.allergies,
                     conditions = healthProfile?.medicalConditions,
                     medications = healthProfile?.medications,
-                    isProfileComplete = healthProfile?.profileCompleted ?: false
+                    isProfileComplete = healthProfile?.profileCompleted ?: false,
+                    emergencyContact = emergencyContact
                 )
             }.flatMapLatest { fullProfile ->
                 if (fullProfile == null) {
