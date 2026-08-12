@@ -99,7 +99,7 @@ fun HealthScoreCard(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                StatItem(label = "BMI", value = bmi?.toString() ?: "--")
+                StatItem(label = "BMI", value = if (bmi != null) String.format(java.util.Locale.US, "%.1f", bmi) else "--")
                 StatDivider()
                 StatItem(label = "Last Check", value = lastCheck ?: "--")
                 StatDivider()
