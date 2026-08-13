@@ -2,6 +2,7 @@ package com.rahul.symptoscan.presentation.history.screen
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -17,6 +18,9 @@ import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Warning
 import androidx.compose.material3.*
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
@@ -43,19 +47,68 @@ import com.rahul.symptoscan.ui.theme.*
 fun HistoryScreen(
     onNavigate: (String) -> Unit,
     onAssessmentClick: (String) -> Unit,
-    viewModel: HistoryViewModel = viewModel()
+    viewModel: HistoryViewModel = viewModel(),
+    showScaffold: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        bottomBar = {
-            HomeBottomNavigation(
-                currentRoute = "history",
+    if (showScaffold) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            bottomBar = {
+                HomeBottomNavigation(
+                    currentRoute = "history",
+                    onNavigate = onNavigate
+                )
+            },
+            topBar = {
+                Surface(shadowElevation = 2.dp) {
+                    TopAppBar(
+                        title = { 
+                            Column {
+                                Text(
+                                    text = "History", 
+                                    fontSize = 20.sp, 
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = "Your previous health assessments",
+                                    fontSize = 12.sp,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontWeight = FontWeight.Normal
+                                )
+                            }
+                        },
+                        actions = {
+                            IconButton(
+                                onClick = { },
+                                modifier = Modifier
+                                    .padding(end = 16.dp)
+                                    .size(40.dp)
+                                    .clip(RoundedCornerShape(12.dp))
+                                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                            ) {
+                                Icon(Icons.Default.FilterList, contentDescription = "Filter", tint = MaterialTheme.colorScheme.primary)
+                            }
+                        },
+                        colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    )
+                }
+            }
+        ) { paddingValues ->
+            HistoryScreenContent(
+                paddingValues = paddingValues,
+                uiState = uiState,
+                onRefresh = viewModel::onRefresh,
+                onSearchQueryChange = viewModel::onSearchQueryChange,
+                onFilterSelected = viewModel::onFilterSelected,
+                onAssessmentClick = onAssessmentClick,
                 onNavigate = onNavigate
             )
-        },
-        topBar = {
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
             Surface(shadowElevation = 2.dp) {
                 TopAppBar(
                     title = { 
@@ -89,17 +142,56 @@ fun HistoryScreen(
                     colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             }
+            HistoryScreenContent(
+                paddingValues = PaddingValues(0.dp),
+                uiState = uiState,
+                onRefresh = viewModel::onRefresh,
+                onSearchQueryChange = viewModel::onSearchQueryChange,
+                onFilterSelected = viewModel::onFilterSelected,
+                onAssessmentClick = onAssessmentClick,
+                onNavigate = onNavigate
+            )
         }
-    ) { paddingValues ->
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun HistoryScreenContent(
+    paddingValues: PaddingValues,
+    uiState: com.rahul.symptoscan.presentation.history.state.HistoryUiState,
+    onRefresh: () -> Unit,
+    onSearchQueryChange: (String) -> Unit,
+    onFilterSelected: (AssessmentStatus?) -> Unit,
+    onAssessmentClick: (String) -> Unit,
+    onNavigate: (String) -> Unit,
+    modifier: Modifier = Modifier
+) {
+    val pullToRefreshState = rememberPullToRefreshState()
+    PullToRefreshBox(
+        isRefreshing = uiState.isRefreshing,
+        onRefresh = onRefresh,
+        state = pullToRefreshState,
+        modifier = modifier
+            .fillMaxSize()
+            .padding(paddingValues),
+        indicator = {
+            PullToRefreshDefaults.Indicator(
+                state = pullToRefreshState,
+                isRefreshing = uiState.isRefreshing,
+                containerColor = MaterialTheme.colorScheme.surface,
+                color = MaterialTheme.colorScheme.primary,
+                modifier = Modifier.align(Alignment.TopCenter)
+            )
+        }
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
+            modifier = Modifier.fillMaxSize()
         ) {
             // Search Bar
             OutlinedTextField(
                 value = uiState.searchQuery,
-                onValueChange = { viewModel.onSearchQueryChange(it) },
+                onValueChange = onSearchQueryChange,
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = 24.dp, vertical = 16.dp),
@@ -113,7 +205,7 @@ fun HistoryScreen(
                 leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 trailingIcon = {
                     if (uiState.searchQuery.isNotEmpty()) {
-                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                        IconButton(onClick = { onSearchQueryChange("") }) {
                             Icon(Icons.Default.Close, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
@@ -133,30 +225,31 @@ fun HistoryScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
+                    .horizontalScroll(rememberScrollState())
                     .padding(horizontal = 24.dp),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 FilterItem(
                     label = "All",
                     selected = uiState.selectedFilter == null,
-                    onClick = { viewModel.onFilterSelected(null) }
+                    onClick = { onFilterSelected(null) }
                 )
                 FilterItem(
                     label = "Low",
                     selected = uiState.selectedFilter == AssessmentStatus.Low,
-                    onClick = { viewModel.onFilterSelected(AssessmentStatus.Low) },
+                    onClick = { onFilterSelected(AssessmentStatus.Low) },
                     accentColor = SuccessGreen
                 )
                 FilterItem(
                     label = "Moderate",
                     selected = uiState.selectedFilter == AssessmentStatus.Moderate,
-                    onClick = { viewModel.onFilterSelected(AssessmentStatus.Moderate) },
+                    onClick = { onFilterSelected(AssessmentStatus.Moderate) },
                     accentColor = WarningAmber
                 )
                 FilterItem(
                     label = "High",
                     selected = uiState.selectedFilter == AssessmentStatus.High,
-                    onClick = { viewModel.onFilterSelected(AssessmentStatus.High) },
+                    onClick = { onFilterSelected(AssessmentStatus.High) },
                     accentColor = DangerRed
                 )
             }

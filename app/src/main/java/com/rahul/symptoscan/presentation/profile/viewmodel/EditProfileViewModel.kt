@@ -117,6 +117,13 @@ class EditProfileViewModel(
             }
 
             // 2. Update health profile
+            val isComplete = !currentProfile.fullName.isBlank() &&
+                             !currentProfile.dob.isNullOrBlank() &&
+                             !currentProfile.gender.isNullOrBlank() &&
+                             currentProfile.height != null &&
+                             currentProfile.weight != null &&
+                             !currentProfile.bloodGroup.isNullOrBlank()
+
             val healthProfile = HealthProfile(
                 userId = currentProfile.id,
                 dateOfBirth = currentProfile.dob,
@@ -127,7 +134,7 @@ class EditProfileViewModel(
                 allergies = currentProfile.allergies,
                 medications = currentProfile.medications,
                 medicalConditions = currentProfile.conditions,
-                profileCompleted = currentProfile.isProfileComplete
+                profileCompleted = isComplete
             )
             
             val healthResult = healthProfileRepository.saveHealthProfile(healthProfile)

@@ -42,27 +42,31 @@ fun AssessmentReportScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Assessment Report", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Assessment Report", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator(color = BluePrimary)
+                CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
             }
         } else if (uiState.error != null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    Text(text = uiState.error!!, color = Color.Red)
+                    Text(text = uiState.error!!, color = MaterialTheme.colorScheme.error)
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(onClick = { viewModel.loadReport(assessmentId) }) {
                         Text("Retry")
@@ -92,12 +96,12 @@ private fun ReportContent(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface)
             ) {
                 Column(modifier = Modifier.padding(24.dp)) {
                     Text(
                         text = "Urgency: ${report.urgencyLevel?.uppercase() ?: "UNKNOWN"}",
-                        color = BluePrimary,
+                        color = MaterialTheme.colorScheme.primary,
                         fontWeight = FontWeight.Bold,
                         fontSize = 12.sp
                     )
@@ -105,14 +109,15 @@ private fun ReportContent(
                     Text(
                         text = "Summary",
                         fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Spacer(modifier = Modifier.height(12.dp))
                     Text(
                         text = report.summary ?: "",
                         fontSize = 15.sp,
                         lineHeight = 24.sp,
-                        color = Color.DarkGray
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -121,7 +126,12 @@ private fun ReportContent(
         item {
             SectionCard(title = "POSSIBLE EXPLANATIONS") {
                 report.possibleCauses?.forEach { cause ->
-                    Text(text = "• $cause", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.padding(vertical = 4.dp))
+                    Text(
+                        text = "• $cause", 
+                        fontSize = 14.sp, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
                 }
             }
         }
@@ -129,7 +139,12 @@ private fun ReportContent(
         item {
             SectionCard(title = "RECOMMENDATIONS") {
                 report.recommendations?.forEach { rec ->
-                    Text(text = "• $rec", fontSize = 14.sp, color = Color.Gray, modifier = Modifier.padding(vertical = 4.dp))
+                    Text(
+                        text = "• $rec", 
+                        fontSize = 14.sp, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    )
                 }
             }
         }
@@ -150,15 +165,15 @@ private fun SectionCard(
             text = title,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 1.sp,
             modifier = Modifier.padding(bottom = 12.dp)
         )
         Card(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
         ) {
             Column(modifier = Modifier.padding(20.dp)) {
                 content()

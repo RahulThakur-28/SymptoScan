@@ -30,21 +30,25 @@ fun FullReportScreen(
     val result = uiState.result ?: return
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Health Report", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Health Report", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
                 actions = {
                     IconButton(onClick = { }) {
-                        Icon(Icons.Default.Download, contentDescription = "Download")
+                        Icon(Icons.Default.Download, contentDescription = "Download", tint = MaterialTheme.colorScheme.onSurface)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -55,32 +59,54 @@ fun FullReportScreen(
                 .verticalScroll(rememberScrollState())
                 .padding(24.dp)
         ) {
-            Text("Summary", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Summary", 
+                fontSize = 16.sp, 
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
             Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     ReportRow(label = "Risk Level", value = result.urgencyLevel ?: "Unknown")
-                    HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 12.dp),
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                    )
                     ReportRow(label = "Summary", value = result.summary ?: "")
                 }
             }
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Selected Symptoms", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Selected Symptoms", 
+                fontSize = 16.sp, 
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
             Spacer(modifier = Modifier.height(12.dp))
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color.White)
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     uiState.selectedSymptoms.forEachIndexed { index, symptom ->
-                        Text("${index + 1}. ${symptom.name}", fontSize = 14.sp)
+                        Text(
+                            text = "${index + 1}. ${symptom.name}", 
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                         if (index < (uiState.selectedSymptoms.size - 1)) {
-                            HorizontalDivider(modifier = Modifier.padding(vertical = 12.dp))
+                            HorizontalDivider(
+                                modifier = Modifier.padding(vertical = 12.dp),
+                                color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                            )
                         }
                     }
                 }
@@ -88,14 +114,19 @@ fun FullReportScreen(
             
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Recommendations", fontSize = 16.sp, fontWeight = FontWeight.Bold)
+            Text(
+                text = "Recommendations", 
+                fontSize = 16.sp, 
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onBackground
+            )
             Spacer(modifier = Modifier.height(12.dp))
             result.recommendations?.forEach { rec ->
                 Text(
                     text = "• $rec",
                     fontSize = 14.sp,
                     lineHeight = 22.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -114,7 +145,12 @@ private fun ReportRow(label: String, value: String) {
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween
     ) {
-        Text(text = label, fontSize = 14.sp, color = Color.Gray)
-        Text(text = value, fontSize = 14.sp, fontWeight = FontWeight.Bold)
+        Text(text = label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+        Text(
+            text = value, 
+            fontSize = 14.sp, 
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurface
+        )
     }
 }

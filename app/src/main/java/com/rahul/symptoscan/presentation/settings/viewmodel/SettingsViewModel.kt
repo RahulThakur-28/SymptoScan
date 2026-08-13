@@ -6,6 +6,7 @@ import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.local.PreferenceManager
 import com.rahul.symptoscan.data.repository.AuthRepository
 import com.rahul.symptoscan.presentation.settings.state.SettingsUiState
+import com.rahul.symptoscan.ui.theme.ThemeMode
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -25,17 +26,25 @@ class SettingsViewModel(
     }
 
     private fun loadSettings() {
+        val storedMode = preferenceManager.getThemeMode()
+        val themeMode = ThemeMode.valueOf(storedMode)
+        
         _uiState.update { it.copy(
-            isDarkMode = preferenceManager.isDarkMode(),
+            themeMode = themeMode,
             currentLanguage = preferenceManager.getLanguage(),
             pushNotifications = preferenceManager.arePushNotificationsEnabled(),
             emailReports = preferenceManager.areEmailReportsEnabled()
         ) }
     }
 
+    fun setThemeMode(mode: ThemeMode) {
+        preferenceManager.setThemeMode(mode.name)
+        _uiState.update { it.copy(themeMode = mode) }
+    }
+
     fun toggleDarkMode(enabled: Boolean) {
-        preferenceManager.setDarkMode(enabled)
-        _uiState.update { it.copy(isDarkMode = enabled) }
+        val mode = if (enabled) ThemeMode.Dark else ThemeMode.Light
+        setThemeMode(mode)
     }
 
     fun togglePushNotifications(enabled: Boolean) {

@@ -15,5 +15,6 @@ data class HomeUiState(
     val notificationCount: Int = 0,
     val isProfileComplete: Boolean = true,
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null
 )

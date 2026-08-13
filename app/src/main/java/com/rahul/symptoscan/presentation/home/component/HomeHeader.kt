@@ -21,6 +21,10 @@ import com.rahul.symptoscan.ui.theme.BluePrimary
 import com.rahul.symptoscan.ui.theme.CyanBlue
 import com.rahul.symptoscan.ui.theme.DeepBlue
 
+import androidx.compose.runtime.*
+import java.time.LocalTime
+import kotlinx.coroutines.delay
+
 @Composable
 fun HomeHeader(
     userName: String,
@@ -30,6 +34,15 @@ fun HomeHeader(
     onNotificationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var greeting by remember { mutableStateOf(getGreetingMessage()) }
+
+    LaunchedEffect(Unit) {
+        while (true) {
+            greeting = getGreetingMessage()
+            delay(60000) // Check every minute
+        }
+    }
+
     Box(
         modifier = modifier
             .fillMaxWidth()
@@ -48,7 +61,7 @@ fun HomeHeader(
         ) {
             Column {
                 Text(
-                    text = "Good morning,",
+                    text = "$greeting,",
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 14.sp
                 )
@@ -111,5 +124,15 @@ fun HomeHeader(
                 }
             }
         }
+    }
+}
+
+private fun getGreetingMessage(): String {
+    val hour = LocalTime.now().hour
+    return when (hour) {
+        in 5..11 -> "Good morning"
+        in 12..16 -> "Good afternoon"
+        in 17..20 -> "Good evening"
+        else -> "Good night"
     }
 }

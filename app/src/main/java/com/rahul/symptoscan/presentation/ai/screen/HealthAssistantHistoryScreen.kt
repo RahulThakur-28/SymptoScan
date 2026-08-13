@@ -135,7 +135,7 @@ fun HealthAssistantHistoryContent(
                                 conversationToDelete?.let { onDeleteConversation(it) }
                                 conversationToDelete = null
                             },
-                            colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                            colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                         ) {
                             Text("Delete")
                         }

@@ -27,7 +27,7 @@ fun ProfileMenuItem(
     modifier: Modifier = Modifier,
     isDestructive: Boolean = false
 ) {
-    val contentColor = if (isDestructive) Color.Red else Color(0xFF1E293B)
+    val contentColor = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
     
     Row(
         modifier = modifier
@@ -40,13 +40,16 @@ fun ProfileMenuItem(
             modifier = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(10.dp))
-                .background(if (isDestructive) Color.Red.copy(alpha = 0.1f) else Color(0xFFEFF6FF)),
+                .background(
+                    if (isDestructive) MaterialTheme.colorScheme.error.copy(alpha = 0.1f) 
+                    else MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)
+                ),
             contentAlignment = Alignment.Center
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isDestructive) Color.Red else BluePrimary,
+                tint = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -63,7 +66,7 @@ fun ProfileMenuItem(
             Text(
                 text = subtitle,
                 fontSize = 13.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         
@@ -71,7 +74,7 @@ fun ProfileMenuItem(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = Color.LightGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 modifier = Modifier.size(20.dp)
             )
         }

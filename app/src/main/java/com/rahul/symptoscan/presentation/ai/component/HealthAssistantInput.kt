@@ -75,14 +75,14 @@ fun HealthAssistantInput(
                 if (isSending) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = Color.White,
+                        color = MaterialTheme.colorScheme.onPrimary,
                         strokeWidth = 2.dp
                     )
                 } else {
                     Icon(
                         imageVector = Icons.AutoMirrored.Filled.Send,
                         contentDescription = "Send",
-                        tint = Color.White
+                        tint = if (isEnabled && value.isNotBlank()) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.38f)
                     )
                 }
             }

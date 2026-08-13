@@ -105,15 +105,27 @@ fun ProfileHeaderCard(
                 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceAround
                 ) {
                     ProfileStatItem(label = "Health Score", value = if (user.healthScore > 0) user.healthScore.toString() else "--")
+                    StatDivider()
                     ProfileStatItem(label = "Assessments", value = user.assessmentCount.toString())
+                    StatDivider()
                     ProfileStatItem(label = "Member Since", value = user.memberSince)
                 }
             }
         }
     }
+}
+
+@Composable
+private fun StatDivider() {
+    Box(
+        modifier = Modifier
+            .height(30.dp)
+            .width(1.dp)
+            .background(Color.White.copy(alpha = 0.2f))
+    )
 }
 
 @Composable

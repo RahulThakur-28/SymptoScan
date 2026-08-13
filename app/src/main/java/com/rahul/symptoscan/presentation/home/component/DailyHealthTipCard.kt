@@ -27,15 +27,15 @@ fun DailyHealthTipCard(
         modifier = modifier
             .padding(horizontal = 24.dp)
             .fillMaxWidth()
-            .background(MintGreen, RoundedCornerShape(16.dp))
-            .border(1.dp, MintBorder, RoundedCornerShape(16.dp))
+            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+            .border(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(16.dp))
             .padding(16.dp)
     ) {
         Row(verticalAlignment = Alignment.Top) {
             Icon(
                 imageVector = Icons.Rounded.Lightbulb,
                 contentDescription = null,
-                tint = SuccessGreen,
+                tint = MaterialTheme.colorScheme.primary,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(12.dp))
@@ -44,14 +44,14 @@ fun DailyHealthTipCard(
                     text = "DAILY HEALTH TIP",
                     fontSize = 12.sp,
                     fontWeight = FontWeight.Bold,
-                    color = SuccessGreen,
+                    color = MaterialTheme.colorScheme.primary,
                     letterSpacing = 0.5.sp
                 )
                 Spacer(modifier = Modifier.height(4.dp))
                 Text(
                     text = tip,
                     fontSize = 14.sp,
-                    color = Color(0xFF1E293B),
+                    color = MaterialTheme.colorScheme.onSurface,
                     lineHeight = 20.sp
                 )
             }

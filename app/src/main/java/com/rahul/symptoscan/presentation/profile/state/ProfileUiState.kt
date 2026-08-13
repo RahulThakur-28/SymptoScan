@@ -8,5 +8,6 @@ data class ProfileUiState(
     val achievements: List<Achievement> = emptyList(),
     val currentLanguage: String = "English",
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null
 )

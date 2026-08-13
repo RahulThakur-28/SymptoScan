@@ -23,11 +23,11 @@ fun HomeBottomNavigation(
 ) {
     Surface(
         modifier = Modifier.fillMaxWidth(),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 16.dp
     ) {
         NavigationBar(
-            containerColor = Color.White,
+            containerColor = MaterialTheme.colorScheme.surface,
             tonalElevation = 0.dp,
             modifier = Modifier.height(80.dp)
         ) {
@@ -39,7 +39,7 @@ fun HomeBottomNavigation(
             )
             NavigationItem(
                 label = "Assess",
-                icon = Icons.Default.AddCircleOutline,
+                icon = Icons.Default.MonitorHeart,
                 selected = currentRoute == "assess",
                 onClick = { onNavigate("assess") }
             )
@@ -84,21 +84,21 @@ private fun RowScope.NavigationItem(
                     Box(
                         modifier = Modifier
                             .clip(RoundedCornerShape(12.dp))
-                            .background(BluePrimary.copy(alpha = 0.1f))
+                            .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
                             .padding(horizontal = 16.dp, vertical = 4.dp),
                         contentAlignment = Alignment.Center
                     ) {
                         Icon(
                             imageVector = icon,
                             contentDescription = label,
-                            tint = BluePrimary
+                            tint = MaterialTheme.colorScheme.primary
                         )
                     }
                 } else {
                     Icon(
                         imageVector = icon,
                         contentDescription = label,
-                        tint = Color.Gray
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     )
                 }
             }
@@ -107,7 +107,7 @@ private fun RowScope.NavigationItem(
             Text(
                 text = label,
                 fontSize = 12.sp,
-                color = if (selected) BluePrimary else Color.Gray
+                color = if (selected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
             )
         },
         colors = NavigationBarItemDefaults.colors(

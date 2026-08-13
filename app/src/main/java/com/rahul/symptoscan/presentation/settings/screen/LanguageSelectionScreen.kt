@@ -38,16 +38,20 @@ fun LanguageSelectionScreen(
     )
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Language", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Language", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -82,11 +86,11 @@ private fun LanguageOption(
             .fillMaxWidth()
             .clickable { onClick() },
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) BluePrimary.copy(alpha = 0.05f) else Color.White
+            containerColor = if (isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else MaterialTheme.colorScheme.surface
         ),
         border = BorderStroke(
             width = 1.dp,
-            color = if (isSelected) BluePrimary else Color.LightGray.copy(alpha = 0.2f)
+            color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
         ),
         shape = RoundedCornerShape(16.dp)
     ) {
@@ -100,12 +104,12 @@ private fun LanguageOption(
                     text = display,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = if (isSelected) BluePrimary else TextDark
+                    color = if (isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = native,
                     fontSize = 13.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -113,7 +117,7 @@ private fun LanguageOption(
                 Icon(
                     imageVector = Icons.Default.Check,
                     contentDescription = null,
-                    tint = BluePrimary
+                    tint = MaterialTheme.colorScheme.primary
                 )
             }
         }

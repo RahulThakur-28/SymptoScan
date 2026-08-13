@@ -25,15 +25,15 @@ fun CompleteProfilePrompt(
             .fillMaxWidth()
             .padding(horizontal = 24.dp),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFEFF6FF)),
-        border = androidx.compose.foundation.BorderStroke(1.dp, BluePrimary.copy(alpha = 0.1f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f)),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Default.Info,
                     contentDescription = null,
-                    tint = BluePrimary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -41,23 +41,23 @@ fun CompleteProfilePrompt(
                     text = "Complete Your Health Profile",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = "Add a few more details to get more relevant health guidance.",
                 fontSize = 14.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(modifier = Modifier.height(16.dp))
             Button(
                 onClick = onClick,
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
+                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.primary)
             ) {
-                Text("Complete Profile", color = Color.White)
+                Text("Complete Profile", color = MaterialTheme.colorScheme.onPrimary)
             }
         }
     }

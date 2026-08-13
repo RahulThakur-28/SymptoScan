@@ -1,5 +1,6 @@
 package com.rahul.symptoscan.presentation.settings.screen
 
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
@@ -19,8 +20,8 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.settings.component.SettingsItem
 import com.rahul.symptoscan.presentation.settings.component.SettingsSection
 import com.rahul.symptoscan.presentation.settings.component.SettingsSwitchItem
+import com.rahul.symptoscan.ui.theme.ThemeMode
 import com.rahul.symptoscan.presentation.settings.viewmodel.SettingsViewModel
-import com.rahul.symptoscan.ui.theme.BackgroundLight
 import com.rahul.symptoscan.ui.theme.SymptoScanTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -32,19 +33,26 @@ fun SettingsScreen(
     viewModel: SettingsViewModel = viewModel(),
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    var showThemeDialog by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text("Settings", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
+            Surface(shadowElevation = 2.dp) {
+                TopAppBar(
+                    title = { Text("Settings", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack, 
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -55,14 +63,20 @@ fun SettingsScreen(
                 .padding(bottom = 32.dp)
         ) {
             SettingsSection(title = "APPEARANCE") {
-                SettingsSwitchItem(
-                    title = "Dark Mode",
-                    subtitle = if (uiState.isDarkMode) "Dark theme active" else "Light theme active",
+                SettingsItem(
+                    title = "Theme",
+                    subtitle = when(uiState.themeMode) {
+                        ThemeMode.System -> "System Default"
+                        ThemeMode.Light -> "Light"
+                        ThemeMode.Dark -> "Dark"
+                    },
                     icon = Icons.Outlined.DarkMode,
-                    checked = uiState.isDarkMode,
-                    onCheckedChange = viewModel::toggleDarkMode
+                    onClick = { showThemeDialog = true }
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp), 
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                )
                 SettingsItem(
                     title = "Language",
                     subtitle = uiState.currentLanguage,
@@ -79,7 +93,10 @@ fun SettingsScreen(
                     checked = uiState.pushNotifications,
                     onCheckedChange = { viewModel.togglePushNotifications(it) }
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp), 
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                )
                 SettingsSwitchItem(
                     title = "Email Reports",
                     subtitle = "Weekly health digest",
@@ -95,7 +112,10 @@ fun SettingsScreen(
                     icon = Icons.Outlined.PrivacyTip,
                     onClick = { onNavigate("privacy_policy") }
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp), 
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                )
                 SettingsItem(
                     title = "Terms of Service",
                     icon = Icons.Outlined.Description,
@@ -111,7 +131,10 @@ fun SettingsScreen(
                     onClick = { },
                     showChevron = false
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp), 
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                )
                 SettingsItem(
                     title = "Changelog",
                     icon = Icons.Outlined.History,
@@ -153,6 +176,61 @@ fun SettingsScreen(
                 }
             }
         )
+    }
+
+    if (showThemeDialog) {
+        AlertDialog(
+            onDismissRequest = { showThemeDialog = false },
+            title = { Text("Select Theme") },
+            text = {
+                Column {
+                    ThemeOption(
+                        label = "System Default",
+                        selected = uiState.themeMode == com.rahul.symptoscan.ui.theme.ThemeMode.System,
+                        onClick = {
+                            viewModel.setThemeMode(com.rahul.symptoscan.ui.theme.ThemeMode.System)
+                            showThemeDialog = false
+                        }
+                    )
+                    ThemeOption(
+                        label = "Light",
+                        selected = uiState.themeMode == com.rahul.symptoscan.ui.theme.ThemeMode.Light,
+                        onClick = {
+                            viewModel.setThemeMode(com.rahul.symptoscan.ui.theme.ThemeMode.Light)
+                            showThemeDialog = false
+                        }
+                    )
+                    ThemeOption(
+                        label = "Dark",
+                        selected = uiState.themeMode == com.rahul.symptoscan.ui.theme.ThemeMode.Dark,
+                        onClick = {
+                            viewModel.setThemeMode(com.rahul.symptoscan.ui.theme.ThemeMode.Dark)
+                            showThemeDialog = false
+                        }
+                    )
+                }
+            },
+            confirmButton = {}
+        )
+    }
+}
+
+@Composable
+private fun ThemeOption(
+    label: String,
+    selected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable { onClick() }
+            .padding(vertical = 12.dp),
+        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically
+    ) {
+        RadioButton(selected = selected, onClick = onClick)
+        Spacer(modifier = Modifier.width(12.dp))
+        Text(text = label, style = MaterialTheme.typography.bodyLarge)
     }
 }
 

@@ -41,7 +41,7 @@ fun RecentAssessmentsSection(
                 text = "Recent Assessments",
                 fontSize = 18.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onBackground
             )
             TextButton(onClick = onSeeAllClick) {
                 Text(
@@ -83,8 +83,8 @@ private fun AssessmentSmallCard(
             .fillMaxWidth()
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f)),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
     ) {
         Row(
@@ -113,12 +113,12 @@ private fun AssessmentSmallCard(
                     text = assessment.title,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E293B)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = assessment.time,
                     fontSize = 13.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             Column(horizontalAlignment = Alignment.End) {
@@ -138,7 +138,7 @@ private fun AssessmentSmallCard(
                 Text(
                     text = "Score: ${assessment.score}",
                     fontSize = 12.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontWeight = FontWeight.Medium
                 )
             }

@@ -9,6 +9,18 @@ import kotlinx.coroutines.flow.asStateFlow
 class PreferenceManager(context: Context) {
     private val prefs: SharedPreferences = context.getSharedPreferences("symptoscan_prefs", Context.MODE_PRIVATE)
 
+    private val _themeMode = MutableStateFlow(prefs.getString("theme_mode", "System") ?: "System")
+    val themeMode: StateFlow<String> = _themeMode.asStateFlow()
+
+    fun setThemeMode(mode: String) {
+        prefs.edit().putString("theme_mode", mode).apply()
+        _themeMode.value = mode
+    }
+
+    fun getThemeMode(): String {
+        return prefs.getString("theme_mode", "System") ?: "System"
+    }
+
     private val _isDarkMode = MutableStateFlow(prefs.getBoolean("dark_mode", false))
     val isDarkMode: StateFlow<Boolean> = _isDarkMode.asStateFlow()
 

@@ -29,9 +29,14 @@ class MainActivity : ComponentActivity() {
         val preferenceManager = Injection.preferenceManager
         
         setContent {
-            val isDarkMode by preferenceManager.isDarkMode.collectAsState()
+            val themeModeString by preferenceManager.themeMode.collectAsState()
+            val themeMode = try {
+                com.rahul.symptoscan.ui.theme.ThemeMode.valueOf(themeModeString)
+            } catch (e: Exception) {
+                com.rahul.symptoscan.ui.theme.ThemeMode.System
+            }
             
-            SymptoScanTheme(darkTheme = isDarkMode) {
+            SymptoScanTheme(themeMode = themeMode) {
                 navController = rememberNavController()
                 Surface(
                     modifier = Modifier.fillMaxSize(),

@@ -41,7 +41,7 @@ fun EditProfileScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             Surface(shadowElevation = 2.dp) {
                 TopAppBar(
@@ -50,7 +50,7 @@ fun EditProfileScreen(
                             "Edit Profile", 
                             fontSize = 18.sp, 
                             fontWeight = FontWeight.Bold,
-                            color = TextDark
+                            color = MaterialTheme.colorScheme.onSurface
                         ) 
                     },
                     navigationIcon = {
@@ -58,11 +58,11 @@ fun EditProfileScreen(
                             Icon(
                                 Icons.AutoMirrored.Filled.ArrowBack, 
                                 contentDescription = "Back",
-                                tint = TextDark
+                                tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             }
         }
@@ -152,12 +152,12 @@ fun EditProfileScreen(
                 if (uiState is EditProfileViewModel.EditProfileUiState.Error) {
                     Spacer(modifier = Modifier.height(Dimens.SpacingMedium))
                     Surface(
-                        color = Color.Red.copy(alpha = 0.1f),
+                        color = MaterialTheme.colorScheme.error.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
                             text = (uiState as EditProfileViewModel.EditProfileUiState.Error).message,
-                            color = Color.Red,
+                            color = MaterialTheme.colorScheme.error,
                             fontSize = 13.sp,
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp)
                         )

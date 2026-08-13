@@ -50,12 +50,22 @@ private val LightColorScheme = lightColorScheme(
     onError = Color.White
 )
 
+enum class ThemeMode {
+    System, Light, Dark
+}
+
 @Composable
 fun SymptoScanTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    themeMode: ThemeMode = ThemeMode.System,
     dynamicColor: Boolean = false,
     content: @Composable () -> Unit
 ) {
+    val darkTheme = when (themeMode) {
+        ThemeMode.Light -> false
+        ThemeMode.Dark -> true
+        ThemeMode.System -> isSystemInDarkTheme()
+    }
+
     val colorScheme = when {
         dynamicColor && Build.VERSION.SDK_INT >= Build.VERSION_CODES.S -> {
             val context = LocalContext.current
@@ -71,8 +81,12 @@ fun SymptoScanTheme(
             val window = (view.context as Activity).window
             window.statusBarColor = Color.Transparent.toArgb()
             window.navigationBarColor = Color.Transparent.toArgb()
-            WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
-            WindowCompat.getInsetsController(window, view).isAppearanceLightNavigationBars = !darkTheme
+            
+            val isAppearanceLight = !darkTheme
+            WindowCompat.getInsetsController(window, view).apply {
+                isAppearanceLightStatusBars = isAppearanceLight
+                isAppearanceLightNavigationBars = isAppearanceLight
+            }
         }
     }
 

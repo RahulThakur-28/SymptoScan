@@ -38,28 +38,32 @@ fun AiFollowUpScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Follow-up Questions") },
+                title = { Text("Follow-up Questions", color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
         if (uiState.isLoading) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = BluePrimary)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(16.dp))
                     Text(
                         text = if (uiState.questions.isEmpty()) "Generating questions..." else "Generating assessment...", 
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -77,8 +81,8 @@ fun AiFollowUpScreen(
                 LinearProgressIndicator(
                     progress = { (currentIdx + 1).toFloat() / totalQuestions },
                     modifier = Modifier.fillMaxWidth().height(8.dp),
-                    color = BluePrimary,
-                    trackColor = Color.LightGray.copy(alpha = 0.2f),
+                    color = MaterialTheme.colorScheme.primary,
+                    trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
                     strokeCap = androidx.compose.ui.graphics.StrokeCap.Round
                 )
                 
@@ -90,7 +94,7 @@ fun AiFollowUpScreen(
                             text = "Question ${currentIdx + 1} of $totalQuestions",
                             fontSize = 12.sp,
                             fontWeight = FontWeight.Bold,
-                            color = BluePrimary,
+                            color = MaterialTheme.colorScheme.primary,
                             letterSpacing = 1.sp
                         )
                         
@@ -100,7 +104,7 @@ fun AiFollowUpScreen(
                             text = question.question,
                             fontSize = 20.sp,
                             fontWeight = FontWeight.Bold,
-                            color = Color(0xFF1E293B),
+                            color = MaterialTheme.colorScheme.onBackground,
                             lineHeight = 28.sp
                         )
                         
@@ -113,9 +117,10 @@ fun AiFollowUpScreen(
                             placeholder = { Text("Type your answer here...") },
                             shape = RoundedCornerShape(16.dp),
                             colors = OutlinedTextFieldDefaults.colors(
-                                focusedContainerColor = Color.White,
-                                unfocusedContainerColor = Color.White,
-                                unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f)
+                                focusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                                unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                                focusedBorderColor = MaterialTheme.colorScheme.primary
                             )
                         )
                     }

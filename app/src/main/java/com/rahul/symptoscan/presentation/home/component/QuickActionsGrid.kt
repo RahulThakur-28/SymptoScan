@@ -31,15 +31,15 @@ fun QuickActionsGrid(
             text = "Quick Actions",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1E293B)
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(16.dp))
         Row(modifier = Modifier.fillMaxWidth()) {
             QuickActionCard(
                 title = "New\nAssessment",
                 icon = Icons.Rounded.MedicalServices,
-                containerColor = Color(0xFFEFF6FF),
-                iconColor = Color(0xFF2563EB),
+                containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                iconColor = MaterialTheme.colorScheme.primary,
                 onClick = onNewAssessment,
                 modifier = Modifier.weight(1f)
             )
@@ -47,8 +47,8 @@ fun QuickActionsGrid(
             QuickActionCard(
                 title = "View\nHistory",
                 icon = Icons.Rounded.Assignment,
-                containerColor = Color(0xFFF0FDF4),
-                iconColor = Color(0xFF22C55E),
+                containerColor = com.rahul.symptoscan.ui.theme.SuccessGreen.copy(alpha = 0.1f),
+                iconColor = com.rahul.symptoscan.ui.theme.SuccessGreen,
                 onClick = onViewHistory,
                 modifier = Modifier.weight(1f)
             )
@@ -58,8 +58,8 @@ fun QuickActionsGrid(
             QuickActionCard(
                 title = "Ask\nAI",
                 icon = Icons.Rounded.SmartToy,
-                containerColor = Color(0xFFFFF7ED),
-                iconColor = Color(0xFFF59E0B),
+                containerColor = com.rahul.symptoscan.ui.theme.WarningAmber.copy(alpha = 0.1f),
+                iconColor = com.rahul.symptoscan.ui.theme.WarningAmber,
                 onClick = onAskAI,
                 modifier = Modifier.weight(1f)
             )
@@ -67,8 +67,8 @@ fun QuickActionsGrid(
             QuickActionCard(
                 title = "Emergency",
                 icon = Icons.Rounded.Emergency,
-                containerColor = Color(0xFFFEF2F2),
-                iconColor = Color(0xFFEF4444),
+                containerColor = com.rahul.symptoscan.ui.theme.DangerRed.copy(alpha = 0.1f),
+                iconColor = com.rahul.symptoscan.ui.theme.DangerRed,
                 onClick = onEmergency,
                 modifier = Modifier.weight(1f)
             )
@@ -105,7 +105,7 @@ private fun QuickActionCard(
                 modifier = Modifier
                     .size(40.dp)
                     .clip(RoundedCornerShape(10.dp))
-                    .background(Color.White),
+                    .background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
@@ -119,7 +119,7 @@ private fun QuickActionCard(
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B),
+                color = MaterialTheme.colorScheme.onSurface,
                 lineHeight = 18.sp
             )
         }

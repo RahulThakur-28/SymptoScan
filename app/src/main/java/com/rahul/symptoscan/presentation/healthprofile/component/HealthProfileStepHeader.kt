@@ -72,7 +72,7 @@ fun HealthProfileProgress(
                     modifier = Modifier
                         .width(20.dp)
                         .height(2.dp)
-                        .background(if (isCompleted) BluePrimary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
+                        .background(if (isCompleted) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                         .offset(y = (-10).dp) // Adjust based on circle size
                 )
             }
@@ -95,16 +95,16 @@ private fun StepIndicator(
         Surface(
             modifier = Modifier.size(32.dp),
             shape = CircleShape,
-            color = if (isCompleted) BluePrimary else if (isActive) BluePrimary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
-            border = if (isActive && !isCompleted) androidx.compose.foundation.BorderStroke(2.dp, BluePrimary) else null
+            color = if (isCompleted) MaterialTheme.colorScheme.primary else if (isActive) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
+            border = if (isActive && !isCompleted) androidx.compose.foundation.BorderStroke(2.dp, MaterialTheme.colorScheme.primary) else null
         ) {
             Box(contentAlignment = Alignment.Center) {
                 if (isCompleted) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
+                    Icon(Icons.Default.Check, contentDescription = null, tint = MaterialTheme.colorScheme.onPrimary, modifier = Modifier.size(16.dp))
                 } else {
                     Text(
                         text = stepNumber.toString(),
-                        color = if (isActive) BluePrimary else MaterialTheme.colorScheme.onSurfaceVariant,
+                        color = if (isActive) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )

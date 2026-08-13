@@ -32,16 +32,20 @@ fun HelpSupportScreen(
     onNavigateToEmergency: () -> Unit
 ) {
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Help & Support", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Help & Support", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -58,13 +62,13 @@ fun HelpSupportScreen(
                 onValueChange = { },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search FAQ...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
                 shape = RoundedCornerShape(12.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedBorderColor = BluePrimary,
-                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f),
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
             
@@ -107,23 +111,28 @@ fun HelpSupportScreen(
             
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFFEF2F2)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, DangerRed.copy(alpha = 0.2f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.1f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f))
             ) {
                 Column(modifier = Modifier.padding(16.dp)) {
                     Row(verticalAlignment = Alignment.CenterVertically) {
-                        Icon(Icons.Rounded.Emergency, contentDescription = null, tint = DangerRed)
+                        Icon(Icons.Rounded.Emergency, contentDescription = null, tint = MaterialTheme.colorScheme.error)
                         Spacer(modifier = Modifier.width(12.dp))
-                        Text("Need immediate medical assistance?", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = TextDark)
+                        Text(
+                            "Need immediate medical assistance?", 
+                            fontSize = 14.sp, 
+                            fontWeight = FontWeight.Bold, 
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                     Spacer(modifier = Modifier.height(16.dp))
                     Button(
                         onClick = onNavigateToEmergency,
                         modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(containerColor = DangerRed),
+                        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Open Emergency Mode")
+                        Text("Open Emergency Mode", color = MaterialTheme.colorScheme.onError)
                     }
                 }
             }
@@ -139,7 +148,7 @@ private fun SectionTitle(title: String) {
         text = title,
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        color = Color.Gray,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         letterSpacing = 1.sp,
         modifier = Modifier.padding(bottom = 12.dp)
     )
@@ -155,8 +164,8 @@ private fun SupportActionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -165,15 +174,15 @@ private fun SupportActionCard(
             Box(
                 modifier = Modifier
                     .size(40.dp)
-                    .background(Color(0xFFF1F5F9), RoundedCornerShape(10.dp)),
+                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(10.dp)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(icon, contentDescription = null, tint = BluePrimary, modifier = Modifier.size(20.dp))
+                Icon(icon, contentDescription = null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(20.dp))
             }
             Spacer(modifier = Modifier.width(16.dp))
             Column {
-                Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = TextDark)
-                Text(subtitle, fontSize = 13.sp, color = Color.Gray)
+                Text(title, fontSize = 15.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                Text(subtitle, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
             }
         }
     }

@@ -9,6 +9,7 @@ data class HistoryUiState(
     val searchQuery: String = "",
     val selectedFilter: AssessmentStatus? = null, // null for 'All'
     val isLoading: Boolean = false,
+    val isRefreshing: Boolean = false,
     val error: String? = null,
     
     // Statistics derived from data

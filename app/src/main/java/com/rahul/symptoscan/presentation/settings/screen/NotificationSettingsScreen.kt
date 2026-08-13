@@ -31,16 +31,20 @@ fun NotificationSettingsScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Notifications", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Notifications", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -59,7 +63,10 @@ fun NotificationSettingsScreen(
                     checked = uiState.pushNotifications,
                     onCheckedChange = viewModel::togglePushNotifications
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp), 
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                )
                 SettingsSwitchItem(
                     title = "Email Reports",
                     subtitle = "Weekly health digest and insights",
@@ -74,7 +81,7 @@ fun NotificationSettingsScreen(
             Text(
                 text = "Note: These preferences control how SymptoScan communicates with you. You can change these at any time.",
                 fontSize = 12.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp
             )
         }

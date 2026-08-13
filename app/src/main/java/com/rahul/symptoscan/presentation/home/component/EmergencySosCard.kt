@@ -31,9 +31,9 @@ fun EmergencySosCard(
             .clickable { onClick() },
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color(0xFFFEF2F2)
+            containerColor = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f)
         ),
-        border = BorderStroke(1.dp, DangerRed.copy(alpha = 0.2f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f))
     ) {
         Row(
             modifier = Modifier.padding(16.dp),
@@ -43,13 +43,13 @@ fun EmergencySosCard(
                 modifier = Modifier
                     .size(48.dp)
                     .clip(CircleShape)
-                    .background(DangerRed),
+                    .background(MaterialTheme.colorScheme.error),
                 contentAlignment = Alignment.Center
             ) {
                 Icon(
                     imageVector = Icons.Rounded.Emergency,
                     contentDescription = null,
-                    tint = Color.White,
+                    tint = MaterialTheme.colorScheme.onError,
                     modifier = Modifier.size(24.dp)
                 )
             }
@@ -59,12 +59,12 @@ fun EmergencySosCard(
                     text = "Emergency SOS",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E293B)
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Text(
                     text = "Tap for emergency guidance & contacts",
                     fontSize = 13.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }

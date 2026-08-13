@@ -38,14 +38,18 @@ class HomeViewModel(
     }
 
     fun onRefresh() {
-        loadData()
+        loadData(isRefresh = true)
     }
 
-    fun loadData() {
+    fun loadData(isRefresh: Boolean = false) {
         val user = authRepository.getCurrentUser() ?: return
         
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            if (isRefresh) {
+                _uiState.update { it.copy(isRefreshing = true, error = null) }
+            } else {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+            }
             
             combine(
                 profileRepository.getUserProfile(user.id),
@@ -67,10 +71,11 @@ class HomeViewModel(
                     healthStatus = deriveHealthStatus(healthScore, history),
                     dailyHealthTip = healthTips.random(),
                     notificationCount = 0, // No real notification source yet
-                    isLoading = false
+                    isLoading = false,
+                    isRefreshing = false
                 ) }
             }.catch { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load data") }
+                _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Failed to load data") }
             }.collect()
         }
     }

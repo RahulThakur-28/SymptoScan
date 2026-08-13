@@ -9,14 +9,13 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.rounded.Info
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.rahul.symptoscan.ui.theme.DangerRed
 
 @Composable
 fun MedicalDisclaimer(
@@ -24,17 +23,22 @@ fun MedicalDisclaimer(
 ) {
     Surface(
         modifier = modifier,
-        color = Color(0xFFFEF2F2),
+        color = MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.5f),
         shape = RoundedCornerShape(12.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, DangerRed.copy(alpha = 0.2f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.error.copy(alpha = 0.2f))
     ) {
         Row(modifier = Modifier.padding(12.dp)) {
-            Icon(Icons.Rounded.Info, contentDescription = null, tint = DangerRed, modifier = Modifier.size(20.dp))
+            Icon(
+                imageVector = Icons.Rounded.Info, 
+                contentDescription = null, 
+                tint = MaterialTheme.colorScheme.error, 
+                modifier = Modifier.size(20.dp)
+            )
             Spacer(modifier = Modifier.width(12.dp))
             Text(
-                "Disclaimer: This AI assessment is for informational purposes only and does not constitute a medical diagnosis or professional advice. Always seek the advice of a qualified healthcare provider for any medical concerns.",
+                text = "Disclaimer: This AI assessment is for informational purposes only and does not constitute a medical diagnosis or professional advice. Always seek the advice of a qualified healthcare provider for any medical concerns.",
                 fontSize = 11.sp,
-                color = DangerRed,
+                color = MaterialTheme.colorScheme.onErrorContainer,
                 lineHeight = 16.sp
             )
         }

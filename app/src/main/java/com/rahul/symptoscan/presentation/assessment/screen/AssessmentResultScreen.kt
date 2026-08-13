@@ -53,18 +53,18 @@ fun AssessmentResultScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Surface(shadowElevation = 2.dp) {
                 TopAppBar(
-                    title = { Text("Assessment Result", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextDark) },
+                    title = { Text("Assessment Result", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDark)
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = MaterialTheme.colorScheme.onSurface)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             }
         }
@@ -72,9 +72,9 @@ fun AssessmentResultScreen(
         if (result == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                    CircularProgressIndicator(color = BluePrimary)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                     Spacer(modifier = Modifier.height(16.dp))
-                    Text("Processing your analysis...", color = Color.Gray, fontSize = 14.sp)
+                    Text("Processing your analysis...", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                 }
             }
         } else {
@@ -97,7 +97,7 @@ fun AssessmentResultScreen(
 
                     if (uiState.selectedImageUri != null) {
                         Surface(
-                            color = BluePrimary.copy(alpha = 0.08f),
+                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.08f),
                             shape = RoundedCornerShape(12.dp),
                             modifier = Modifier.padding(bottom = 20.dp)
                         ) {
@@ -108,14 +108,14 @@ fun AssessmentResultScreen(
                                 Icon(
                                     imageVector = Icons.Default.CheckCircle,
                                     contentDescription = null,
-                                    tint = BluePrimary,
+                                    tint = MaterialTheme.colorScheme.primary,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Spacer(modifier = Modifier.width(8.dp))
                                 Text(
                                     text = "Analysis included visual context from your photo",
                                     fontSize = 13.sp,
-                                    color = BluePrimary,
+                                    color = MaterialTheme.colorScheme.primary,
                                     fontWeight = FontWeight.SemiBold
                                 )
                             }
@@ -132,16 +132,16 @@ fun AssessmentResultScreen(
 
                     Card(
                         modifier = Modifier.fillMaxWidth(),
-                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
                         shape = RoundedCornerShape(20.dp),
-                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+                        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                     ) {
                         Text(
                             text = result.summary ?: "",
                             modifier = Modifier.padding(20.dp),
                             fontSize = 15.sp,
                             lineHeight = 24.sp,
-                            color = Color.DarkGray
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
 
@@ -150,7 +150,7 @@ fun AssessmentResultScreen(
                     ResultSection(
                         title = "Possible Explanations", 
                         items = result.possibleCauses ?: emptyList(), 
-                        iconColor = BluePrimary,
+                        iconColor = MaterialTheme.colorScheme.primary,
                         icon = Icons.Default.Info
                     )
 
@@ -177,14 +177,14 @@ fun AssessmentResultScreen(
 
                     // Disclaimer
                     Surface(
-                        color = Color.LightGray.copy(alpha = 0.1f),
+                        color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                         shape = RoundedCornerShape(12.dp),
                         modifier = Modifier.fillMaxWidth()
                     ) {
                         Text(
                             text = result.disclaimer ?: "This information is for general educational purposes and is not a medical diagnosis.",
                             fontSize = 11.sp,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                             modifier = Modifier.padding(16.dp),
                             lineHeight = 16.sp
@@ -195,8 +195,9 @@ fun AssessmentResultScreen(
                 }
 
                 Surface(
-                    color = Color.White,
-                    shadowElevation = 16.dp
+                    color = MaterialTheme.colorScheme.surface,
+                    shadowElevation = 16.dp,
+                    tonalElevation = 8.dp
                 ) {
                     Column(modifier = Modifier.padding(24.dp).navigationBarsPadding()) {
                         PrimaryButton(
@@ -209,10 +210,11 @@ fun AssessmentResultScreen(
                         OutlinedButton(
                             onClick = onAskAI,
                             modifier = Modifier.fillMaxWidth().height(56.dp),
-                            shape = RoundedCornerShape(12.dp),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, BluePrimary)
+                            shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.primary),
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                         ) {
-                            Text("Discuss with AI Assistant", color = BluePrimary, fontWeight = FontWeight.Bold)
+                            Text("Discuss with AI Assistant", fontWeight = FontWeight.Bold)
                         }
                     }
                 }
@@ -225,9 +227,9 @@ fun AssessmentResultScreen(
 private fun UrgencyBadge(urgency: String) {
     val color = when (urgency.lowercase()) {
         "emergency" -> DangerRed
-        "urgent" -> Color(0xFFF59E0B) // Using a manual orange color
+        "urgent" -> WarningAmber
         "routine" -> SuccessGreen
-        else -> BluePrimary
+        else -> MaterialTheme.colorScheme.primary
     }
 
     val label = when (urgency.lowercase()) {
@@ -257,9 +259,9 @@ private fun UrgencyBadge(urgency: String) {
 private fun ResultSection(title: String, items: List<String>, iconColor: Color, icon: ImageVector) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(16.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
@@ -274,7 +276,7 @@ private fun ResultSection(title: String, items: List<String>, iconColor: Color, 
                     text = title,
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             Spacer(modifier = Modifier.height(12.dp))
@@ -289,7 +291,7 @@ private fun ResultSection(title: String, items: List<String>, iconColor: Color, 
                     Text(
                         text = item, 
                         fontSize = 14.sp, 
-                        color = Color.DarkGray, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 20.sp
                     )
                 }

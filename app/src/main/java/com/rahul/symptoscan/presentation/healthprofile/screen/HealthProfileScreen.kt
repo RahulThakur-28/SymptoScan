@@ -218,10 +218,10 @@ private fun BodyStep(state: com.rahul.symptoscan.presentation.healthprofile.stat
                 ) {
                     Column {
                         Text("Your BMI", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text("${String.format("%.1f", state.bmi)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = BluePrimary)
+                        Text("${String.format("%.1f", state.bmi)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
                     }
                     Surface(
-                        color = if (state.bmiStatus == "Normal") MintGreen else WarningAmber.copy(alpha = 0.1f),
+                        color = if (state.bmiStatus == "Normal") SuccessGreen.copy(alpha = 0.1f) else WarningAmber.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(

@@ -32,16 +32,20 @@ fun RateSymptoScanScreen(
     var isSubmitted by remember { mutableStateOf(false) }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Rate SymptomScan", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Rate SymptomScan", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -55,10 +59,10 @@ fun RateSymptoScanScreen(
         ) {
             if (!isSubmitted) {
                 Text(
-                    "How would you rate SymptomScan?",
+                    text = "How would you rate SymptomScan?",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center
                 )
                 
@@ -72,10 +76,10 @@ fun RateSymptoScanScreen(
                 Spacer(modifier = Modifier.height(48.dp))
                 
                 Text(
-                    "Tell us what you think",
+                    text = "Tell us what you think",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onBackground,
                     modifier = Modifier.fillMaxWidth()
                 )
                 
@@ -87,11 +91,13 @@ fun RateSymptoScanScreen(
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(150.dp),
-                    placeholder = { Text("Share your feedback...", color = Color.Gray) },
+                    placeholder = { Text("Share your feedback...", color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)) },
                     shape = RoundedCornerShape(16.dp),
                     colors = OutlinedTextFieldDefaults.colors(
-                        focusedContainerColor = Color.White,
-                        unfocusedContainerColor = Color.White
+                        focusedContainerColor = MaterialTheme.colorScheme.surface,
+                        unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                        focusedBorderColor = MaterialTheme.colorScheme.primary,
+                        unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f)
                     )
                 )
                 
@@ -106,24 +112,24 @@ fun RateSymptoScanScreen(
                 Box(
                     modifier = Modifier
                         .size(80.dp)
-                        .background(BluePrimary.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(20.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text("❤️", fontSize = 40.sp)
                 }
                 Spacer(modifier = Modifier.height(24.dp))
                 Text(
-                    "Thank you for your feedback!",
+                    text = "Thank you for your feedback!",
                     fontSize = 20.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onBackground,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Text(
-                    "Your input helps us improve SymptomScan for everyone.",
+                    text = "Your input helps us improve SymptomScan for everyone.",
                     fontSize = 14.sp,
-                    color = Color.Gray,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
                 Spacer(modifier = Modifier.height(48.dp))
@@ -152,7 +158,7 @@ private fun RatingStars(
             Icon(
                 imageVector = if (i <= rating) Icons.Default.Star else Icons.Default.StarBorder,
                 contentDescription = null,
-                tint = if (i <= rating) Color(0xFFFFB800) else Color.LightGray,
+                tint = if (i <= rating) Color(0xFFFFB800) else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
                 modifier = Modifier
                     .size(48.dp)
                     .clickable { onRatingChange(i) }

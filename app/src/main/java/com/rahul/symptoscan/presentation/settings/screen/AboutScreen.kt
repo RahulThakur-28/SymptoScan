@@ -7,8 +7,10 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.outlined.Description
 import androidx.compose.material.icons.outlined.History
 import androidx.compose.material.icons.outlined.Policy
+import androidx.compose.material.icons.outlined.PrivacyTip
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -35,16 +37,20 @@ fun AboutScreen(
     onNavigateToChangelog: () -> Unit
 ) {
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("About", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("About", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -61,12 +67,12 @@ fun AboutScreen(
             // App Logo
             Surface(
                 modifier = Modifier.size(100.dp),
-                color = BluePrimary.copy(alpha = 0.1f),
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                 shape = RoundedCornerShape(24.dp)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Image(
-                        painter = painterResource(id = R.drawable.ic_launcher_foreground), // Fallback to launcher icon
+                        painter = painterResource(id = R.drawable.app_logo),
                         contentDescription = "SymptoScan Logo",
                         modifier = Modifier.size(80.dp)
                     )
@@ -79,13 +85,13 @@ fun AboutScreen(
                 text = "SymptoScan",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextDark
+                color = MaterialTheme.colorScheme.onBackground
             )
             
             Text(
                 text = "AI-powered health guidance and symptom assessment.",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(horizontal = 32.dp, vertical = 8.dp)
             )
@@ -95,8 +101,8 @@ fun AboutScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 shape = RoundedCornerShape(20.dp),
-                colors = CardDefaults.cardColors(containerColor = Color.White),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             ) {
                 Column(modifier = Modifier.padding(8.dp)) {
                     SettingsItem(
@@ -106,12 +112,35 @@ fun AboutScreen(
                         onClick = { },
                         showChevron = false
                     )
-                    HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp), 
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                    )
                     SettingsItem(
-                        title = "Changelog",
-                        subtitle = "See what's new",
+                        title = "What's New",
+                        subtitle = "Changelog",
                         icon = Icons.Outlined.History,
                         onClick = onNavigateToChangelog
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp), 
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                    )
+                    SettingsItem(
+                        title = "Privacy Policy",
+                        subtitle = "How we handle your data",
+                        icon = Icons.Outlined.PrivacyTip,
+                        onClick = onNavigateToPrivacy
+                    )
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp), 
+                        color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                    )
+                    SettingsItem(
+                        title = "Terms of Service",
+                        subtitle = "Terms and conditions",
+                        icon = Icons.Outlined.Description,
+                        onClick = onNavigateToTerms
                     )
                 }
             }
@@ -121,7 +150,14 @@ fun AboutScreen(
             Text(
                 text = "© 2026 SymptoScan AI. All rights reserved.",
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+            
+            Text(
+                text = "Made for general health guidance.",
+                fontSize = 11.sp,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                modifier = Modifier.padding(top = 4.dp)
             )
             
             Spacer(modifier = Modifier.height(32.dp))

@@ -25,7 +25,7 @@ fun SettingsSection(
             text = title,
             fontSize = 12.sp,
             fontWeight = FontWeight.Bold,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             letterSpacing = 1.sp,
             modifier = Modifier.padding(start = 24.dp, end = 24.dp, bottom = 12.dp)
         )
@@ -33,9 +33,9 @@ fun SettingsSection(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 16.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
         ) {
             Column {
                 content()
@@ -64,7 +64,7 @@ fun SettingsItem(
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = if (isDestructive) Color.Red else Color.Gray,
+                tint = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.size(24.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
@@ -75,13 +75,13 @@ fun SettingsItem(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = if (isDestructive) Color.Red else TextDark
+                color = if (isDestructive) MaterialTheme.colorScheme.error else MaterialTheme.colorScheme.onSurface
             )
             if (subtitle != null) {
                 Text(
                     text = subtitle,
                     fontSize = 13.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -90,7 +90,7 @@ fun SettingsItem(
             Icon(
                 imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
                 contentDescription = null,
-                tint = Color.LightGray,
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 modifier = Modifier.size(20.dp)
             )
         }
@@ -114,7 +114,7 @@ fun SettingsSwitchItem(
         Icon(
             imageVector = icon,
             contentDescription = null,
-            tint = Color.Gray,
+            tint = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.size(24.dp)
         )
         Spacer(modifier = Modifier.width(16.dp))
@@ -124,12 +124,12 @@ fun SettingsSwitchItem(
                 text = title,
                 fontSize = 15.sp,
                 fontWeight = FontWeight.Medium,
-                color = TextDark
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = subtitle,
                 fontSize = 13.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         
@@ -137,7 +137,7 @@ fun SettingsSwitchItem(
             checked = checked,
             onCheckedChange = onCheckedChange,
             colors = SwitchDefaults.colors(
-                checkedThumbColor = Color.White,
+                checkedThumbColor = MaterialTheme.colorScheme.onPrimary,
                 checkedTrackColor = MaterialTheme.colorScheme.primary
             )
         )

@@ -28,16 +28,20 @@ fun PrivacySecurityScreen(
     onNavigateToDeleteAccount: () -> Unit
 ) {
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Privacy & Security", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Privacy & Security", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -55,7 +59,10 @@ fun PrivacySecurityScreen(
                     icon = Icons.Outlined.PrivacyTip,
                     onClick = onNavigateToPrivacyPolicy
                 )
-                HorizontalDivider(modifier = Modifier.padding(horizontal = 16.dp), color = Color.LightGray.copy(alpha = 0.2f))
+                HorizontalDivider(
+                    modifier = Modifier.padding(horizontal = 16.dp), 
+                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
+                )
                 SettingsItem(
                     title = "Terms of Service",
                     subtitle = "Usage agreement",
@@ -79,7 +86,7 @@ fun PrivacySecurityScreen(
             Text(
                 text = "SymptoScan uses end-to-end encryption for your sensitive health data stored in Supabase. We do not share your personal identification with third parties.",
                 fontSize = 12.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp
             )
         }

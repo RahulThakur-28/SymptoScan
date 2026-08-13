@@ -50,16 +50,20 @@ fun EmergencyScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Emergency Mode", color = DangerRed, fontWeight = FontWeight.Bold) },
+                title = { Text("Emergency Mode", color = MaterialTheme.colorScheme.error, fontWeight = FontWeight.Bold) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -75,10 +79,10 @@ fun EmergencyScreen(
                 modifier = Modifier
                     .size(80.dp)
                     .clip(CircleShape)
-                    .background(DangerRed.copy(alpha = 0.1f)),
+                    .background(MaterialTheme.colorScheme.error.copy(alpha = 0.1f)),
                 contentAlignment = Alignment.Center
             ) {
-                Icon(Icons.Rounded.Emergency, contentDescription = null, tint = DangerRed, modifier = Modifier.size(48.dp))
+                Icon(Icons.Rounded.Emergency, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(48.dp))
             }
 
             Spacer(modifier = Modifier.height(24.dp))
@@ -87,13 +91,13 @@ fun EmergencyScreen(
                 text = "Emergency Assistance",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = TextDark
+                color = MaterialTheme.colorScheme.onBackground
             )
             
             Text(
                 text = "Please stay calm. Help is available.",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
 
@@ -118,7 +122,7 @@ fun EmergencyScreen(
                 modifier = Modifier.fillMaxWidth(),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 letterSpacing = 1.sp
             )
             Spacer(modifier = Modifier.height(12.dp))
@@ -128,8 +132,8 @@ fun EmergencyScreen(
                 Card(
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                 ) {
                     Column(modifier = Modifier.padding(20.dp)) {
                         Row(verticalAlignment = Alignment.CenterVertically) {
@@ -137,18 +141,18 @@ fun EmergencyScreen(
                                 modifier = Modifier
                                     .size(40.dp)
                                     .clip(CircleShape)
-                                    .background(Color(0xFFF1F5F9)),
+                                    .background(MaterialTheme.colorScheme.surfaceVariant),
                                 contentAlignment = Alignment.Center
                             ) {
-                                Text(contact.name.take(1).uppercase(), fontWeight = FontWeight.Bold, color = DangerRed)
+                                Text(contact.name.take(1).uppercase(), fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.error)
                             }
                             Spacer(modifier = Modifier.width(16.dp))
                             Column(modifier = Modifier.weight(1f)) {
-                                Text(contact.name, fontSize = 16.sp, fontWeight = FontWeight.Bold)
-                                Text(contact.relationship, fontSize = 13.sp, color = Color.Gray)
+                                Text(contact.name, fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
+                                Text(contact.relationship, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                             IconButton(onClick = onEditEmergencyContact) {
-                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = Color.Gray)
+                                Icon(Icons.Default.Edit, contentDescription = "Edit", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                         
@@ -162,7 +166,7 @@ fun EmergencyScreen(
                                 },
                                 modifier = Modifier.weight(1f),
                                 shape = RoundedCornerShape(12.dp),
-                                colors = ButtonDefaults.buttonColors(containerColor = DangerRed)
+                                colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.error)
                             ) {
                                 Icon(Icons.Default.Call, contentDescription = null, modifier = Modifier.size(18.dp))
                                 Spacer(modifier = Modifier.width(8.dp))
@@ -173,9 +177,9 @@ fun EmergencyScreen(
                                 onClick = { showDeleteDialog = true },
                                 modifier = Modifier.weight(0.5f),
                                 shape = RoundedCornerShape(12.dp),
-                                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+                                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
                             ) {
-                                Text("Remove", color = Color.Gray)
+                                Text("Remove", color = MaterialTheme.colorScheme.onSurfaceVariant)
                             }
                         }
                     }
@@ -185,18 +189,18 @@ fun EmergencyScreen(
                     onClick = onAddEmergencyContact,
                     modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(16.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                 ) {
                     Column(
                         modifier = Modifier.padding(24.dp),
                         horizontalAlignment = Alignment.CenterHorizontally
                     ) {
-                        Text("No emergency contact added", color = Color.Gray, fontSize = 14.sp)
+                        Text("No emergency contact added", color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 14.sp)
                         Spacer(modifier = Modifier.height(12.dp))
                         Text(
                             text = "+ Add Emergency Contact",
-                            color = DangerRed,
+                            color = MaterialTheme.colorScheme.error,
                             fontWeight = FontWeight.Bold,
                             fontSize = 15.sp
                         )
@@ -234,7 +238,7 @@ fun EmergencyScreen(
                         viewModel.removeEmergencyContact()
                         showDeleteDialog = false
                     },
-                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Red)
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
                 ) {
                     Text("Remove")
                 }
@@ -255,7 +259,7 @@ private fun SectionHeader(title: String) {
         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
         fontSize = 12.sp,
         fontWeight = FontWeight.Bold,
-        color = Color.Gray,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         letterSpacing = 1.sp
     )
 }
@@ -270,21 +274,21 @@ private fun EmergencyActionCard(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = DangerRed)
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.error)
     ) {
         Row(
             modifier = Modifier.padding(20.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Column(modifier = Modifier.weight(1f)) {
-                Text(text = title, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
-                Text(text = number, color = Color.White, fontSize = 24.sp, fontWeight = FontWeight.Black)
-                Text(text = subtitle, color = Color.White.copy(alpha = 0.8f), fontSize = 13.sp)
+                Text(text = title, color = MaterialTheme.colorScheme.onError.copy(alpha = 0.8f), fontSize = 13.sp)
+                Text(text = number, color = MaterialTheme.colorScheme.onError, fontSize = 24.sp, fontWeight = FontWeight.Black)
+                Text(text = subtitle, color = MaterialTheme.colorScheme.onError.copy(alpha = 0.8f), fontSize = 13.sp)
             }
             FloatingActionButton(
                 onClick = onCall,
-                containerColor = Color.White,
-                contentColor = DangerRed,
+                containerColor = MaterialTheme.colorScheme.onError,
+                contentColor = MaterialTheme.colorScheme.error,
                 shape = CircleShape
             ) {
                 Icon(Icons.Default.Call, contentDescription = "Call")
@@ -297,13 +301,13 @@ private fun EmergencyActionCard(
 private fun FirstAidItem(title: String, description: String) {
     Card(
         modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
-            Text(text = title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = TextDark)
+            Text(text = title, fontWeight = FontWeight.Bold, fontSize = 15.sp, color = MaterialTheme.colorScheme.onSurface)
             Spacer(modifier = Modifier.height(4.dp))
-            Text(text = description, fontSize = 13.sp, color = Color.Gray, lineHeight = 18.sp)
+            Text(text = description, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 18.sp)
         }
     }
 }
@@ -311,8 +315,8 @@ private fun FirstAidItem(title: String, description: String) {
 @Composable
 private fun WarningSign(text: String) {
     Row(modifier = Modifier.padding(vertical = 4.dp).fillMaxWidth()) {
-        Icon(Icons.Rounded.Info, contentDescription = null, tint = DangerRed, modifier = Modifier.size(18.dp))
+        Icon(Icons.Rounded.Info, contentDescription = null, tint = MaterialTheme.colorScheme.error, modifier = Modifier.size(18.dp))
         Spacer(modifier = Modifier.width(12.dp))
-        Text(text = text, fontSize = 13.sp, color = Color.Gray)
+        Text(text = text, fontSize = 13.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
     }
 }

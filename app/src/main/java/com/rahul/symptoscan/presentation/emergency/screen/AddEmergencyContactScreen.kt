@@ -35,16 +35,20 @@ fun AddEmergencyContactScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Emergency Contact", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Emergency Contact", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -60,12 +64,12 @@ fun AddEmergencyContactScreen(
                 text = "Emergency Contact Details",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Bold,
-                color = com.rahul.symptoscan.ui.theme.TextDark
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
                 text = "Provide information for your primary emergency contact person.",
                 fontSize = 14.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.padding(top = 4.dp)
             )
 
@@ -98,7 +102,7 @@ fun AddEmergencyContactScreen(
 
             if (uiState.error != null) {
                 Spacer(modifier = Modifier.height(16.dp))
-                Text(text = uiState.error!!, color = Color.Red, fontSize = 12.sp)
+                Text(text = uiState.error!!, color = MaterialTheme.colorScheme.error, fontSize = 12.sp)
             }
 
             Spacer(modifier = Modifier.height(48.dp))
@@ -115,9 +119,10 @@ fun AddEmergencyContactScreen(
                 onClick = onNavigateBack,
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(12.dp),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.5f))
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
+                colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
             ) {
-                Text("Cancel", color = Color.Gray)
+                Text("Cancel")
             }
         }
     }

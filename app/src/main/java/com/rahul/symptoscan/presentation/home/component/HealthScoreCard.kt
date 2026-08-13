@@ -34,9 +34,9 @@ fun HealthScoreCard(
             .padding(horizontal = 24.dp),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(
-            containerColor = Color.White.copy(alpha = 0.9f)
+            containerColor = MaterialTheme.colorScheme.surface.copy(alpha = 0.9f)
         ),
-        border = BorderStroke(1.dp, Color.White.copy(alpha = 0.5f))
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.onSurface.copy(alpha = 0.1f))
     ) {
         Column(
             modifier = Modifier.padding(20.dp)
@@ -49,7 +49,7 @@ fun HealthScoreCard(
                 Column {
                     Text(
                         text = "HEALTH SCORE",
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         letterSpacing = 1.sp
@@ -59,12 +59,12 @@ fun HealthScoreCard(
                             text = score.toString(),
                             fontSize = 44.sp,
                             fontWeight = FontWeight.Black,
-                            color = Color(0xFF1E293B)
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = "/100",
                             fontSize = 18.sp,
-                            color = Color.Gray,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(bottom = 8.dp, start = 2.dp)
                         )
                     }
@@ -92,7 +92,7 @@ fun HealthScoreCard(
             }
 
             Spacer(modifier = Modifier.height(20.dp))
-            HorizontalDivider(color = Color.LightGray.copy(alpha = 0.3f))
+            HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
             Spacer(modifier = Modifier.height(20.dp))
 
             Row(
@@ -118,7 +118,7 @@ private fun HealthScoreProgress(
         CircularProgressIndicator(
             progress = { 1f },
             modifier = Modifier.fillMaxSize(),
-            color = Color.LightGray.copy(alpha = 0.2f),
+            color = MaterialTheme.colorScheme.surfaceVariant,
             strokeWidth = 8.dp,
             strokeCap = StrokeCap.Round,
         )
@@ -133,7 +133,7 @@ private fun HealthScoreProgress(
             text = "${(progress * 100).toInt()}%",
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1E293B)
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -145,12 +145,12 @@ private fun StatItem(label: String, value: String) {
             text = value,
             fontSize = 16.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1E293B)
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = label,
             fontSize = 12.sp,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -161,6 +161,6 @@ private fun StatDivider() {
         modifier = Modifier
             .height(30.dp)
             .width(1.dp)
-            .background(Color.LightGray.copy(alpha = 0.3f))
+            .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     )
 }

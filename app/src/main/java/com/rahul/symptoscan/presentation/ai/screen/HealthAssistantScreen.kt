@@ -26,14 +26,9 @@ import com.rahul.symptoscan.presentation.ai.component.HealthAssistantEmptyState
 import com.rahul.symptoscan.presentation.ai.component.HealthAssistantInput
 import com.rahul.symptoscan.presentation.ai.component.HealthMessageBubble
 import com.rahul.symptoscan.presentation.ai.viewmodel.HealthAssistantViewModel
-import com.rahul.symptoscan.ui.theme.BackgroundLight
-import com.rahul.symptoscan.ui.theme.BluePrimary
-import com.rahul.symptoscan.ui.theme.TextDark
-
 import com.rahul.symptoscan.presentation.home.component.HomeBottomNavigation
-import com.rahul.symptoscan.ui.theme.BackgroundLight
 import com.rahul.symptoscan.ui.theme.BluePrimary
-import com.rahul.symptoscan.ui.theme.TextDark
+import com.rahul.symptoscan.ui.theme.SymptoScanTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -41,24 +36,43 @@ fun HealthAssistantScreen(
     onNavigate: (String) -> Unit,
     onBackClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    viewModel: HealthAssistantViewModel = viewModel()
+    viewModel: HealthAssistantViewModel = viewModel(),
+    showScaffold: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     
-    HealthAssistantContent(
-        uiState = uiState,
-        onNavigate = onNavigate,
-        onBackClick = onBackClick,
-        onHistoryClick = onHistoryClick,
-        onInputChange = viewModel::onInputChange,
-        onSendClick = viewModel::sendMessage,
-        onNewChatClick = viewModel::startNewConversation,
-        onSuggestionClick = { suggestion ->
-            viewModel.onInputChange(suggestion)
-            viewModel.sendMessage()
-        },
-        onClearError = viewModel::clearError
-    )
+    if (showScaffold) {
+        HealthAssistantContent(
+            uiState = uiState,
+            onNavigate = onNavigate,
+            onBackClick = onBackClick,
+            onHistoryClick = onHistoryClick,
+            onInputChange = viewModel::onInputChange,
+            onSendClick = viewModel::sendMessage,
+            onNewChatClick = viewModel::startNewConversation,
+            onSuggestionClick = { suggestion ->
+                viewModel.onInputChange(suggestion)
+                viewModel.sendMessage()
+            },
+            onClearError = viewModel::clearError
+        )
+    } else {
+        HealthAssistantContent(
+            uiState = uiState,
+            onNavigate = onNavigate,
+            onBackClick = onBackClick,
+            onHistoryClick = onHistoryClick,
+            onInputChange = viewModel::onInputChange,
+            onSendClick = viewModel::sendMessage,
+            onNewChatClick = viewModel::startNewConversation,
+            onSuggestionClick = { suggestion ->
+                viewModel.onInputChange(suggestion)
+                viewModel.sendMessage()
+            },
+            onClearError = viewModel::clearError,
+            showScaffold = false
+        )
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -72,7 +86,8 @@ fun HealthAssistantContent(
     onSendClick: () -> Unit,
     onNewChatClick: () -> Unit,
     onSuggestionClick: (String) -> Unit,
-    onClearError: () -> Unit
+    onClearError: () -> Unit,
+    showScaffold: Boolean = true
 ) {
     val snackbarHostState = remember { SnackbarHostState() }
     val listState = rememberLazyListState()
@@ -93,111 +108,189 @@ fun HealthAssistantContent(
         }
     }
 
-    Scaffold(
-        containerColor = MaterialTheme.colorScheme.background,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
-        topBar = {
-            TopAppBar(
-                title = {
-                    Column {
-                        Text(
-                            text = "Health Assistant",
-                            fontSize = 18.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onBackground
-                        )
-                        Text(
-                            text = "General health information",
-                            fontSize = 12.sp,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onHistoryClick) {
-                        Icon(
-                            Icons.Default.History, 
-                            contentDescription = "History",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                    TextButton(
-                        onClick = onNewChatClick,
-                        colors = ButtonDefaults.textButtonColors(contentColor = BluePrimary)
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                        Spacer(modifier = Modifier.width(4.dp))
-                        Text("New", fontWeight = FontWeight.SemiBold)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+    if (showScaffold) {
+        Scaffold(
+            containerColor = MaterialTheme.colorScheme.background,
+            snackbarHost = { SnackbarHost(snackbarHostState) },
+            topBar = {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(
+                                text = "Health Assistant",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "General health information",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onHistoryClick) {
+                            Icon(
+                                Icons.Default.History, 
+                                contentDescription = "History",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        TextButton(
+                            onClick = onNewChatClick,
+                            colors = ButtonDefaults.textButtonColors(contentColor = BluePrimary)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New", fontWeight = FontWeight.SemiBold)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                )
+            },
+            bottomBar = {
+                if (uiState.messages.isEmpty()) {
+                    HomeBottomNavigation(
+                        currentRoute = "ai",
+                        onNavigate = onNavigate
+                    )
+                }
+            }
+        ) { paddingValues ->
+            AssistantMainLayout(
+                paddingValues = paddingValues,
+                uiState = uiState,
+                onSuggestionClick = onSuggestionClick,
+                listState = listState,
+                onInputChange = onInputChange,
+                onSendClick = onSendClick
             )
-        },
-        bottomBar = {
-            if (uiState.messages.isEmpty()) {
-                HomeBottomNavigation(
-                    currentRoute = "ai",
-                    onNavigate = onNavigate
+        }
+    } else {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Surface(shadowElevation = 2.dp) {
+                TopAppBar(
+                    title = {
+                        Column {
+                            Text(
+                                text = "Health Assistant",
+                                fontSize = 18.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onBackground
+                            )
+                            Text(
+                                text = "General health information",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onHistoryClick) {
+                            Icon(
+                                Icons.Default.History, 
+                                contentDescription = "History",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                        TextButton(
+                            onClick = onNewChatClick,
+                            colors = ButtonDefaults.textButtonColors(contentColor = BluePrimary)
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("New", fontWeight = FontWeight.SemiBold)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             }
+            AssistantMainLayout(
+                paddingValues = PaddingValues(0.dp),
+                uiState = uiState,
+                onSuggestionClick = onSuggestionClick,
+                listState = listState,
+                onInputChange = onInputChange,
+                onSendClick = onSendClick
+            )
         }
-    ) { paddingValues ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(paddingValues)
-        ) {
-            Box(modifier = Modifier.weight(1f)) {
-                if (uiState.messages.isEmpty() && !uiState.isLoadingMessages) {
-                    HealthAssistantEmptyState(
-                        suggestions = listOf(
-                            "Common causes of headache",
-                            "How can I improve my sleep?",
-                            "What can cause fatigue?",
-                            "When should I see a doctor for a cough?"
-                        ),
-                        onSuggestionClick = onSuggestionClick
-                    )
-                } else if (uiState.isLoadingMessages) {
-                    Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                        CircularProgressIndicator(color = BluePrimary)
-                    }
-                } else {
-                    LazyColumn(
-                        state = listState,
-                        modifier = Modifier.fillMaxSize(),
-                        contentPadding = PaddingValues(16.dp)
-                    ) {
-                        items(uiState.messages) { message ->
-                            HealthMessageBubble(message = message)
-                        }
+    }
+}
 
-                        if (uiState.isSendingMessage) {
-                            item {
-                                TypingIndicator()
-                            }
+@Composable
+private fun AssistantMainLayout(
+    paddingValues: PaddingValues,
+    uiState: com.rahul.symptoscan.presentation.ai.state.HealthAssistantUiState,
+    onSuggestionClick: (String) -> Unit,
+    listState: LazyListState,
+    onInputChange: (String) -> Unit,
+    onSendClick: () -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .padding(paddingValues)
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
+            if (uiState.messages.isEmpty() && !uiState.isLoadingMessages) {
+                HealthAssistantEmptyState(
+                    suggestions = listOf(
+                        "Common causes of headache",
+                        "How can I improve my sleep?",
+                        "What can cause fatigue?",
+                        "When should I see a doctor for a cough?"
+                    ),
+                    onSuggestionClick = onSuggestionClick
+                )
+            } else if (uiState.isLoadingMessages) {
+                Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(color = BluePrimary)
+                }
+            } else {
+                LazyColumn(
+                    state = listState,
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(16.dp)
+                ) {
+                    items(uiState.messages) { message ->
+                        HealthMessageBubble(message = message)
+                    }
+
+                    if (uiState.isSendingMessage) {
+                        item {
+                            TypingIndicator()
                         }
                     }
                 }
             }
-
-            HealthAssistantInput(
-                value = uiState.inputText,
-                onValueChange = onInputChange,
-                onSendClick = onSendClick,
-                isEnabled = true,
-                isSending = uiState.isSendingMessage
-            )
         }
+
+        HealthAssistantInput(
+            value = uiState.inputText,
+            onValueChange = onInputChange,
+            onSendClick = onSendClick,
+            isEnabled = true,
+            isSending = uiState.isSendingMessage
+        )
     }
 }
 
@@ -235,66 +328,4 @@ private fun TypingIndicator() {
             }
         }
     }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HealthAssistantScreenEmptyPreview() {
-    HealthAssistantContent(
-        uiState = com.rahul.symptoscan.presentation.ai.state.HealthAssistantUiState(
-            messages = emptyList(),
-            isLoadingMessages = false
-        ),
-        onNavigate = {},
-        onBackClick = {},
-        onHistoryClick = {},
-        onInputChange = {},
-        onSendClick = {},
-        onNewChatClick = {},
-        onSuggestionClick = {},
-        onClearError = {}
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HealthAssistantScreenChatPreview() {
-    HealthAssistantContent(
-        uiState = com.rahul.symptoscan.presentation.ai.state.HealthAssistantUiState(
-            messages = listOf(
-                HealthMessage("1", "c1", "u1", "user", "What can cause fatigue?", null),
-                HealthMessage("2", "c1", "u1", "assistant", "Fatigue can be caused by many factors, including lack of sleep, stress, poor diet, or underlying medical conditions like anemia or thyroid issues.", null)
-            ),
-            isLoadingMessages = false
-        ),
-        onNavigate = {},
-        onBackClick = {},
-        onHistoryClick = {},
-        onInputChange = {},
-        onSendClick = {},
-        onNewChatClick = {},
-        onSuggestionClick = {},
-        onClearError = {}
-    )
-}
-
-@Preview(showBackground = true)
-@Composable
-fun HealthAssistantScreenLoadingPreview() {
-    HealthAssistantContent(
-        uiState = com.rahul.symptoscan.presentation.ai.state.HealthAssistantUiState(
-            messages = listOf(
-                HealthMessage("1", "c1", "u1", "user", "How to improve sleep?", null)
-            ),
-            isSendingMessage = true
-        ),
-        onNavigate = {},
-        onBackClick = {},
-        onHistoryClick = {},
-        onInputChange = {},
-        onSendClick = {},
-        onNewChatClick = {},
-        onSuggestionClick = {},
-        onClearError = {}
-    )
 }

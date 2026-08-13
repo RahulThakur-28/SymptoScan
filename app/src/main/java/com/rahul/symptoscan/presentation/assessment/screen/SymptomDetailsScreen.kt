@@ -44,7 +44,7 @@ fun SymptomDetailsScreen(
     }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             Surface(shadowElevation = 3.dp) {
@@ -54,15 +54,19 @@ fun SymptomDetailsScreen(
                             "Assessment Details", 
                             fontSize = 18.sp, 
                             fontWeight = FontWeight.Bold,
-                            color = TextDark
+                            color = MaterialTheme.colorScheme.onSurface
                         ) 
                     },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
-                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDark)
+                            Icon(
+                                Icons.AutoMirrored.Filled.ArrowBack, 
+                                contentDescription = "Back", 
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
                 )
             }
         }
@@ -88,7 +92,7 @@ fun SymptomDetailsScreen(
                     Text(
                         text = "The more details you provide, the more accurate the guidance will be.",
                         fontSize = 14.sp,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         modifier = Modifier.padding(top = 4.dp)
                     )
                 }
@@ -125,7 +129,7 @@ fun SymptomDetailsScreen(
             }
 
             Surface(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 8.dp,
                 shadowElevation = 16.dp
             ) {
@@ -152,16 +156,16 @@ private fun SymptomDetailItem(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(20.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
                         .size(48.dp)
-                        .background(BluePrimary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                        .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
                     Text(text = icon, fontSize = 24.sp)
@@ -171,7 +175,7 @@ private fun SymptomDetailItem(
                     text = name, 
                     fontSize = 18.sp, 
                     fontWeight = FontWeight.Bold,
-                    color = TextDark
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             
@@ -226,9 +230,9 @@ private fun AssessmentLevelInfo(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(20.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Text(
@@ -253,12 +257,12 @@ private fun AssessmentLevelInfo(
                     text = "${String.format("%.1f", temperature)}°F", 
                     fontSize = 24.sp, 
                     fontWeight = FontWeight.Black, 
-                    color = BluePrimary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Surface(
                     color = when(tempStatus) {
-                        "Normal" -> Color(0xFFF0FDF4)
-                        else -> Color(0xFFFEF2F2)
+                        "Normal" -> com.rahul.symptoscan.ui.theme.SuccessGreen.copy(alpha = 0.1f)
+                        else -> com.rahul.symptoscan.ui.theme.DangerRed.copy(alpha = 0.1f)
                     },
                     shape = RoundedCornerShape(8.dp)
                 ) {
@@ -268,8 +272,8 @@ private fun AssessmentLevelInfo(
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold,
                         color = when(tempStatus) {
-                            "Normal" -> Color(0xFF16A34A)
-                            else -> Color(0xFFDC2626)
+                            "Normal" -> com.rahul.symptoscan.ui.theme.SuccessGreen
+                            else -> com.rahul.symptoscan.ui.theme.DangerRed
                         }
                     )
                 }
@@ -281,9 +285,9 @@ private fun AssessmentLevelInfo(
                 valueRange = 91f..108f,
                 steps = 170, // 0.1 increments roughly
                 colors = SliderDefaults.colors(
-                    thumbColor = BluePrimary,
-                    activeTrackColor = BluePrimary,
-                    inactiveTrackColor = Color.LightGray.copy(alpha = 0.3f)
+                    thumbColor = MaterialTheme.colorScheme.primary,
+                    activeTrackColor = MaterialTheme.colorScheme.primary,
+                    inactiveTrackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
                 )
             )
 
@@ -303,16 +307,16 @@ private fun AssessmentLevelInfo(
                     Text(
                         "Describe anything additional about your symptoms, triggers, or relevant context...", 
                         fontSize = 14.sp,
-                        color = Color.Gray
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     ) 
                 },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
                 shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f),
-                    focusedBorderColor = BluePrimary,
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface
                 )
             )
         }
@@ -329,14 +333,19 @@ private fun DetailSlider(
 ) {
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
         Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(label, fontSize = 14.sp, color = Color.Gray)
-            Text("${value.toInt()}/10", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = BluePrimary)
+            Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+            Text("${value.toInt()}/10", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
         }
         Slider(
             value = value,
             onValueChange = onValueChange,
             valueRange = range,
-            steps = steps
+            steps = steps,
+            colors = SliderDefaults.colors(
+                thumbColor = MaterialTheme.colorScheme.primary,
+                activeTrackColor = MaterialTheme.colorScheme.primary,
+                inactiveTrackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+            )
         )
     }
 }
@@ -350,7 +359,12 @@ private fun DetailChips(
     onSelected: (String) -> Unit
 ) {
     Column(modifier = Modifier.padding(bottom = 16.dp)) {
-        Text(label, fontSize = 14.sp, color = Color.Gray, modifier = Modifier.padding(bottom = 8.dp))
+        Text(
+            label, 
+            fontSize = 14.sp, 
+            color = MaterialTheme.colorScheme.onSurfaceVariant, 
+            modifier = Modifier.padding(bottom = 8.dp)
+        )
         FlowRow(
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalArrangement = Arrangement.spacedBy(8.dp)
@@ -362,14 +376,16 @@ private fun DetailChips(
                     onClick = { onSelected(option) },
                     label = { Text(option) },
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = BluePrimary.copy(alpha = 0.1f),
-                        selectedLabelColor = BluePrimary
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        selectedLabelColor = MaterialTheme.colorScheme.primary,
+                        containerColor = MaterialTheme.colorScheme.surface,
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant
                     ),
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
                         selected = isSelected,
-                        borderColor = Color.LightGray.copy(alpha = 0.3f),
-                        selectedBorderColor = BluePrimary
+                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                        selectedBorderColor = MaterialTheme.colorScheme.primary
                     )
                 )
             }

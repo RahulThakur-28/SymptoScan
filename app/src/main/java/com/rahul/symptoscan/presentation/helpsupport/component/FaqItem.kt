@@ -26,8 +26,8 @@ fun FaqItem(
     
     Card(
         modifier = modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -41,13 +41,13 @@ fun FaqItem(
                     text = question,
                     fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextDark,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.weight(1f)
                 )
                 Icon(
                     imageVector = if (expanded) Icons.Default.KeyboardArrowUp else Icons.Default.KeyboardArrowDown,
                     contentDescription = null,
-                    tint = Color.Gray
+                    tint = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -57,7 +57,7 @@ fun FaqItem(
                     Text(
                         text = answer,
                         fontSize = 14.sp,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         lineHeight = 20.sp
                     )
                 }

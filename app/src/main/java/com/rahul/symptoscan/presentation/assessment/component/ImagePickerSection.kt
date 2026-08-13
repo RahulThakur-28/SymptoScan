@@ -47,16 +47,16 @@ fun ImagePickerSection(
     Card(
         modifier = modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
                     imageVector = Icons.Rounded.PhotoLibrary,
                     contentDescription = null,
-                    tint = BluePrimary,
+                    tint = MaterialTheme.colorScheme.primary,
                     modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
@@ -64,7 +64,7 @@ fun ImagePickerSection(
                     text = "Add a photo (optional)",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = TextDark
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
             
@@ -72,7 +72,7 @@ fun ImagePickerSection(
             Text(
                 text = "Providing visual context can help the AI better understand your symptoms.",
                 fontSize = 13.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 lineHeight = 18.sp
             )
 
@@ -94,7 +94,7 @@ fun ImagePickerSection(
                     )
                     
                     Surface(
-                        color = Color.Black.copy(alpha = 0.6f),
+                        color = Color.Black.copy(alpha = 0.6f), // Keep fixed dark for overlay
                         shape = CircleShape,
                         modifier = Modifier
                             .align(Alignment.TopEnd)
@@ -119,7 +119,8 @@ fun ImagePickerSection(
                             PickVisualMediaRequest(ActivityResultContracts.PickVisualMedia.ImageOnly)
                         )
                     },
-                    modifier = Modifier.align(Alignment.CenterHorizontally)
+                    modifier = Modifier.align(Alignment.CenterHorizontally),
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
                 ) {
                     Icon(Icons.Rounded.PhotoLibrary, contentDescription = null, modifier = Modifier.size(16.dp))
                     Spacer(modifier = Modifier.width(8.dp))
@@ -135,8 +136,8 @@ fun ImagePickerSection(
                     modifier = Modifier.fillMaxWidth().height(50.dp),
                     shape = RoundedCornerShape(12.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = BluePrimary.copy(alpha = 0.08f),
-                        contentColor = BluePrimary
+                        containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        contentColor = MaterialTheme.colorScheme.primary
                     ),
                     elevation = ButtonDefaults.buttonElevation(defaultElevation = 0.dp)
                 ) {

@@ -21,18 +21,28 @@ class HistoryViewModel(
         loadHistory()
     }
 
-    fun loadHistory() {
+    fun onRefresh() {
+        loadHistory(isRefresh = true)
+    }
+
+    fun loadHistory(isRefresh: Boolean = false) {
         viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true, error = null) }
+            if (isRefresh) {
+                _uiState.update { it.copy(isRefreshing = true, error = null) }
+            } else {
+                _uiState.update { it.copy(isLoading = true, error = null) }
+            }
+            
             repository.getAssessmentHistory()
                 .catch { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load history") }
+                    _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Failed to load history") }
                 }
                 .collect { assessments ->
                     _uiState.update { state ->
                         state.copy(
                             assessments = assessments,
-                            isLoading = false
+                            isLoading = false,
+                            isRefreshing = false
                         )
                     }
                     applyFilters()

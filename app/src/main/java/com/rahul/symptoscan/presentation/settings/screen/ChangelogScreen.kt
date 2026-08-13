@@ -23,16 +23,20 @@ fun ChangelogScreen(
     onNavigateBack: () -> Unit
 ) {
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         topBar = {
             TopAppBar(
-                title = { Text("Changelog", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
+                title = { Text("Changelog", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onSurface
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
         }
     ) { paddingValues ->
@@ -81,8 +85,8 @@ private fun ChangelogVersion(
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(
@@ -93,12 +97,12 @@ private fun ChangelogVersion(
                     text = "Version $version",
                     fontSize = 18.sp,
                     fontWeight = FontWeight.Bold,
-                    color = BluePrimary
+                    color = MaterialTheme.colorScheme.primary
                 )
                 Text(
                     text = date,
                     fontSize = 12.sp,
-                    color = Color.Gray
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             
@@ -106,12 +110,12 @@ private fun ChangelogVersion(
             
             changes.forEach { change ->
                 Row(modifier = Modifier.padding(vertical = 4.dp)) {
-                    Text(text = "•", color = BluePrimary, fontWeight = FontWeight.Bold)
+                    Text(text = "•", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                     Spacer(modifier = Modifier.width(12.dp))
                     Text(
                         text = change,
                         fontSize = 14.sp,
-                        color = TextDark,
+                        color = MaterialTheme.colorScheme.onSurface,
                         lineHeight = 20.sp
                     )
                 }

@@ -26,8 +26,8 @@ fun HealthMessageBubble(
 ) {
     val isUser = message.role == "user"
     val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
-    val bubbleColor = if (isUser) BluePrimary else MaterialTheme.colorScheme.surfaceVariant
-    val textColor = if (isUser) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+    val bubbleColor = if (isUser) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.surfaceVariant
+    val textColor = if (isUser) MaterialTheme.colorScheme.onPrimary else MaterialTheme.colorScheme.onSurfaceVariant
     val shape = if (isUser) {
         RoundedCornerShape(16.dp, 16.dp, 0.dp, 16.dp)
     } else {
