@@ -6,7 +6,8 @@ data class AssessmentSummary(
     val time: String,
     val status: AssessmentStatus,
     val score: Int,
-    val symptoms: List<String> = emptyList()
+    val symptoms: List<String> = emptyList(),
+    val hasImage: Boolean = false
 )
 
 enum class AssessmentStatus {

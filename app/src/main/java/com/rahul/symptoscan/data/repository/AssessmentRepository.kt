@@ -132,7 +132,7 @@ class AssessmentRepository {
         val userId = auth.currentUserOrNull()?.id ?: return@flow
         try {
             val assessments = postgrest.from("assessments")
-                .select(columns = Columns.raw("id, status, created_at, assessment_results(summary, urgency_level)")) {
+                .select(columns = Columns.raw("id, image_url, status, created_at, assessment_results(summary, urgency_level), assessment_symptoms(symptom_name)")) {
                     filter { eq("user_id", userId); eq("status", "completed") }
                     order("created_at", Order.DESCENDING)
                 }
@@ -145,7 +145,8 @@ class AssessmentRepository {
                     time = it.createdAt ?: "",
                     status = mapUrgency(it.result?.urgencyLevel),
                     score = 0,
-                    symptoms = emptyList()
+                    symptoms = it.symptoms.map { s -> s.symptomName },
+                    hasImage = !it.imageUrl.isNullOrBlank()
                 )
             })
         } catch (e: Exception) {

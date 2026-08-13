@@ -1,15 +1,18 @@
 package com.rahul.symptoscan.presentation.history.screen
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.FilterList
+import androidx.compose.material.icons.filled.History
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material.icons.rounded.Check
 import androidx.compose.material.icons.rounded.Warning
@@ -21,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -31,8 +35,8 @@ import com.rahul.symptoscan.presentation.home.component.HomeBottomNavigation
 import com.rahul.symptoscan.presentation.history.component.AssessmentHistoryCard
 import com.rahul.symptoscan.presentation.history.component.HistoryStats
 import com.rahul.symptoscan.presentation.history.viewmodel.HistoryViewModel
-import com.rahul.symptoscan.ui.theme.BackgroundLight
-import com.rahul.symptoscan.ui.theme.BluePrimary
+import com.rahul.symptoscan.ui.components.PrimaryButton
+import com.rahul.symptoscan.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,7 +48,7 @@ fun HistoryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         bottomBar = {
             HomeBottomNavigation(
                 currentRoute = "history",
@@ -52,22 +56,39 @@ fun HistoryScreen(
             )
         },
         topBar = {
-            TopAppBar(
-                title = { Text("History", fontSize = 20.sp, fontWeight = FontWeight.Bold) },
-                actions = {
-                    IconButton(
-                        onClick = { },
-                        modifier = Modifier
-                            .padding(end = 8.dp)
-                            .size(40.dp)
-                            .clip(RoundedCornerShape(10.dp))
-                            .background(Color(0xFFEFF6FF))
-                    ) {
-                        Icon(Icons.Default.FilterList, contentDescription = "Filter", tint = BluePrimary)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent)
-            )
+            Surface(shadowElevation = 2.dp) {
+                TopAppBar(
+                    title = { 
+                        Column {
+                            Text(
+                                text = "History", 
+                                fontSize = 20.sp, 
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Text(
+                                text = "Your previous health assessments",
+                                fontSize = 12.sp,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Normal
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(
+                            onClick = { },
+                            modifier = Modifier
+                                .padding(end = 16.dp)
+                                .size(40.dp)
+                                .clip(RoundedCornerShape(12.dp))
+                                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f))
+                        ) {
+                            Icon(Icons.Default.FilterList, contentDescription = "Filter", tint = MaterialTheme.colorScheme.primary)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -81,14 +102,29 @@ fun HistoryScreen(
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 12.dp),
-                placeholder = { Text("Search assessments...", fontSize = 14.sp) },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
-                shape = RoundedCornerShape(12.dp),
+                    .padding(horizontal = 24.dp, vertical = 16.dp),
+                placeholder = { 
+                    Text(
+                        "Search assessments...", 
+                        fontSize = 14.sp, 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    ) 
+                },
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = MaterialTheme.colorScheme.onSurfaceVariant) },
+                trailingIcon = {
+                    if (uiState.searchQuery.isNotEmpty()) {
+                        IconButton(onClick = { viewModel.onSearchQueryChange("") }) {
+                            Icon(Icons.Default.Close, contentDescription = "Clear", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                        }
+                    }
+                },
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White,
-                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f)
+                    focusedContainerColor = MaterialTheme.colorScheme.surface,
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surface,
+                    focusedBorderColor = MaterialTheme.colorScheme.primary,
+                    unfocusedBorderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
+                    cursorColor = MaterialTheme.colorScheme.primary
                 ),
                 singleLine = true
             )
@@ -97,8 +133,8 @@ fun HistoryScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 24.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    .padding(horizontal = 24.dp),
+                horizontalArrangement = Arrangement.spacedBy(10.dp)
             ) {
                 FilterItem(
                     label = "All",
@@ -108,131 +144,77 @@ fun HistoryScreen(
                 FilterItem(
                     label = "Low",
                     selected = uiState.selectedFilter == AssessmentStatus.Low,
-                    onClick = { viewModel.onFilterSelected(AssessmentStatus.Low) }
+                    onClick = { viewModel.onFilterSelected(AssessmentStatus.Low) },
+                    accentColor = SuccessGreen
                 )
                 FilterItem(
                     label = "Moderate",
                     selected = uiState.selectedFilter == AssessmentStatus.Moderate,
-                    onClick = { viewModel.onFilterSelected(AssessmentStatus.Moderate) }
+                    onClick = { viewModel.onFilterSelected(AssessmentStatus.Moderate) },
+                    accentColor = WarningAmber
                 )
                 FilterItem(
                     label = "High",
                     selected = uiState.selectedFilter == AssessmentStatus.High,
-                    onClick = { viewModel.onFilterSelected(AssessmentStatus.High) }
+                    onClick = { viewModel.onFilterSelected(AssessmentStatus.High) },
+                    accentColor = DangerRed
                 )
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Stats
-            HistoryStats(
-                total = uiState.totalCount,
-                low = uiState.lowCount,
-                moderate = uiState.moderateCount,
-                high = uiState.highCount
-            )
-
             Spacer(modifier = Modifier.height(24.dp))
-
-            Text(
-                text = "${uiState.filteredAssessments.size} ASSESSMENTS",
-                fontSize = 11.sp,
-                fontWeight = FontWeight.Bold,
-                color = Color.Gray,
-                modifier = Modifier.padding(horizontal = 24.dp),
-                letterSpacing = 1.sp
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
 
             if (uiState.isLoading) {
                 Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(color = BluePrimary)
+                    CircularProgressIndicator(color = MaterialTheme.colorScheme.primary)
                 }
-            } else if (uiState.filteredAssessments.isEmpty()) {
-                EmptyHistoryState(
-                    isSearch = uiState.searchQuery.isNotEmpty() || uiState.selectedFilter != null,
-                    onStartAssessment = { onNavigate("assess") }
-                )
             } else {
                 LazyColumn(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .padding(horizontal = 24.dp),
-                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                    modifier = Modifier.fillMaxSize(),
+                    contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
-                    itemsIndexed(
-                        items = uiState.filteredAssessments,
-                        key = { _, item -> item.id }
-                    ) { index, assessment ->
-                        TimelineAssessmentItem(
-                            assessment = assessment,
-                            isLast = index == uiState.filteredAssessments.size - 1,
-                            onClick = { onAssessmentClick(assessment.id) }
+                    item {
+                        HistoryStats(
+                            total = uiState.totalCount,
+                            low = uiState.lowCount,
+                            moderate = uiState.moderateCount,
+                            high = uiState.highCount
                         )
+                        Spacer(modifier = Modifier.height(24.dp))
                     }
-                    item { Spacer(modifier = Modifier.height(24.dp)) }
+
+                    if (uiState.filteredAssessments.isEmpty()) {
+                        item {
+                            EmptyHistoryState(
+                                isSearch = uiState.searchQuery.isNotEmpty() || uiState.selectedFilter != null,
+                                onStartAssessment = { onNavigate("assess") }
+                            )
+                        }
+                    } else {
+                        item {
+                            Text(
+                                text = "${uiState.filteredAssessments.size} ASSESSMENTS",
+                                fontSize = 11.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
+                                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp),
+                                letterSpacing = 1.sp
+                            )
+                        }
+
+                        itemsIndexed(
+                            items = uiState.filteredAssessments,
+                            key = { _, item -> item.id }
+                        ) { _, assessment ->
+                            Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
+                                AssessmentHistoryCard(
+                                    assessment = assessment,
+                                    onClick = { onAssessmentClick(assessment.id) }
+                                )
+                            }
+                        }
+                    }
                 }
             }
-        }
-    }
-}
-
-@Composable
-private fun TimelineAssessmentItem(
-    assessment: com.rahul.symptoscan.domain.model.AssessmentSummary,
-    isLast: Boolean,
-    onClick: () -> Unit
-) {
-    val statusColor = when (assessment.status) {
-        AssessmentStatus.Low -> Color(0xFF16C76B)
-        AssessmentStatus.Moderate -> Color(0xFFF59E0B)
-        AssessmentStatus.High -> Color(0xFFEF4444)
-    }
-
-    val icon = when (assessment.status) {
-        AssessmentStatus.Low -> Icons.Rounded.Check
-        else -> Icons.Rounded.Warning
-    }
-
-    Row(modifier = Modifier.fillMaxWidth()) {
-        // Timeline Column
-        Column(
-            horizontalAlignment = Alignment.CenterHorizontally,
-            modifier = Modifier.width(40.dp)
-        ) {
-            Box(
-                modifier = Modifier
-                    .size(24.dp)
-                    .clip(CircleShape)
-                    .background(statusColor.copy(alpha = 0.1f))
-                    .border(1.dp, statusColor, CircleShape),
-                contentAlignment = Alignment.Center
-            ) {
-                Icon(
-                    imageVector = icon,
-                    contentDescription = null,
-                    tint = statusColor,
-                    modifier = Modifier.size(14.dp)
-                )
-            }
-            if (!isLast) {
-                Box(
-                    modifier = Modifier
-                        .width(1.dp)
-                        .weight(1f)
-                        .background(Color.LightGray.copy(alpha = 0.3f))
-                )
-            }
-        }
-        
-        // Card Column
-        Column(modifier = Modifier.weight(1f)) {
-            AssessmentHistoryCard(
-                assessment = assessment,
-                onClick = onClick
-            )
-            Spacer(modifier = Modifier.height(24.dp))
         }
     }
 }
@@ -241,22 +223,29 @@ private fun TimelineAssessmentItem(
 private fun FilterItem(
     label: String,
     selected: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    accentColor: Color = MaterialTheme.colorScheme.primary
 ) {
     Surface(
+        onClick = onClick,
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
-            .background(if (selected) BluePrimary else Color(0xFFEFF6FF))
-            .clickable { onClick() },
-        color = Color.Transparent
+            .height(38.dp)
+            .clip(RoundedCornerShape(10.dp)),
+        color = if (selected) accentColor else MaterialTheme.colorScheme.surface,
+        border = if (!selected) androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)) else null,
+        tonalElevation = if (selected) 4.dp else 0.dp
     ) {
-        Text(
-            text = label,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            fontSize = 13.sp,
-            fontWeight = FontWeight.SemiBold,
-            color = if (selected) Color.White else BluePrimary
-        )
+        Box(
+            modifier = Modifier.padding(horizontal = 16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                fontSize = 13.sp,
+                fontWeight = FontWeight.SemiBold,
+                color = if (selected) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
     }
 }
 
@@ -267,33 +256,53 @@ private fun EmptyHistoryState(
 ) {
     Column(
         modifier = Modifier
-            .fillMaxSize()
-            .padding(48.dp),
+            .fillMaxWidth()
+            .padding(horizontal = 48.dp, vertical = 64.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.Center
     ) {
+        Box(
+            modifier = Modifier
+                .size(80.dp)
+                .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), CircleShape),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                imageVector = if (isSearch) Icons.Default.Search else Icons.Default.History,
+                contentDescription = null,
+                tint = MaterialTheme.colorScheme.primary.copy(alpha = 0.6f),
+                modifier = Modifier.size(40.dp)
+            )
+        }
+        
+        Spacer(modifier = Modifier.height(24.dp))
+        
         Text(
             text = if (isSearch) "No matching assessments" else "No assessments yet",
             fontSize = 18.sp,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1E293B)
+            color = MaterialTheme.colorScheme.onBackground,
+            textAlign = TextAlign.Center
         )
+        
         Spacer(modifier = Modifier.height(8.dp))
+        
         Text(
-            text = if (isSearch) "Try changing your search or filter." else "Your completed symptom assessments will appear here.",
+            text = if (isSearch) "Try changing your search query or filter to find what you're looking for." 
+                  else "Your completed AI health assessments will appear here for easy tracking.",
             fontSize = 14.sp,
-            color = Color.Gray,
-            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            textAlign = TextAlign.Center,
+            lineHeight = 20.sp
         )
+        
         if (!isSearch) {
-            Spacer(modifier = Modifier.height(24.dp))
-            Button(
+            Spacer(modifier = Modifier.height(32.dp))
+            PrimaryButton(
+                text = "Start New Assessment",
                 onClick = onStartAssessment,
-                shape = RoundedCornerShape(12.dp),
-                colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
-            ) {
-                Text("Start Assessment")
-            }
+                modifier = Modifier.width(220.dp)
+            )
         }
     }
 }
@@ -301,7 +310,7 @@ private fun EmptyHistoryState(
 @Preview(showBackground = true)
 @Composable
 fun HistoryScreenPreview() {
-    MaterialTheme {
+    SymptoScanTheme {
         HistoryScreen(
             onNavigate = {},
             onAssessmentClick = {}

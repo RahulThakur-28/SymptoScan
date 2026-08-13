@@ -82,6 +82,8 @@ data class DbAssessmentResult(
 @Serializable
 data class DbAssessmentWithResult(
     val id: String,
+    @SerialName("image_url") val imageUrl: String? = null,
     @SerialName("created_at") val createdAt: String?,
-    @SerialName("assessment_results") val result: DbAssessmentResult? = null
+    @SerialName("assessment_results") val result: DbAssessmentResult? = null,
+    @SerialName("assessment_symptoms") val symptoms: List<DbAssessmentSymptom> = emptyList()
 )
