@@ -6,7 +6,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
@@ -25,7 +24,7 @@ fun ProgressHeader(
             Text(
                 text = label,
                 fontSize = 12.sp,
-                color = Color.Gray
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = "${(progress * 100).toInt()}%",
@@ -38,7 +37,7 @@ fun ProgressHeader(
             progress = { progress },
             modifier = Modifier.fillMaxWidth().height(6.dp),
             color = MaterialTheme.colorScheme.primary,
-            trackColor = Color(0xFFE2E8F0),
+            trackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
             strokeCap = StrokeCap.Round
         )
     }

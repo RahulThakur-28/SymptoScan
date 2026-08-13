@@ -1,6 +1,8 @@
 package com.rahul.symptoscan.ui.components
 
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.input.KeyboardType
@@ -28,10 +30,10 @@ fun NumberTextField(
         error = error,
         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
         trailingIcon = {
-            androidx.compose.material3.Text(
+            Text(
                 text = suffix,
-                color = androidx.compose.ui.graphics.Color.Gray,
-                style = androidx.compose.material3.MaterialTheme.typography.bodyMedium
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f),
+                style = MaterialTheme.typography.bodyMedium
             )
         }
     )

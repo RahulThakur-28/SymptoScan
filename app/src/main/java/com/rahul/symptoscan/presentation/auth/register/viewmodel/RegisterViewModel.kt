@@ -39,10 +39,9 @@ class RegisterViewModel(
             }
             is RegisterEvent.PasswordChanged -> {
                 _state.update { 
-                    val validation = AuthValidator.validatePassword(event.password)
                     it.copy(
                         password = event.password,
-                        passwordError = if (validation.isValid) null else "Password does not meet requirements",
+                        passwordError = null, // Handled progressively in UI
                         confirmPasswordError = if (it.confirmPassword.isEmpty() || event.password == it.confirmPassword) null else "Passwords do not match"
                     )
                 }
@@ -82,7 +81,7 @@ class RegisterViewModel(
         }
         val passValidation = AuthValidator.validatePassword(password)
         if (!passValidation.isValid) {
-            _state.update { it.copy(passwordError = "Password does not meet requirements") }
+            _state.update { it.copy(passwordError = "Please meet all password requirements") }
             return
         }
         if (password != confirmPassword) {

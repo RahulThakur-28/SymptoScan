@@ -25,7 +25,7 @@ fun SkipButton(
     ) {
         Text(
             text = "Skip",
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             fontSize = 16.sp,
             fontWeight = FontWeight.Medium
         )
@@ -43,7 +43,7 @@ fun TitleSection(
         fontWeight = FontWeight.Bold,
         textAlign = TextAlign.Center,
         modifier = modifier.fillMaxWidth(),
-        color = Color(0xFF1E293B)
+        color = MaterialTheme.colorScheme.onBackground
     )
 }
 
@@ -57,7 +57,7 @@ fun DescriptionSection(
         style = MaterialTheme.typography.bodyLarge,
         textAlign = TextAlign.Center,
         modifier = modifier.fillMaxWidth(),
-        color = Color.Gray,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
         lineHeight = 24.sp
     )
 }
@@ -66,23 +66,21 @@ fun DescriptionSection(
 fun IllustrationSection(
     modifier: Modifier = Modifier
 ) {
-    // Placeholder for Illustration
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(300.dp),
         contentAlignment = Alignment.Center
     ) {
-        // Here we would normally have an Image or a Lottie animation
         Surface(
             modifier = Modifier.size(200.dp),
-            color = BluePrimary.copy(alpha = 0.1f),
+            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
             shape = RoundedCornerShape(Dimens.CornerRadiusLarge)
         ) {
             Box(contentAlignment = Alignment.Center) {
                 Text(
                     text = "Medical Illustration",
-                    color = BluePrimary,
+                    color = MaterialTheme.colorScheme.primary,
                     fontSize = 14.sp,
                     fontWeight = FontWeight.Medium
                 )

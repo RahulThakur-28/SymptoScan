@@ -31,6 +31,7 @@ import com.rahul.symptoscan.presentation.healthprofile.component.HealthProfileSt
 import com.rahul.symptoscan.presentation.healthprofile.event.HealthProfileEvent
 import com.rahul.symptoscan.presentation.healthprofile.viewmodel.HealthProfileViewModel
 import com.rahul.symptoscan.ui.components.*
+import com.rahul.symptoscan.ui.theme.*
 import com.rahul.symptoscan.ui.theme.BluePrimary
 import com.rahul.symptoscan.ui.theme.DangerRed
 import com.rahul.symptoscan.ui.theme.Dimens
@@ -58,11 +59,11 @@ fun HealthProfileScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         bottomBar = {
             Surface(
-                color = Color.White,
+                color = MaterialTheme.colorScheme.surface,
                 tonalElevation = 4.dp,
                 shadowElevation = 8.dp
             ) {
@@ -77,9 +78,16 @@ fun HealthProfileScreen(
                         OutlinedButton(
                             onClick = { viewModel.onEvent(HealthProfileEvent.Back) },
                             modifier = Modifier.weight(1f).height(56.dp),
-                            shape = RoundedCornerShape(16.dp)
+                            shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
+                            border = androidx.compose.foundation.BorderStroke(
+                                1.dp, 
+                                MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)
+                            ),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = MaterialTheme.colorScheme.onSurface
+                            )
                         ) {
-                            Text("Back")
+                            Text("Back", fontWeight = FontWeight.SemiBold)
                         }
                     }
                     
@@ -92,7 +100,6 @@ fun HealthProfileScreen(
                             "Continue"
                         },
                         onClick = { 
-                            android.util.Log.d("HealthProfile", "[HEALTH-CLICK-1] Save & Continue clicked. Step: ${state.currentStep}, BasicMode: $isBasicMode")
                             if (isBasicMode && state.currentStep == 2) {
                                 viewModel.onEvent(HealthProfileEvent.SaveBasic)
                             } else if (state.currentStep == 4) {
@@ -115,7 +122,7 @@ fun HealthProfileScreen(
                 .padding(paddingValues)
                 .imePadding()
                 .verticalScroll(rememberScrollState())
-                .padding(24.dp)
+                .padding(Dimens.PaddingLarge)
         ) {
             HealthProfileStepHeader(currentStep = state.currentStep)
             
@@ -135,6 +142,8 @@ fun HealthProfileScreen(
                     4 -> EmergencyStep(state, viewModel)
                 }
             }
+            
+            Spacer(modifier = Modifier.height(32.dp))
         }
     }
 }
@@ -149,18 +158,19 @@ private fun PersonalStep(state: com.rahul.symptoscan.presentation.healthprofile.
             placeholder = "Enter your full name"
         )
         
-        AppTextField(
-            value = state.dob,
-            onValueChange = { viewModel.onEvent(HealthProfileEvent.DobChanged(it)) },
+        DatePickerField(
             label = "Date of Birth",
-            placeholder = "DD/MM/YYYY"
+            value = state.dob,
+            onDateSelected = { viewModel.onEvent(HealthProfileEvent.DobChanged(it)) },
+            placeholder = "Select your birth date"
         )
         
         AppDropdown(
             value = state.gender,
             onValueChange = { viewModel.onEvent(HealthProfileEvent.GenderChanged(it)) },
             label = "Gender",
-            options = listOf("Male", "Female", "Other")
+            options = listOf("Male", "Female", "Other"),
+            placeholder = "Select Gender"
         )
     }
 }
@@ -191,14 +201,15 @@ private fun BodyStep(state: com.rahul.symptoscan.presentation.healthprofile.stat
             value = state.bloodGroup,
             onValueChange = { viewModel.onEvent(HealthProfileEvent.BloodGroupChanged(it)) },
             label = "Blood Group",
-            options = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-")
+            options = listOf("A+", "A-", "B+", "B-", "AB+", "AB-", "O+", "O-"),
+            placeholder = "Select Blood Group"
         )
         
         if (state.bmi != null) {
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+                colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
             ) {
                 Row(
                     modifier = Modifier.padding(16.dp),
@@ -206,11 +217,11 @@ private fun BodyStep(state: com.rahul.symptoscan.presentation.healthprofile.stat
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     Column {
-                        Text("Your BMI", fontSize = 12.sp, color = Color.Gray)
+                        Text("Your BMI", fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text("${String.format("%.1f", state.bmi)}", fontSize = 24.sp, fontWeight = FontWeight.Bold, color = BluePrimary)
                     }
                     Surface(
-                        color = if (state.bmiStatus == "Normal") Color(0xFFF0FDF4) else Color(0xFFFFF7ED),
+                        color = if (state.bmiStatus == "Normal") MintGreen else WarningAmber.copy(alpha = 0.1f),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Text(
@@ -218,7 +229,7 @@ private fun BodyStep(state: com.rahul.symptoscan.presentation.healthprofile.stat
                             modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Bold,
-                            color = if (state.bmiStatus == "Normal") SuccessGreen else Color(0xFFF59E0B)
+                            color = if (state.bmiStatus == "Normal") SuccessGreen else WarningAmber
                         )
                     }
                 }
@@ -232,7 +243,7 @@ private fun BodyStep(state: com.rahul.symptoscan.presentation.healthprofile.stat
 private fun MedicalStep(state: com.rahul.symptoscan.presentation.healthprofile.state.HealthProfileUiState, viewModel: HealthProfileViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Column {
-            Text("Known Allergies", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+            Text("Known Allergies", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(12.dp))
             FlowRow(
                 horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -249,37 +260,44 @@ private fun MedicalStep(state: com.rahul.symptoscan.presentation.healthprofile.s
                     )
                 }
                 
-                // Simplified Add button
                 AssistChip(
                     onClick = { /* Open Dialog */ },
-                    label = { Text("Add") },
-                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) }
+                    label = { Text("Add Custom") },
+                    leadingIcon = { Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp)) },
+                    colors = AssistChipDefaults.assistChipColors(
+                        labelColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                        leadingIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant
+                    ),
+                    border = null // Use default or customized BorderStroke
                 )
             }
         }
         
         Column {
-            Text("Existing Conditions", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+            Text("Existing Conditions", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(12.dp))
             state.conditions.forEach { condition ->
                 Card(
                     modifier = Modifier.fillMaxWidth().padding(bottom = 8.dp),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF8FAFC)),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+                    colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)),
+                    border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                 ) {
                     Row(
                         modifier = Modifier.padding(12.dp, 8.dp),
                         verticalAlignment = Alignment.CenterVertically,
                         horizontalArrangement = Arrangement.SpaceBetween
                     ) {
-                        Text(condition, fontSize = 14.sp)
+                        Text(condition, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurface)
                         IconButton(onClick = { viewModel.onEvent(HealthProfileEvent.ConditionRemoved(condition)) }, modifier = Modifier.size(20.dp)) {
-                            Icon(Icons.Default.Close, contentDescription = "Remove", tint = Color.Gray)
+                            Icon(Icons.Default.Close, contentDescription = "Remove", tint = MaterialTheme.colorScheme.onSurfaceVariant)
                         }
                     }
                 }
             }
-            TextButton(onClick = { viewModel.onEvent(HealthProfileEvent.ConditionAdded("Sample Condition")) }) {
+            TextButton(
+                onClick = { viewModel.onEvent(HealthProfileEvent.ConditionAdded("Sample Condition")) },
+                colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+            ) {
                 Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(16.dp))
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Add condition...")
@@ -287,7 +305,7 @@ private fun MedicalStep(state: com.rahul.symptoscan.presentation.healthprofile.s
         }
         
         Column {
-            Text("Current Medications", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = Color(0xFF1E293B))
+            Text("Current Medications", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onBackground)
             Spacer(modifier = Modifier.height(12.dp))
             AppTextField(
                 value = state.medications,
@@ -303,7 +321,7 @@ private fun MedicalStep(state: com.rahul.symptoscan.presentation.healthprofile.s
 private fun EmergencyStep(state: com.rahul.symptoscan.presentation.healthprofile.state.HealthProfileUiState, viewModel: HealthProfileViewModel) {
     Column(verticalArrangement = Arrangement.spacedBy(24.dp)) {
         Surface(
-            color = Color(0xFFFEF2F2),
+            color = DangerRed.copy(alpha = 0.1f),
             shape = RoundedCornerShape(12.dp),
             border = androidx.compose.foundation.BorderStroke(1.dp, DangerRed.copy(alpha = 0.2f))
         ) {
@@ -313,7 +331,8 @@ private fun EmergencyStep(state: com.rahul.symptoscan.presentation.healthprofile
                 Text(
                     text = "This information will only be used in medical emergencies.",
                     fontSize = 13.sp,
-                    color = DangerRed
+                    color = DangerRed,
+                    fontWeight = FontWeight.Medium
                 )
             }
         }
@@ -323,21 +342,25 @@ private fun EmergencyStep(state: com.rahul.symptoscan.presentation.healthprofile
                 value = state.emergencyContactName,
                 onValueChange = { viewModel.onEvent(HealthProfileEvent.EmergencyContactNameChanged(it)) },
                 label = "Contact Name",
-                placeholder = "James Johnson"
+                placeholder = "e.g. James Johnson"
             )
             
             AppDropdown(
                 value = state.emergencyRelationship,
                 onValueChange = { viewModel.onEvent(HealthProfileEvent.EmergencyRelationshipChanged(it)) },
                 label = "Relationship",
-                options = listOf("Spouse", "Parent", "Child", "Sibling", "Friend", "Other")
+                options = listOf("Spouse", "Parent", "Child", "Sibling", "Friend", "Other"),
+                placeholder = "Select Relationship"
             )
             
             AppTextField(
                 value = state.emergencyPhone,
                 onValueChange = { viewModel.onEvent(HealthProfileEvent.EmergencyPhoneChanged(it)) },
                 label = "Phone Number",
-                placeholder = "+1 (555) 123-4567"
+                placeholder = "e.g. +1 (555) 123-4567",
+                keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                    keyboardType = androidx.compose.ui.text.input.KeyboardType.Phone
+                )
             )
         }
     }
@@ -362,21 +385,21 @@ private fun SelectableChip(
 ) {
     Surface(
         modifier = Modifier
-            .clip(RoundedCornerShape(12.dp))
+            .clip(RoundedCornerShape(Dimens.CornerRadiusMedium))
             .clickable { onClick() }
             .border(
                 width = 1.dp,
-                color = if (selected) selectedColor else Color.LightGray.copy(alpha = 0.3f),
-                shape = RoundedCornerShape(12.dp)
+                color = if (selected) selectedColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                shape = RoundedCornerShape(Dimens.CornerRadiusMedium)
             ),
-        color = if (selected) selectedColor.copy(alpha = 0.1f) else Color(0xFFF1F5F9)
+        color = if (selected) selectedColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
     ) {
         Text(
             text = label,
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             fontSize = 13.sp,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium,
-            color = if (selected) selectedColor else Color(0xFF64748B)
+            color = if (selected) selectedColor else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

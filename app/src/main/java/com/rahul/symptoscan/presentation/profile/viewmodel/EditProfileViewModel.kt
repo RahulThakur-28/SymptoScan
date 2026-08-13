@@ -39,7 +39,7 @@ class EditProfileViewModel(
             ) { base, health ->
                 base?.copy(
                     email = email,
-                    isVerified = true, // We assume verified if they can edit
+                    isVerified = true,
                     dob = health?.dateOfBirth,
                     gender = health?.biologicalSex,
                     bloodGroup = health?.bloodGroup,
@@ -88,6 +88,21 @@ class EditProfileViewModel(
         // Validation
         if (currentProfile.fullName.isBlank()) {
             _uiState.value = EditProfileUiState.Error("Name cannot be empty")
+            return
+        }
+
+        if (currentProfile.dob.isNullOrBlank()) {
+            _uiState.value = EditProfileUiState.Error("Please select your date of birth")
+            return
+        }
+
+        if (currentProfile.height != null && (currentProfile.height <= 0 || currentProfile.height > 300)) {
+            _uiState.value = EditProfileUiState.Error("Please enter a valid height")
+            return
+        }
+
+        if (currentProfile.weight != null && (currentProfile.weight <= 0 || currentProfile.weight > 600)) {
+            _uiState.value = EditProfileUiState.Error("Please enter a valid weight")
             return
         }
 

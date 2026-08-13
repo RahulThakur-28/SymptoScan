@@ -9,7 +9,7 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -40,17 +40,27 @@ fun ResetPasswordScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
-                title = { Text("Reset Password") },
+                title = { 
+                    Text(
+                        "Reset Password",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    ) 
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { paddingValues ->
@@ -68,7 +78,7 @@ fun ResetPasswordScreen(
             Text(
                 text = "Create a new secure password for your account.",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 modifier = Modifier.fillMaxWidth()
             )
             
@@ -81,7 +91,8 @@ fun ResetPasswordScreen(
                 placeholder = "••••••••••",
                 isVisible = state.isPasswordVisible,
                 onToggleVisibility = { viewModel.onEvent(ResetPasswordEvent.TogglePasswordVisibility) },
-                error = state.passwordError
+                error = state.passwordError,
+                modifier = Modifier.fillMaxWidth()
             )
             
             Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
@@ -93,7 +104,8 @@ fun ResetPasswordScreen(
                 placeholder = "••••••••••",
                 isVisible = state.isConfirmPasswordVisible,
                 onToggleVisibility = { viewModel.onEvent(ResetPasswordEvent.ToggleConfirmPasswordVisibility) },
-                error = state.confirmPasswordError
+                error = state.confirmPasswordError,
+                modifier = Modifier.fillMaxWidth()
             )
             
             Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))

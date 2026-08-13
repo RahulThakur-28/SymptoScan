@@ -4,6 +4,7 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -19,16 +20,15 @@ import com.rahul.symptoscan.ui.theme.Dimens
 fun AppLogo(
     modifier: Modifier = Modifier,
     size: Dp = Dimens.LogoSize,
-    backgroundColor: Color = Color.White.copy(alpha = 0.2f),
-    iconColor: Color = Color.White
+    backgroundColor: Color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+    iconColor: Color = MaterialTheme.colorScheme.primary
 ) {
     Box(
         modifier = modifier
             .size(size)
             .clip(RoundedCornerShape(Dimens.CornerRadiusLarge))
             .background(backgroundColor)
-            .padding(2.dp)
-            .background(backgroundColor.copy(alpha = 0.5f)),
+            .padding(2.dp),
         contentAlignment = Alignment.Center
     ) {
         // Circuit Pattern

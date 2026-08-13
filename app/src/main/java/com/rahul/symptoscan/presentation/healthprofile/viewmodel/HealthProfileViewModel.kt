@@ -134,15 +134,22 @@ class HealthProfileViewModel(
         android.util.Log.d("HealthProfile", "[HEALTH-SAVE-3] Auth user obtained: ${user.id}")
 
         // Validate basic requirements for Phase 1
-        // We only require Step 1 data if we are in Basic Setup or if it's currently missing
-        if (!isFinal && (currentState.dob.isBlank() || currentState.gender.isBlank())) {
-            android.util.Log.e("HealthProfile", "[HEALTH-SAVE-ERROR] Validation failed: Step 1 data missing. State: $currentState")
-            _uiState.update { it.copy(error = "Please complete Step 1 (Personal Info) before saving.") }
+        if (currentState.fullName.isBlank()) {
+            _uiState.update { it.copy(error = "Please enter your full name") }
+            return
+        }
+
+        if (currentState.dob.isBlank()) {
+            _uiState.update { it.copy(error = "Please select your date of birth") }
+            return
+        }
+
+        if (currentState.gender.isBlank()) {
+            _uiState.update { it.copy(error = "Please select your gender") }
             return
         }
 
         if (currentState.height.isBlank() || currentState.weight.isBlank()) {
-            android.util.Log.e("HealthProfile", "[HEALTH-SAVE-ERROR] Validation failed: Height or Weight missing")
             _uiState.update { it.copy(error = "Please enter your height and weight.") }
             return
         }

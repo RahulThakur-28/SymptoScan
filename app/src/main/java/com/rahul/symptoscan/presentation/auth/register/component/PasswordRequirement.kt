@@ -5,11 +5,11 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Close
 import androidx.compose.material3.Icon
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.rahul.symptoscan.ui.theme.SuccessGreen
@@ -27,14 +27,14 @@ fun PasswordRequirement(
         Icon(
             imageVector = if (isMet) Icons.Default.Check else Icons.Default.Close,
             contentDescription = null,
-            tint = if (isMet) SuccessGreen else Color.Gray.copy(alpha = 0.5f),
+            tint = if (isMet) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
             modifier = Modifier.size(12.dp)
         )
         Spacer(modifier = Modifier.width(8.dp))
         Text(
             text = text,
             fontSize = 11.sp,
-            color = if (isMet) SuccessGreen else Color.Gray
+            color = if (isMet) SuccessGreen else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

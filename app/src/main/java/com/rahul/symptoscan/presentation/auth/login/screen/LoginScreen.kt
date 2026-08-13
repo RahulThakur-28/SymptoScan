@@ -100,7 +100,7 @@ fun LoginScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         AnimatedVisibility(
@@ -127,7 +127,11 @@ fun LoginScreen(
                     onValueChange = { viewModel.onEvent(LoginEvent.EmailChanged(it)) },
                     label = "Email Address",
                     placeholder = "you@example.com",
-                    error = state.emailError
+                    error = state.emailError,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                    )
                 )
                 
                 Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
@@ -172,7 +176,11 @@ fun LoginScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Don't have an account? ", color = Color.Gray, fontSize = 14.sp)
+                    Text(
+                        text = "Don't have an account? ", 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                        fontSize = 14.sp
+                    )
                     TextButton(onClick = onRegisterClick) {
                         Text(
                             text = "Create Account",

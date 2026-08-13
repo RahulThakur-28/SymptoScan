@@ -26,16 +26,16 @@ fun SocialButton(
             .fillMaxWidth()
             .height(56.dp),
         shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
-        border = BorderStroke(1.dp, Color(0xFFE2E8F0)),
+        border = BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.5f)),
         colors = ButtonDefaults.outlinedButtonColors(
-            contentColor = Color(0xFF1E293B)
+            contentColor = MaterialTheme.colorScheme.onSurface
         )
     ) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.Center
         ) {
-            GoogleLogo(modifier = Modifier.size(20.dp))
+            GoogleIcon(modifier = Modifier.size(20.dp))
             Spacer(modifier = Modifier.width(12.dp))
             Text(
                 text = text,
@@ -47,37 +47,37 @@ fun SocialButton(
 }
 
 @Composable
-fun GoogleLogo(modifier: Modifier = Modifier) {
+fun GoogleIcon(modifier: Modifier = Modifier) {
     Canvas(modifier = modifier) {
-        // Draw a simple multicolored 'G' circle segment for illustration
-        // In production, you'd use a proper SVG resource
+        val strokeWidth = 3.dp.toPx()
+        // Simple 4-color arc representing Google logo
         drawArc(
-            color = Color(0xFFEA4335),
-            startAngle = 135f,
+            color = Color(0xFFEA4335), // Red
+            startAngle = 180f,
             sweepAngle = 90f,
             useCenter = false,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth)
         )
         drawArc(
-            color = Color(0xFFFBBC05),
-            startAngle = 45f,
+            color = Color(0xFFFBBC05), // Yellow
+            startAngle = 90f,
             sweepAngle = 90f,
             useCenter = false,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth)
         )
         drawArc(
-            color = Color(0xFF34A853),
-            startAngle = -45f,
+            color = Color(0xFF34A853), // Green
+            startAngle = 0f,
             sweepAngle = 90f,
             useCenter = false,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth)
         )
         drawArc(
-            color = Color(0xFF4285F4),
-            startAngle = -135f,
+            color = Color(0xFF4285F4), // Blue
+            startAngle = 270f,
             sweepAngle = 90f,
             useCenter = false,
-            style = androidx.compose.ui.graphics.drawscope.Stroke(width = 4.dp.toPx())
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = strokeWidth)
         )
     }
 }

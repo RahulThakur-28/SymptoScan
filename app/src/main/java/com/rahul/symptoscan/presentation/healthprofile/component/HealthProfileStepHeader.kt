@@ -1,6 +1,5 @@
 package com.rahul.symptoscan.presentation.healthprofile.component
 
-import androidx.compose.animation.animateColorAsState
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
@@ -8,10 +7,8 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -31,13 +28,13 @@ fun HealthProfileStepHeader(
             text = "Complete Your Profile",
             style = MaterialTheme.typography.headlineMedium,
             fontWeight = FontWeight.Bold,
-            color = Color(0xFF1E293B)
+            color = MaterialTheme.colorScheme.onBackground
         )
         Spacer(modifier = Modifier.height(4.dp))
         Text(
             text = "Help us personalize your health experience",
             style = MaterialTheme.typography.bodyMedium,
-            color = Color.Gray
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Spacer(modifier = Modifier.height(32.dp))
         
@@ -66,6 +63,7 @@ fun HealthProfileProgress(
                 title = title,
                 isActive = isActive,
                 isCompleted = isCompleted,
+                stepNumber = stepNumber,
                 modifier = Modifier.weight(1f)
             )
             
@@ -74,8 +72,7 @@ fun HealthProfileProgress(
                     modifier = Modifier
                         .width(20.dp)
                         .height(2.dp)
-                        .background(if (isCompleted) BluePrimary else Color.LightGray.copy(alpha = 0.5f))
-                        .align(Alignment.CenterVertically)
+                        .background(if (isCompleted) BluePrimary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f))
                         .offset(y = (-10).dp) // Adjust based on circle size
                 )
             }
@@ -88,6 +85,7 @@ private fun StepIndicator(
     title: String,
     isActive: Boolean,
     isCompleted: Boolean,
+    stepNumber: Int,
     modifier: Modifier = Modifier
 ) {
     Column(
@@ -97,7 +95,7 @@ private fun StepIndicator(
         Surface(
             modifier = Modifier.size(32.dp),
             shape = CircleShape,
-            color = if (isCompleted) BluePrimary else if (isActive) BluePrimary.copy(alpha = 0.1f) else Color(0xFFF1F5F9),
+            color = if (isCompleted) BluePrimary else if (isActive) BluePrimary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surfaceVariant,
             border = if (isActive && !isCompleted) androidx.compose.foundation.BorderStroke(2.dp, BluePrimary) else null
         ) {
             Box(contentAlignment = Alignment.Center) {
@@ -105,8 +103,8 @@ private fun StepIndicator(
                     Icon(Icons.Default.Check, contentDescription = null, tint = Color.White, modifier = Modifier.size(16.dp))
                 } else {
                     Text(
-                        text = (if (title == "Personal") "1" else if (title == "Body") "2" else if (title == "Medical") "3" else "4"),
-                        color = if (isActive) BluePrimary else Color.Gray,
+                        text = stepNumber.toString(),
+                        color = if (isActive) BluePrimary else MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 12.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -118,7 +116,7 @@ private fun StepIndicator(
             text = title,
             fontSize = 11.sp,
             fontWeight = if (isActive) FontWeight.Bold else FontWeight.Medium,
-            color = if (isActive) Color(0xFF1E293B) else Color.Gray
+            color = if (isActive) MaterialTheme.colorScheme.onBackground else MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

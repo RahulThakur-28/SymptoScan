@@ -19,6 +19,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.auth.common.AuthUiState
 import com.rahul.symptoscan.presentation.auth.login.component.HeaderSection
 import com.rahul.symptoscan.presentation.auth.login.component.PasswordTextField
+import com.rahul.symptoscan.presentation.auth.login.component.SecurityCard
 import com.rahul.symptoscan.presentation.auth.register.component.PasswordRequirementsSection
 import com.rahul.symptoscan.presentation.auth.register.event.RegisterEvent
 import com.rahul.symptoscan.presentation.auth.register.viewmodel.RegisterViewModel
@@ -52,7 +53,7 @@ fun RegisterScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(hostState = snackbarHostState) }
     ) { paddingValues ->
         AnimatedVisibility(
@@ -68,7 +69,10 @@ fun RegisterScreen(
                     .padding(horizontal = Dimens.PaddingExtraLarge, vertical = Dimens.PaddingLarge),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                HeaderSection()
+                HeaderSection(
+                    title = "Create Account",
+                    subtitle = "Join SymptoScan for personal health guidance"
+                )
                 
                 Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
                 
@@ -77,7 +81,11 @@ fun RegisterScreen(
                     onValueChange = { viewModel.onEvent(RegisterEvent.FullNameChanged(it)) },
                     label = "Full Name",
                     placeholder = "John Doe",
-                    error = state.fullNameError
+                    error = state.fullNameError,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Text,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                    )
                 )
                 
                 Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
@@ -87,7 +95,11 @@ fun RegisterScreen(
                     onValueChange = { viewModel.onEvent(RegisterEvent.EmailChanged(it)) },
                     label = "Email Address",
                     placeholder = "you@example.com",
-                    error = state.emailError
+                    error = state.emailError,
+                    keyboardOptions = androidx.compose.foundation.text.KeyboardOptions(
+                        keyboardType = androidx.compose.ui.text.input.KeyboardType.Email,
+                        imeAction = androidx.compose.ui.text.input.ImeAction.Next
+                    )
                 )
                 
                 Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
@@ -99,7 +111,8 @@ fun RegisterScreen(
                     placeholder = "••••••••••",
                     isVisible = state.isPasswordVisible,
                     onToggleVisibility = { viewModel.onEvent(RegisterEvent.TogglePasswordVisibility) },
-                    error = state.passwordError
+                    error = state.passwordError,
+                    modifier = Modifier.fillMaxWidth()
                 )
 
                 if (state.password.isNotEmpty()) {
@@ -137,7 +150,11 @@ fun RegisterScreen(
                     horizontalArrangement = Arrangement.Center,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(text = "Already have an account? ", color = Color.Gray, fontSize = 14.sp)
+                    Text(
+                        text = "Already have an account? ", 
+                        color = MaterialTheme.colorScheme.onSurfaceVariant, 
+                        fontSize = 14.sp
+                    )
                     TextButton(onClick = onNavigateToLogin) {
                         Text(
                             text = "Sign In",
@@ -147,6 +164,12 @@ fun RegisterScreen(
                         )
                     }
                 }
+                
+                Spacer(modifier = Modifier.height(Dimens.PaddingLarge))
+                
+                SecurityCard()
+                
+                Spacer(modifier = Modifier.height(20.dp))
             }
         }
     }

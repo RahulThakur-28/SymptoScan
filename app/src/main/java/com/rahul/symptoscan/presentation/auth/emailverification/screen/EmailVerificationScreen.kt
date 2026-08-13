@@ -34,6 +34,21 @@ fun EmailVerificationScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
+    val context = androidx.compose.ui.platform.LocalContext.current
+    val lifecycleOwner = androidx.lifecycle.compose.LocalLifecycleOwner.current
+
+    DisposableEffect(lifecycleOwner) {
+        val observer = androidx.lifecycle.LifecycleEventObserver { _, event ->
+            if (event == androidx.lifecycle.Lifecycle.Event.ON_RESUME) {
+                viewModel.onEvent(EmailVerificationEvent.VerifyClicked)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
+    }
+
     LaunchedEffect(uiState) {
         if (uiState is AuthUiState.Success) {
             onVerificationSuccess()
@@ -43,17 +58,21 @@ fun EmailVerificationScreen(
     }
 
     Scaffold(
-        containerColor = Color.White,
-        snackbarHost = { SnackbarHost(snackbarHostState) },
+        containerColor = MaterialTheme.colorScheme.background,
+        snackbarHost = { SnackbarHost(hostState = snackbarHostState) },
         topBar = {
             TopAppBar(
                 title = {},
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(imageVector = Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
             )
         }
     ) { paddingValues ->
@@ -78,7 +97,7 @@ fun EmailVerificationScreen(
                 text = "Check Your Email",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onBackground
             )
             
             Spacer(modifier = Modifier.height(Dimens.PaddingSmall))
@@ -86,19 +105,37 @@ fun EmailVerificationScreen(
             Text(
                 text = "We've sent a verification link to\n${AuthValidator.maskEmail(state.email)}",
                 style = MaterialTheme.typography.bodyLarge,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = TextAlign.Center
             )
             
             Spacer(modifier = Modifier.height(Dimens.PaddingExtraLarge))
             
             Button(
-                onClick = { /* In production, open email app via intent */ },
+                onClick = { 
+                    val intent = android.content.Intent(android.content.Intent.ACTION_MAIN).apply {
+                        addCategory(android.content.Intent.CATEGORY_APP_EMAIL)
+                        addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK)
+                    }
+                    try {
+                        context.startActivity(intent)
+                    } catch (e: Exception) {
+                        // Fallback if no email app found
+                        val mailIntent = android.content.Intent(android.content.Intent.ACTION_VIEW).apply {
+                            data = android.net.Uri.parse("mailto:")
+                        }
+                        try {
+                            context.startActivity(mailIntent)
+                        } catch (e2: Exception) {
+                            // Last resort fallback or notification
+                        }
+                    }
+                },
                 modifier = Modifier.fillMaxWidth().height(56.dp),
                 shape = RoundedCornerShape(Dimens.CornerRadiusMedium),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color(0xFFF1F5F9),
-                    contentColor = Color(0xFF1E293B)
+                    containerColor = MaterialTheme.colorScheme.surfaceVariant,
+                    contentColor = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             ) {
                 Text(text = "Open Email App", fontWeight = FontWeight.SemiBold)
@@ -120,7 +157,7 @@ fun EmailVerificationScreen(
             ) {
                 Text(
                     text = if (state.canResend) "Resend Email" else "Resend available in ${state.resendCooldown}s",
-                    color = if (state.canResend) MaterialTheme.colorScheme.primary else Color.Gray,
+                    color = if (state.canResend) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
                     fontWeight = FontWeight.Bold
                 )
             }
@@ -129,7 +166,7 @@ fun EmailVerificationScreen(
             
             Text(
                 text = "Check your spam folder if you don't see it.",
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
                 fontSize = 14.sp
             )
             

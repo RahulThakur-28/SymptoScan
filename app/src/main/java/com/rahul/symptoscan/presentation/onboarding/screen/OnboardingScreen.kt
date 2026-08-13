@@ -42,6 +42,7 @@ fun OnboardingScreen(
     }
 
     Scaffold(
+        containerColor = androidx.compose.material3.MaterialTheme.colorScheme.background,
         topBar = {
             Box(
                 modifier = Modifier
