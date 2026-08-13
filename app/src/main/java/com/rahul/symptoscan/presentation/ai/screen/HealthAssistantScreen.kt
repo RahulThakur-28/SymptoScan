@@ -30,9 +30,15 @@ import com.rahul.symptoscan.ui.theme.BackgroundLight
 import com.rahul.symptoscan.ui.theme.BluePrimary
 import com.rahul.symptoscan.ui.theme.TextDark
 
+import com.rahul.symptoscan.presentation.home.component.HomeBottomNavigation
+import com.rahul.symptoscan.ui.theme.BackgroundLight
+import com.rahul.symptoscan.ui.theme.BluePrimary
+import com.rahul.symptoscan.ui.theme.TextDark
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun HealthAssistantScreen(
+    onNavigate: (String) -> Unit,
     onBackClick: () -> Unit,
     onHistoryClick: () -> Unit,
     viewModel: HealthAssistantViewModel = viewModel()
@@ -41,6 +47,7 @@ fun HealthAssistantScreen(
     
     HealthAssistantContent(
         uiState = uiState,
+        onNavigate = onNavigate,
         onBackClick = onBackClick,
         onHistoryClick = onHistoryClick,
         onInputChange = viewModel::onInputChange,
@@ -58,6 +65,7 @@ fun HealthAssistantScreen(
 @Composable
 fun HealthAssistantContent(
     uiState: com.rahul.symptoscan.presentation.ai.state.HealthAssistantUiState,
+    onNavigate: (String) -> Unit,
     onBackClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onInputChange: (String) -> Unit,
@@ -72,7 +80,8 @@ fun HealthAssistantContent(
     // Auto-scroll to bottom when new messages arrive
     LaunchedEffect(uiState.messages.size, uiState.isSendingMessage) {
         if (uiState.messages.isNotEmpty()) {
-            listState.animateScrollToItem(uiState.messages.size)
+            val totalItems = uiState.messages.size + (if (uiState.isSendingMessage) 1 else 0)
+            listState.animateScrollToItem(totalItems - 1)
         }
     }
 
@@ -85,7 +94,7 @@ fun HealthAssistantContent(
     }
 
     Scaffold(
-        containerColor = BackgroundLight,
+        containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
             TopAppBar(
@@ -95,12 +104,12 @@ fun HealthAssistantContent(
                             text = "Health Assistant",
                             fontSize = 18.sp,
                             fontWeight = FontWeight.Bold,
-                            color = TextDark
+                            color = MaterialTheme.colorScheme.onBackground
                         )
                         Text(
                             text = "General health information",
                             fontSize = 12.sp,
-                            color = Color.Gray
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 },
@@ -108,22 +117,38 @@ fun HealthAssistantContent(
                     IconButton(onClick = onBackClick) {
                         Icon(
                             imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Back"
+                            contentDescription = "Back",
+                            tint = MaterialTheme.colorScheme.onBackground
                         )
                     }
                 },
                 actions = {
                     IconButton(onClick = onHistoryClick) {
-                        Icon(Icons.Default.History, contentDescription = "History")
+                        Icon(
+                            Icons.Default.History, 
+                            contentDescription = "History",
+                            tint = MaterialTheme.colorScheme.onBackground
+                        )
                     }
-                    TextButton(onClick = onNewChatClick) {
+                    TextButton(
+                        onClick = onNewChatClick,
+                        colors = ButtonDefaults.textButtonColors(contentColor = BluePrimary)
+                    ) {
                         Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
                         Spacer(modifier = Modifier.width(4.dp))
                         Text("New", fontWeight = FontWeight.SemiBold)
                     }
                 },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
             )
+        },
+        bottomBar = {
+            if (uiState.messages.isEmpty()) {
+                HomeBottomNavigation(
+                    currentRoute = "ai",
+                    onNavigate = onNavigate
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -193,7 +218,7 @@ private fun TypingIndicator() {
                 modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
             )
             Surface(
-                color = Color(0xFFF1F5F9),
+                color = MaterialTheme.colorScheme.surfaceVariant,
                 shape = RoundedCornerShape(16.dp, 16.dp, 16.dp, 0.dp)
             ) {
                 Row(
@@ -203,7 +228,7 @@ private fun TypingIndicator() {
                     Text(
                         text = "Thinking...",
                         fontSize = 14.sp,
-                        color = Color.Gray,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontStyle = androidx.compose.ui.text.font.FontStyle.Italic
                     )
                 }
@@ -220,6 +245,7 @@ fun HealthAssistantScreenEmptyPreview() {
             messages = emptyList(),
             isLoadingMessages = false
         ),
+        onNavigate = {},
         onBackClick = {},
         onHistoryClick = {},
         onInputChange = {},
@@ -241,6 +267,7 @@ fun HealthAssistantScreenChatPreview() {
             ),
             isLoadingMessages = false
         ),
+        onNavigate = {},
         onBackClick = {},
         onHistoryClick = {},
         onInputChange = {},
@@ -261,6 +288,7 @@ fun HealthAssistantScreenLoadingPreview() {
             ),
             isSendingMessage = true
         ),
+        onNavigate = {},
         onBackClick = {},
         onHistoryClick = {},
         onInputChange = {},

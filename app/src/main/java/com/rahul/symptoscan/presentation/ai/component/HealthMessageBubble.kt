@@ -4,6 +4,7 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
@@ -25,8 +26,8 @@ fun HealthMessageBubble(
 ) {
     val isUser = message.role == "user"
     val alignment = if (isUser) Alignment.CenterEnd else Alignment.CenterStart
-    val bubbleColor = if (isUser) BluePrimary else Color(0xFFF1F5F9)
-    val textColor = if (isUser) Color.White else TextDark
+    val bubbleColor = if (isUser) BluePrimary else MaterialTheme.colorScheme.surfaceVariant
+    val textColor = if (isUser) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     val shape = if (isUser) {
         RoundedCornerShape(16.dp, 16.dp, 0.dp, 16.dp)
     } else {
@@ -52,17 +53,17 @@ fun HealthMessageBubble(
                     modifier = Modifier.padding(start = 4.dp, bottom = 4.dp)
                 )
             }
-            Box(
-                modifier = Modifier
-                    .clip(shape)
-                    .background(bubbleColor)
-                    .padding(horizontal = 16.dp, vertical = 12.dp)
+            Surface(
+                color = bubbleColor,
+                shape = shape,
+                shadowElevation = if (isUser) 1.dp else 0.dp
             ) {
                 Text(
                     text = message.content,
                     color = textColor,
                     fontSize = 14.sp,
-                    lineHeight = 20.sp
+                    lineHeight = 20.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp)
                 )
             }
         }

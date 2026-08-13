@@ -330,6 +330,7 @@ fun AppNavGraph(navController: NavHostController) {
             }
 
             HealthAssistantScreen(
+                onNavigate = { navController.navigate(it) },
                 onBackClick = { navController.popBackStack() },
                 onHistoryClick = { navController.navigate(Screen.AIHistory.route) },
                 viewModel = viewModel

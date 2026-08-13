@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.HealthAssistantRepository
+import com.rahul.symptoscan.domain.model.HealthMessage
 import com.rahul.symptoscan.presentation.ai.state.HealthAssistantUiState
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -12,7 +13,8 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 class HealthAssistantViewModel(
-    private val repository: HealthAssistantRepository = Injection.healthAssistantRepository
+    private val repository: HealthAssistantRepository = Injection.healthAssistantRepository,
+    private val authRepository: com.rahul.symptoscan.data.repository.AuthRepository = Injection.authRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(HealthAssistantUiState())
@@ -82,15 +84,30 @@ class HealthAssistantViewModel(
         val text = _uiState.value.inputText.trim()
         if (text.isBlank() || _uiState.value.isSendingMessage) return
 
+        val userId = authRepository.getCurrentUser()?.id ?: ""
+
         viewModelScope.launch {
             _uiState.update { it.copy(isSendingMessage = true, error = null) }
             
+            // Optimistic update if we already have a conversation
+            if (_uiState.value.currentConversationId != null) {
+                val tempMsg = HealthMessage(
+                    id = "temp_${System.currentTimeMillis()}",
+                    conversationId = _uiState.value.currentConversationId!!,
+                    userId = userId,
+                    role = "user",
+                    content = text,
+                    createdAt = null
+                )
+                _uiState.update { it.copy(messages = it.messages + tempMsg, inputText = "") }
+            }
+
             // 1. Resolve or Create Conversation ID
             val activeConversationId = when (val currentId = _uiState.value.currentConversationId) {
                 null -> {
                     android.util.Log.d("HealthAssistantVM", "currentConversationId is null, creating new")
                     val result = repository.createConversation(
-                        title = text.take(30) + if (text.length > 30) "..." else "",
+                        title = text.take(50) + if (text.length > 50) "..." else "",
                         language = _uiState.value.language
                     )
                     
@@ -107,10 +124,23 @@ class HealthAssistantViewModel(
                     }
 
                     android.util.Log.d("HealthAssistantVM", "Created conversation successfully with ID: ${newConv.id}")
+                    
+                    // Show message optimistically for the NEW conversation now that we have ID
+                    val tempMsg = HealthMessage(
+                        id = "temp_${System.currentTimeMillis()}",
+                        conversationId = newConv.id,
+                        userId = userId,
+                        role = "user",
+                        content = text,
+                        createdAt = null
+                    )
+                    
                     _uiState.update { 
                         it.copy(
                             currentConversationId = newConv.id,
-                            isConversationCreated = true
+                            isConversationCreated = true,
+                            messages = it.messages + tempMsg,
+                            inputText = ""
                         ) 
                     }
                     newConv.id
@@ -131,7 +161,7 @@ class HealthAssistantViewModel(
             ).onSuccess {
                 // Success, reload messages to get the latest state (user + assistant message)
                 loadMessages(activeConversationId)
-                _uiState.update { it.copy(inputText = "", isSendingMessage = false) }
+                _uiState.update { it.copy(isSendingMessage = false) }
             }.onFailure { e ->
                 if (e.message == "CONVERSATION_NOT_FOUND") {
                     _uiState.update { 
@@ -144,6 +174,8 @@ class HealthAssistantViewModel(
                         ) 
                     }
                 } else {
+                    // Remove the optimistic message on failure? 
+                    // Better to just show error.
                     _uiState.update { it.copy(isSendingMessage = false, error = e.message) }
                 }
             }

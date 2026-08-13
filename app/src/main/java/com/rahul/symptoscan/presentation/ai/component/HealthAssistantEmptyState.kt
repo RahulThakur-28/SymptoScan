@@ -34,7 +34,7 @@ fun HealthAssistantEmptyState(
             text = "How can I help you?",
             fontSize = 22.sp,
             fontWeight = FontWeight.Bold,
-            color = TextDark,
+            color = MaterialTheme.colorScheme.onBackground,
             textAlign = TextAlign.Center
         )
         
@@ -43,7 +43,7 @@ fun HealthAssistantEmptyState(
         Text(
             text = "Ask me about symptoms, general health, wellness, or common health topics.",
             fontSize = 14.sp,
-            color = Color.Gray,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
             modifier = Modifier.padding(horizontal = 16.dp)
         )
@@ -67,14 +67,14 @@ fun HealthAssistantEmptyState(
         Spacer(modifier = Modifier.height(32.dp))
 
         Surface(
-            color = Color(0xFFF8FAFC),
+            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
             shape = RoundedCornerShape(12.dp),
-            border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.3f))
+            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
         ) {
             Text(
                 text = "Health Assistant provides general information and does not replace professional medical advice.",
                 fontSize = 11.sp,
-                color = Color.Gray,
+                color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                 textAlign = TextAlign.Center,
                 modifier = Modifier.padding(16.dp),
                 lineHeight = 16.sp

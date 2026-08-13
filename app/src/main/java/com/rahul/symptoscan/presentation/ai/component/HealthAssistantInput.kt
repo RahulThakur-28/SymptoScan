@@ -27,7 +27,7 @@ fun HealthAssistantInput(
 ) {
     Surface(
         modifier = modifier.fillMaxWidth(),
-        color = Color.White,
+        color = MaterialTheme.colorScheme.surface,
         shadowElevation = 8.dp
     ) {
         Row(
@@ -43,11 +43,17 @@ fun HealthAssistantInput(
                 modifier = Modifier
                     .weight(1f)
                     .padding(end = 8.dp),
-                placeholder = { Text("Ask a health question...", fontSize = 14.sp) },
+                placeholder = { 
+                    Text(
+                        text = "Ask a health question...", 
+                        fontSize = 14.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
+                    ) 
+                },
                 colors = TextFieldDefaults.colors(
-                    focusedContainerColor = Color(0xFFF1F5F9),
-                    unfocusedContainerColor = Color(0xFFF1F5F9),
-                    disabledContainerColor = Color(0xFFF1F5F9),
+                    focusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    unfocusedContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
+                    disabledContainerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f),
                     focusedIndicatorColor = Color.Transparent,
                     unfocusedIndicatorColor = Color.Transparent,
                 ),
@@ -62,7 +68,7 @@ fun HealthAssistantInput(
                 modifier = Modifier
                     .size(48.dp)
                     .background(
-                        if (isEnabled && value.isNotBlank() && !isSending) BluePrimary else Color.LightGray.copy(alpha = 0.5f),
+                        if (isEnabled && value.isNotBlank() && !isSending) BluePrimary else MaterialTheme.colorScheme.onSurface.copy(alpha = 0.12f),
                         CircleShape
                     )
             ) {
