@@ -7,8 +7,13 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material.icons.filled.Warning
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.Info
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
@@ -18,6 +23,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -25,8 +31,10 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentViewModel
+import com.rahul.symptoscan.ui.components.PrimaryButton
 import com.rahul.symptoscan.ui.theme.*
 
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AssessmentResultScreen(
     onNavigateBack: () -> Unit,
@@ -46,93 +54,167 @@ fun AssessmentResultScreen(
 
     Scaffold(
         containerColor = BackgroundLight,
-        snackbarHost = { SnackbarHost(snackbarHostState) }
+        snackbarHost = { SnackbarHost(snackbarHostState) },
+        topBar = {
+            Surface(shadowElevation = 2.dp) {
+                TopAppBar(
+                    title = { Text("Assessment Result", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = TextDark) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDark)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                )
+            }
+        }
     ) { paddingValues ->
         if (result == null) {
             Box(modifier = Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                CircularProgressIndicator()
+                Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                    CircularProgressIndicator(color = BluePrimary)
+                    Spacer(modifier = Modifier.height(16.dp))
+                    Text("Processing your analysis...", color = Color.Gray, fontSize = 14.sp)
+                }
             }
         } else {
             Column(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(paddingValues)
-                    .verticalScroll(rememberScrollState())
-                    .padding(24.dp),
-                horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // Urgency Header
-                UrgencyBadge(urgency = result.urgencyLevel ?: "Moderate")
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                Text(
-                    text = "Assessment Summary",
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = TextDark
-                )
-
-                Spacer(modifier = Modifier.height(16.dp))
-
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color.White),
-                    shape = RoundedCornerShape(20.dp)
+                Column(
+                    modifier = Modifier
+                        .weight(1f)
+                        .verticalScroll(rememberScrollState())
+                        .padding(24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    // Urgency Header
+                    UrgencyBadge(urgency = result.urgencyLevel ?: "Moderate")
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (uiState.selectedImageUri != null) {
+                        Surface(
+                            color = BluePrimary.copy(alpha = 0.08f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.padding(bottom = 20.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 10.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.CheckCircle,
+                                    contentDescription = null,
+                                    tint = BluePrimary,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text(
+                                    text = "Analysis included visual context from your photo",
+                                    fontSize = 13.sp,
+                                    color = BluePrimary,
+                                    fontWeight = FontWeight.SemiBold
+                                )
+                            }
+                        }
+                    }
+
                     Text(
-                        text = result.summary ?: "",
-                        modifier = Modifier.padding(20.dp),
-                        fontSize = 15.sp,
-                        lineHeight = 24.sp,
-                        color = Color.DarkGray
+                        text = "Assessment Summary",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground,
+                        modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp)
                     )
-                }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = RoundedCornerShape(20.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            text = result.summary ?: "",
+                            modifier = Modifier.padding(20.dp),
+                            fontSize = 15.sp,
+                            lineHeight = 24.sp,
+                            color = Color.DarkGray
+                        )
+                    }
 
-                ResultSection(title = "Possible Explanations", items = result.possibleCauses ?: emptyList(), iconColor = BluePrimary)
+                    Spacer(modifier = Modifier.height(32.dp))
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    ResultSection(
+                        title = "Possible Explanations", 
+                        items = result.possibleCauses ?: emptyList(), 
+                        iconColor = BluePrimary,
+                        icon = Icons.Default.Info
+                    )
 
-                ResultSection(title = "Recommendations", items = result.recommendations ?: emptyList(), iconColor = SuccessGreen)
+                    Spacer(modifier = Modifier.height(24.dp))
 
-                Spacer(modifier = Modifier.height(24.dp))
+                    ResultSection(
+                        title = "Recommendations", 
+                        items = result.recommendations ?: emptyList(), 
+                        iconColor = SuccessGreen,
+                        icon = Icons.Default.CheckCircle
+                    )
 
-                if (!result.warningSigns.isNullOrEmpty()) {
-                    ResultSection(title = "Warning Signs", items = result.warningSigns, iconColor = DangerRed)
+                    Spacer(modifier = Modifier.height(24.dp))
+
+                    if (!result.warningSigns.isNullOrEmpty()) {
+                        ResultSection(
+                            title = "Warning Signs", 
+                            items = result.warningSigns,
+                            iconColor = DangerRed,
+                            icon = Icons.Default.Warning
+                        )
+                        Spacer(modifier = Modifier.height(24.dp))
+                    }
+
+                    // Disclaimer
+                    Surface(
+                        color = Color.LightGray.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp),
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            text = result.disclaimer ?: "This information is for general educational purposes and is not a medical diagnosis.",
+                            fontSize = 11.sp,
+                            color = Color.Gray,
+                            textAlign = TextAlign.Center,
+                            modifier = Modifier.padding(16.dp),
+                            lineHeight = 16.sp
+                        )
+                    }
+
                     Spacer(modifier = Modifier.height(24.dp))
                 }
 
-                // Disclaimer
-                Text(
-                    text = result.disclaimer ?: "This information is for general educational purposes and is not a medical diagnosis.",
-                    fontSize = 12.sp,
-                    color = Color.Gray,
-                    textAlign = TextAlign.Center,
-                    modifier = Modifier.padding(horizontal = 16.dp)
-                )
-
-                Spacer(modifier = Modifier.height(40.dp))
-
-                Button(
-                    onClick = onNavigateBack,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = BluePrimary)
+                Surface(
+                    color = Color.White,
+                    shadowElevation = 16.dp
                 ) {
-                    Text("Return to Home", fontWeight = FontWeight.Bold)
-                }
+                    Column(modifier = Modifier.padding(24.dp).navigationBarsPadding()) {
+                        PrimaryButton(
+                            text = "Return to Home",
+                            onClick = onNavigateBack
+                        )
+                        
+                        Spacer(modifier = Modifier.height(12.dp))
 
-                Spacer(modifier = Modifier.height(16.dp))
-
-                OutlinedButton(
-                    onClick = onAskAI,
-                    modifier = Modifier.fillMaxWidth().height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, BluePrimary)
-                ) {
-                    Text("Discuss with AI Assistant", color = BluePrimary, fontWeight = FontWeight.Bold)
+                        OutlinedButton(
+                            onClick = onAskAI,
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, BluePrimary)
+                        ) {
+                            Text("Discuss with AI Assistant", color = BluePrimary, fontWeight = FontWeight.Bold)
+                        }
+                    }
                 }
             }
         }
@@ -172,25 +254,45 @@ private fun UrgencyBadge(urgency: String) {
 }
 
 @Composable
-private fun ResultSection(title: String, items: List<String>, iconColor: Color) {
-    Column(modifier = Modifier.fillMaxWidth()) {
-        Text(
-            text = title,
-            fontSize = 18.sp,
-            fontWeight = FontWeight.Bold,
-            color = TextDark
-        )
-        Spacer(modifier = Modifier.height(12.dp))
-        items.forEach { item ->
-            Row(modifier = Modifier.padding(vertical = 4.dp)) {
+private fun ResultSection(title: String, items: List<String>, iconColor: Color, icon: ImageVector) {
+    Card(
+        modifier = Modifier.fillMaxWidth().padding(vertical = 8.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(16.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
+    ) {
+        Column(modifier = Modifier.padding(16.dp)) {
+            Row(verticalAlignment = Alignment.CenterVertically) {
                 Icon(
-                    imageVector = if (iconColor == DangerRed) Icons.Default.Warning else Icons.Default.Check,
+                    imageVector = icon,
                     contentDescription = null,
                     tint = iconColor,
-                    modifier = Modifier.size(18.dp).padding(top = 2.dp)
+                    modifier = Modifier.size(20.dp)
                 )
                 Spacer(modifier = Modifier.width(12.dp))
-                Text(text = item, fontSize = 14.sp, color = Color.Gray, lineHeight = 20.sp)
+                Text(
+                    text = title,
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
+            }
+            Spacer(modifier = Modifier.height(12.dp))
+            items.forEach { item ->
+                Row(modifier = Modifier.padding(vertical = 6.dp)) {
+                    Text(
+                        text = "•", 
+                        color = iconColor, 
+                        fontWeight = FontWeight.Bold,
+                        modifier = Modifier.padding(end = 12.dp)
+                    )
+                    Text(
+                        text = item, 
+                        fontSize = 14.sp, 
+                        color = Color.DarkGray, 
+                        lineHeight = 20.sp
+                    )
+                }
             }
         }
     }

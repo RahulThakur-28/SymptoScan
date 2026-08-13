@@ -19,14 +19,27 @@ class AssessmentRepository {
     private val postgrest = SupabaseClient.database
     private val auth = SupabaseClient.auth
     private val functions = SupabaseClient.supabase.functions
+    private val storage = SupabaseClient.storage
 
-    suspend fun createAssessment(temperature: Double, notes: String): Result<String> = withContext(Dispatchers.IO) {
+    suspend fun uploadAssessmentImage(bytes: ByteArray, fileName: String): Result<String> = withContext(Dispatchers.IO) {
+        runCatching {
+            val userId = auth.currentUserOrNull()?.id ?: throw IllegalStateException("User not authenticated")
+            val path = "$userId/$fileName"
+            storage.from("assessment-images").upload(path, bytes) {
+                upsert = true
+            }
+            path
+        }
+    }
+
+    suspend fun createAssessment(temperature: Double, notes: String, imageUrl: String? = null): Result<String> = withContext(Dispatchers.IO) {
         runCatching {
             val userId = auth.currentUserOrNull()?.id ?: throw IllegalStateException("User not authenticated")
             val assessment = DbAssessment(
                 userId = userId,
                 bodyTemperature = temperature,
-                additionalNotes = notes
+                additionalNotes = notes,
+                imageUrl = imageUrl
             )
             
             android.util.Log.d("AssessmentRepository", "Creating assessment for user: $userId")
@@ -41,12 +54,13 @@ class AssessmentRepository {
         }
     }
 
-    suspend fun updateAssessmentContext(assessmentId: String, temperature: Double, notes: String): Result<Unit> = withContext(Dispatchers.IO) {
+    suspend fun updateAssessmentContext(assessmentId: String, temperature: Double, notes: String, imageUrl: String? = null): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             android.util.Log.d("AssessmentRepository", "Updating context for assessmentId = $assessmentId")
             postgrest.from("assessments").update(buildJsonObject {
                 put("body_temperature", temperature)
                 put("additional_notes", notes)
+                imageUrl?.let { put("image_url", it) }
             }) {
                 filter { eq("id", assessmentId) }
             }

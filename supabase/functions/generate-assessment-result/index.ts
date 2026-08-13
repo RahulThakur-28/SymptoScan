@@ -37,6 +37,7 @@ serve(async (req) => {
         user_id,
         body_temperature,
         additional_notes,
+        image_url,
         assessment_symptoms (*),
         assessment_questions (*)
       `)
@@ -85,7 +86,13 @@ Body Temperature: ${assessment.body_temperature}°C
 Additional Notes: ${assessment.additional_notes || 'None'}
 `.trim()
 
-    const prompt = `You are a medical AI assistant for SymptoScan. Analyze the following user health report and provide general health guidance.
+    let prompt = `You are a medical AI assistant for SymptoScan. Analyze the following user health report and provide general health guidance.`
+
+    if (assessment.image_url) {
+        prompt += `\nAn image has been provided by the user for visual context. Use it to inform your analysis but prioritize safety and mention that visual analysis is limited.`
+    }
+
+    prompt += `
 
 Health Context:
 ${contextText}
@@ -122,8 +129,46 @@ Response format:
   "disclaimer": "This information is for general educational purposes..."
 }`
 
-    // 6. Call Gemini (Migrated to Current Interactions API)
-    // Using gemini-3.6-flash and the interactions endpoint
+    // 6. Call Gemini (Multimodal support)
+    let input: any = prompt
+
+    if (assessment.image_url) {
+        console.log(`Fetching image from storage: ${assessment.image_url}`)
+        const { data: imageData, error: imageError } = await supabaseClient
+            .storage
+            .from('assessment-images')
+            .download(assessment.image_url)
+
+        if (imageData && !imageError) {
+            const buffer = await imageData.arrayBuffer()
+            // Convert to base64
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            const base64Image = btoa(binary)
+
+            const mimeType = assessment.image_url.toLowerCase().endsWith('.png') ? 'image/png' :
+                             assessment.image_url.toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg'
+
+            input = [
+                { text: prompt },
+                {
+                    inline_data: {
+                        mime_type: mimeType,
+                        data: base64Image
+                    }
+                }
+            ]
+            console.log('Multimodal input prepared')
+        } else {
+            console.error('Failed to download image:', imageError)
+            // Fallback to text-only if image download fails
+        }
+    }
+
     const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
       method: "POST",
       headers: {
@@ -132,7 +177,7 @@ Response format:
       },
       body: JSON.stringify({
         model: "gemini-3.6-flash",
-        input: prompt
+        input: input
       })
     })
 

@@ -8,9 +8,8 @@ import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.Add
-import androidx.compose.material.icons.rounded.Mic
 import androidx.compose.material.icons.filled.Search
+import androidx.compose.material.icons.rounded.Add
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -27,6 +26,7 @@ import com.rahul.symptoscan.presentation.home.component.HomeBottomNavigation
 import com.rahul.symptoscan.ui.components.PrimaryButton
 import com.rahul.symptoscan.ui.theme.BackgroundLight
 import com.rahul.symptoscan.ui.theme.BluePrimary
+import com.rahul.symptoscan.ui.theme.TextDark
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,6 +44,21 @@ fun SymptomAssessmentScreen(
                 currentRoute = "assess",
                 onNavigate = onNavigate
             )
+        },
+        topBar = {
+            Surface(shadowElevation = 2.dp) {
+                TopAppBar(
+                    title = { 
+                        Text(
+                            "New Assessment", 
+                            fontSize = 18.sp, 
+                            fontWeight = FontWeight.Bold, 
+                            color = TextDark
+                        ) 
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -56,33 +71,35 @@ fun SymptomAssessmentScreen(
             Spacer(modifier = Modifier.height(24.dp))
             
             Text(
-                text = "Symptom Assessment",
+                text = "What symptoms are you feeling?",
                 fontSize = 24.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onBackground
             )
             Text(
-                text = "Select all symptoms you're experiencing",
+                text = "Select all that apply for a comprehensive AI analysis.",
                 fontSize = 14.sp,
-                color = Color.Gray
+                color = Color.Gray,
+                modifier = Modifier.padding(top = 4.dp)
             )
 
-            Spacer(modifier = Modifier.height(20.dp))
+            Spacer(modifier = Modifier.height(24.dp))
 
             OutlinedTextField(
                 value = uiState.searchQuery,
                 onValueChange = { viewModel.onSearchQueryChange(it) },
                 modifier = Modifier.fillMaxWidth(),
                 placeholder = { Text("Search symptoms...") },
-                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null) },
-                trailingIcon = { IconButton(onClick = {}) { Icon(Icons.Rounded.Mic, contentDescription = "Voice search") } },
-                shape = RoundedCornerShape(12.dp),
+                leadingIcon = { Icon(Icons.Default.Search, contentDescription = null, tint = Color.Gray) },
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
                     focusedBorderColor = BluePrimary,
                     unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f),
                     focusedContainerColor = Color.White,
-                    unfocusedContainerColor = Color.White
-                )
+                    unfocusedContainerColor = Color.White,
+                    cursorColor = BluePrimary
+                ),
+                singleLine = true
             )
 
             val showAddCustom = uiState.searchQuery.isNotBlank() && 
@@ -113,7 +130,7 @@ fun SymptomAssessmentScreen(
                     text = "Recent Symptoms",
                     fontSize = 16.sp,
                     fontWeight = FontWeight.Bold,
-                    color = Color(0xFF1E293B)
+                    color = MaterialTheme.colorScheme.onBackground
                 )
                 
                 Spacer(modifier = Modifier.height(12.dp))
@@ -129,10 +146,26 @@ fun SymptomAssessmentScreen(
                         FilterChip(
                             selected = isSelected,
                             onClick = { viewModel.onSymptomToggle(symptom.id) },
-                            label = { Text(symptom.name) },
+                            label = { 
+                                Text(
+                                    text = symptom.name,
+                                    fontSize = 13.sp,
+                                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                                ) 
+                            },
+                            shape = RoundedCornerShape(12.dp),
                             colors = FilterChipDefaults.filterChipColors(
                                 selectedContainerColor = BluePrimary.copy(alpha = 0.1f),
-                                selectedLabelColor = BluePrimary
+                                selectedLabelColor = BluePrimary,
+                                containerColor = Color.White,
+                                labelColor = Color.Gray
+                            ),
+                            border = FilterChipDefaults.filterChipBorder(
+                                enabled = true,
+                                selected = isSelected,
+                                borderColor = Color.LightGray.copy(alpha = 0.3f),
+                                selectedBorderColor = BluePrimary,
+                                borderWidth = 1.dp
                             )
                         )
                     }
@@ -144,15 +177,15 @@ fun SymptomAssessmentScreen(
                 text = "Symptoms List",
                 fontSize = 16.sp,
                 fontWeight = FontWeight.Bold,
-                color = Color(0xFF1E293B)
+                color = MaterialTheme.colorScheme.onBackground
             )
 
             Spacer(modifier = Modifier.height(12.dp))
 
             LazyVerticalGrid(
                 columns = GridCells.Fixed(3),
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp),
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
                 modifier = Modifier.weight(1f)
             ) {
                 val filteredSymptoms = uiState.symptoms.filter { 

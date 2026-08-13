@@ -92,6 +92,18 @@ class AssessmentViewModel(
         _uiState.update { it.copy(additionalNotes = notes) }
     }
 
+    fun onImageSelected(uri: android.net.Uri?) {
+        _uiState.update { it.copy(selectedImageUri = uri) }
+    }
+
+    fun removeImage() {
+        _uiState.update { it.copy(selectedImageUri = null) }
+    }
+
+    private fun fahrenheitToCelsius(f: Double): Double {
+        return (f - 32) * 5 / 9
+    }
+
     fun startAssessment(onComplete: () -> Unit) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
@@ -99,14 +111,39 @@ class AssessmentViewModel(
             val state = _uiState.value
             val currentId = state.assessmentId
             
+            // Convert to Celsius for backend storage
+            val tempCelsius = fahrenheitToCelsius(state.bodyTemperature)
+
+            var uploadedImagePath: String? = null
+            if (state.selectedImageUri != null) {
+                _uiState.update { it.copy(isImageUploading = true) }
+                val bytes = com.rahul.symptoscan.core.utils.ImageUtils.uriToByteArray(
+                    Injection.applicationContext,
+                    state.selectedImageUri
+                )
+                if (bytes != null) {
+                    val fileName = "assessment_${System.currentTimeMillis()}.jpg"
+                    repository.uploadAssessmentImage(bytes, fileName).onSuccess { path ->
+                        uploadedImagePath = path
+                    }.onFailure { e ->
+                        _uiState.update { it.copy(isLoading = false, isImageUploading = false, error = "Failed to upload image: ${e.message}") }
+                        return@launch
+                    }
+                } else {
+                    _uiState.update { it.copy(isLoading = false, isImageUploading = false, error = "Failed to process image") }
+                    return@launch
+                }
+                _uiState.update { it.copy(isImageUploading = false) }
+            }
+            
             if (currentId != null) {
                 // Update context for existing assessment
-                repository.updateAssessmentContext(currentId, state.bodyTemperature, state.additionalNotes)
+                repository.updateAssessmentContext(currentId, tempCelsius, state.additionalNotes, uploadedImagePath)
                 saveSymptoms(onComplete)
                 return@launch
             }
 
-            repository.createAssessment(state.bodyTemperature, state.additionalNotes).onSuccess { id ->
+            repository.createAssessment(tempCelsius, state.additionalNotes, uploadedImagePath).onSuccess { id ->
                 _uiState.update { it.copy(assessmentId = id) }
                 saveSymptoms(onComplete)
             }.onFailure { e ->

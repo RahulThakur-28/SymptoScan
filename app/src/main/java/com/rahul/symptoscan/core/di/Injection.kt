@@ -9,7 +9,8 @@ import com.rahul.symptoscan.data.repository.*
  * Manual Dependency Injection provider.
  */
 object Injection {
-    private lateinit var applicationContext: Context
+    lateinit var applicationContext: Context
+        private set
 
     fun init(context: Context) {
         applicationContext = context.applicationContext

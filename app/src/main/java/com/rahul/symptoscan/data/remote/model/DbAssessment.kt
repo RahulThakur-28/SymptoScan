@@ -15,6 +15,8 @@ data class DbAssessment(
     val bodyTemperature: Double? = null,
     @SerialName("additional_notes")
     val additionalNotes: String? = null,
+    @SerialName("image_url")
+    val imageUrl: String? = null,
     @SerialName("created_at")
     val createdAt: String? = null,
     @SerialName("completed_at")

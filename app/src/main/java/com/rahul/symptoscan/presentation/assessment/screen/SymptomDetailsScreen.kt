@@ -1,5 +1,6 @@
 package com.rahul.symptoscan.presentation.assessment.screen
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -18,6 +19,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import com.rahul.symptoscan.presentation.assessment.component.ImagePickerSection
 import com.rahul.symptoscan.presentation.assessment.state.SymptomDetails
 import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentViewModel
 import com.rahul.symptoscan.ui.components.PrimaryButton
@@ -45,15 +47,24 @@ fun SymptomDetailsScreen(
         containerColor = BackgroundLight,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            TopAppBar(
-                title = { Text("Symptom Details") },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back")
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
-            )
+            Surface(shadowElevation = 3.dp) {
+                TopAppBar(
+                    title = { 
+                        Text(
+                            "Assessment Details", 
+                            fontSize = 18.sp, 
+                            fontWeight = FontWeight.Bold,
+                            color = TextDark
+                        ) 
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(Icons.AutoMirrored.Filled.ArrowBack, contentDescription = "Back", tint = TextDark)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.White)
+                )
+            }
         }
     ) { paddingValues ->
         Column(
@@ -64,9 +75,24 @@ fun SymptomDetailsScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(24.dp),
-                verticalArrangement = Arrangement.spacedBy(24.dp)
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
+                item {
+                    Text(
+                        text = "Refine your symptoms",
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onBackground
+                    )
+                    Text(
+                        text = "The more details you provide, the more accurate the guidance will be.",
+                        fontSize = 14.sp,
+                        color = Color.Gray,
+                        modifier = Modifier.padding(top = 4.dp)
+                    )
+                }
+
                 items(uiState.selectedSymptoms) { symptom ->
                     SymptomDetailItem(
                         name = symptom.name,
@@ -84,19 +110,33 @@ fun SymptomDetailsScreen(
                         onNotesChange = { viewModel.onNotesChange(it) }
                     )
                 }
+
+                item {
+                    ImagePickerSection(
+                        selectedImageUri = uiState.selectedImageUri,
+                        onImageSelected = { viewModel.onImageSelected(it) },
+                        onRemoveImage = { viewModel.removeImage() }
+                    )
+                }
+                
+                item {
+                    Spacer(modifier = Modifier.height(16.dp))
+                }
             }
 
             Surface(
                 color = Color.White,
                 tonalElevation = 8.dp,
-                shadowElevation = 8.dp
+                shadowElevation = 16.dp
             ) {
-                PrimaryButton(
-                    text = "Proceed to AI Assessment",
-                    onClick = { viewModel.startAssessment(onProceed) },
-                    isLoading = uiState.isLoading,
-                    modifier = Modifier.padding(24.dp)
-                )
+                Box(modifier = Modifier.padding(24.dp).navigationBarsPadding()) {
+                    PrimaryButton(
+                        text = if (uiState.isImageUploading) "Uploading context..." else "Generate AI Assessment",
+                        onClick = { viewModel.startAssessment(onProceed) },
+                        isLoading = uiState.isLoading,
+                        enabled = !uiState.isImageUploading,
+                    )
+                }
             }
         }
     }
@@ -113,13 +153,26 @@ private fun SymptomDetailItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(20.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(text = icon, fontSize = 24.sp)
-                Spacer(modifier = Modifier.width(12.dp))
-                Text(text = name, fontSize = 18.sp, fontWeight = FontWeight.Bold)
+                Box(
+                    modifier = Modifier
+                        .size(48.dp)
+                        .background(BluePrimary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(text = icon, fontSize = 24.sp)
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Text(
+                    text = name, 
+                    fontSize = 18.sp, 
+                    fontWeight = FontWeight.Bold,
+                    color = TextDark
+                )
             }
             
             Spacer(modifier = Modifier.height(24.dp))
@@ -174,14 +227,20 @@ private fun AssessmentLevelInfo(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(20.dp),
+        border = androidx.compose.foundation.BorderStroke(1.dp, Color.LightGray.copy(alpha = 0.2f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text("Body Temperature", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text(
+                "Body Temperature", 
+                fontSize = 16.sp, 
+                fontWeight = FontWeight.Bold, 
+                color = MaterialTheme.colorScheme.onSurface
+            )
 
             val tempStatus = when {
-                temperature < 36.5 -> "Low"
-                temperature > 37.5 -> "High (Fever)"
+                temperature < 97.7 -> "Low"
+                temperature > 99.5 -> "High (Fever)"
                 else -> "Normal"
             }
             
@@ -190,7 +249,12 @@ private fun AssessmentLevelInfo(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(text = "${String.format("%.1f", temperature)}°C", fontSize = 24.sp, fontWeight = FontWeight.Black, color = BluePrimary)
+                Text(
+                    text = "${String.format("%.1f", temperature)}°F", 
+                    fontSize = 24.sp, 
+                    fontWeight = FontWeight.Black, 
+                    color = BluePrimary
+                )
                 Surface(
                     color = when(tempStatus) {
                         "Normal" -> Color(0xFFF0FDF4)
@@ -214,22 +278,41 @@ private fun AssessmentLevelInfo(
             Slider(
                 value = temperature.toFloat(),
                 onValueChange = { onTemperatureChange(it.toDouble()) },
-                valueRange = 35f..42f,
-                steps = 69 // 0.1 increments roughly
+                valueRange = 91f..108f,
+                steps = 170, // 0.1 increments roughly
+                colors = SliderDefaults.colors(
+                    thumbColor = BluePrimary,
+                    activeTrackColor = BluePrimary,
+                    inactiveTrackColor = Color.LightGray.copy(alpha = 0.3f)
+                )
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text("Additional Notes", fontSize = 16.sp, fontWeight = FontWeight.Bold, color = TextDark)
+            Text(
+                "Additional Notes", 
+                fontSize = 16.sp, 
+                fontWeight = FontWeight.Bold, 
+                color = MaterialTheme.colorScheme.onSurface
+            )
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 value = notes,
                 onValueChange = onNotesChange,
-                placeholder = { Text("Describe anything additional about your symptoms, triggers, or relevant context...", fontSize = 14.sp) },
+                placeholder = { 
+                    Text(
+                        "Describe anything additional about your symptoms, triggers, or relevant context...", 
+                        fontSize = 14.sp,
+                        color = Color.Gray
+                    ) 
+                },
                 modifier = Modifier.fillMaxWidth().height(120.dp),
-                shape = RoundedCornerShape(12.dp),
+                shape = RoundedCornerShape(16.dp),
                 colors = OutlinedTextFieldDefaults.colors(
-                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f)
+                    unfocusedBorderColor = Color.LightGray.copy(alpha = 0.3f),
+                    focusedBorderColor = BluePrimary,
+                    focusedContainerColor = Color.White,
+                    unfocusedContainerColor = Color.White
                 )
             )
         }

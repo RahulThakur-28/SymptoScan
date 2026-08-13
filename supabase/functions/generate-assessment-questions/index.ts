@@ -35,7 +35,7 @@ serve(async (req) => {
     // 2. Verify ownership
     const { data: assessment, error: assessmentError } = await supabaseClient
       .from('assessments')
-      .select('user_id, body_temperature, additional_notes')
+      .select('user_id, body_temperature, additional_notes, image_url')
       .eq('id', assessmentId)
       .single()
 
@@ -70,7 +70,13 @@ Additional Notes: ${assessment.additional_notes || 'None'}
 `.trim()
 
     // 4. AI Prompt
-    const prompt = `You are a medical health assistant for SymptoScan. Based on the following symptoms and health context reported by a user, generate 3 to 5 concise, relevant follow-up questions to better understand their condition.
+    let prompt = `You are a medical health assistant for SymptoScan. Based on the following symptoms and health context reported by a user, generate 3 to 5 concise, relevant follow-up questions to better understand their condition.`
+
+    if (assessment.image_url) {
+        prompt += `\nAn image has been provided by the user for visual context. Use it to help determine relevant questions.`
+    }
+
+    prompt += `
 
 Health Context:
 ${contextText}
@@ -89,8 +95,44 @@ Response format:
   "questions": ["Question 1", "Question 2", ...]
 }`
 
-    // 5. Call Gemini (Migrated to Current Interactions API)
-    // Using gemini-3.6-flash and the interactions endpoint
+    // 5. Call Gemini (Multimodal support)
+    let input: any = prompt
+
+    if (assessment.image_url) {
+        console.log(`Fetching image from storage: ${assessment.image_url}`)
+        const { data: imageData, error: imageError } = await supabaseClient
+            .storage
+            .from('assessment-images')
+            .download(assessment.image_url)
+
+        if (imageData && !imageError) {
+            const buffer = await imageData.arrayBuffer()
+            let binary = '';
+            const bytes = new Uint8Array(buffer);
+            const len = bytes.byteLength;
+            for (let i = 0; i < len; i++) {
+                binary += String.fromCharCode(bytes[i]);
+            }
+            const base64Image = btoa(binary)
+
+            const mimeType = assessment.image_url.toLowerCase().endsWith('.png') ? 'image/png' :
+                             assessment.image_url.toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg'
+
+            input = [
+                { text: prompt },
+                {
+                    inline_data: {
+                        mime_type: mimeType,
+                        data: base64Image
+                    }
+                }
+            ]
+            console.log('Multimodal input prepared for questions')
+        } else {
+            console.error('Failed to download image for questions:', imageError)
+        }
+    }
+
     const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
       method: "POST",
       headers: {
@@ -99,7 +141,7 @@ Response format:
       },
       body: JSON.stringify({
         model: "gemini-3.6-flash",
-        input: prompt
+        input: input
       })
     })
 

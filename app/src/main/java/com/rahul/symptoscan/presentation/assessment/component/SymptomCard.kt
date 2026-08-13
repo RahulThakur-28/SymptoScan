@@ -1,7 +1,9 @@
 package com.rahul.symptoscan.presentation.assessment.component
 
 import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -14,6 +16,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.tooling.preview.Preview
 import com.rahul.symptoscan.domain.model.Symptom
+import com.rahul.symptoscan.ui.theme.Dimens
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -22,37 +25,50 @@ fun SymptomCard(
     onClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    val borderColor = if (symptom.isSelected) MaterialTheme.colorScheme.primary else Color.LightGray.copy(alpha = 0.2f)
-    val backgroundColor = if (symptom.isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.05f) else Color.White
+    val borderColor = if (symptom.isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+    val backgroundColor = if (symptom.isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) else MaterialTheme.colorScheme.surface
 
     Card(
         onClick = onClick,
         modifier = modifier
             .fillMaxWidth()
-            .height(100.dp),
-        shape = RoundedCornerShape(16.dp),
+            .height(110.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = backgroundColor),
         border = BorderStroke(1.dp, borderColor),
-        elevation = CardDefaults.cardElevation(defaultElevation = if (symptom.isSelected) 4.dp else 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = if (symptom.isSelected) 2.dp else 0.dp)
     ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(8.dp),
+                .padding(Dimens.PaddingSmall),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
-            Text(
-                text = symptom.icon,
-                fontSize = 32.sp
-            )
-            Spacer(modifier = Modifier.height(4.dp))
+            Box(
+                modifier = Modifier
+                    .size(44.dp)
+                    .background(
+                        if (symptom.isSelected) MaterialTheme.colorScheme.primary.copy(alpha = 0.1f) 
+                        else MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f),
+                        CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    text = symptom.icon,
+                    fontSize = 24.sp
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
             Text(
                 text = symptom.name,
-                fontSize = 13.sp,
-                fontWeight = FontWeight.SemiBold,
+                fontSize = 12.sp,
+                fontWeight = if (symptom.isSelected) FontWeight.Bold else FontWeight.Medium,
                 textAlign = TextAlign.Center,
-                color = if (symptom.isSelected) MaterialTheme.colorScheme.primary else Color(0xFF1E293B)
+                color = if (symptom.isSelected) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.onSurface,
+                maxLines = 1,
+                overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
             )
         }
     }
