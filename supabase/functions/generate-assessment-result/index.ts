@@ -10,6 +10,7 @@ serve(async (req) => {
 
   try {
     // 1. Authentication
+    console.log("[Assessment] Request received");
     const authHeader = req.headers.get('Authorization')
     if (!authHeader) {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
@@ -22,6 +23,8 @@ serve(async (req) => {
       console.error('Auth error:', authError)
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
     }
+
+    console.log("[Assessment] Authentication complete");
 
     const { assessmentId } = await req.json()
     if (!assessmentId) {
@@ -53,6 +56,8 @@ serve(async (req) => {
         console.error('Assessment ownership mismatch. Assessment owner:', assessment.user_id, 'Authenticated user:', user.id)
         return new Response(JSON.stringify({ error: 'Assessment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
+
+    console.log("[Assessment] Assessment loaded");
 
     const symptoms = assessment.assessment_symptoms || []
     const questions = assessment.assessment_questions || []
@@ -105,12 +110,13 @@ ${qaText}
 
 Instructions:
 1. Provide a concise summary of the reported symptoms.
-2. List possible causes or explanations (use cautious language like "This may be associated with...").
+2. List possible conditions (at least 2-3). For each, provide a name, severity level (Mild, Moderate, Severe), and a confidence percentage (1-100).
 3. Provide general health recommendations.
 4. List specific warning signs that would require immediate medical attention.
-5. Assign an urgency level: "emergency", "urgent", "routine", or "self_care".
-6. Include a clear medical disclaimer.
-7. Return strictly valid JSON.
+5. Assign an overall risk score (0-100) and an urgency level: "emergency", "urgent", "moderate", "routine", or "self_care".
+6. Provide a recommendation for which type of medical specialist to see (e.g., "General Practitioner", "Cardiologist").
+7. Include a clear medical disclaimer.
+8. Return strictly valid JSON.
 
 Constraints:
 - DO NOT provide a definitive diagnosis.
@@ -122,10 +128,19 @@ Constraints:
 Response format:
 {
   "summary": "...",
-  "possible_causes": ["...", "..."],
-  "recommendations": ["...", "..."],
-  "warning_signs": ["...", "..."],
+  "risk_score": 34,
   "urgency_level": "routine",
+  "conditions": [
+    { "name": "Condition Name", "severity": "Mild", "confidence": 75, "icon": "🤒" }
+  ],
+  "recommendation_items": [
+    { "title": "Recommendation", "icon": "💊" }
+  ],
+  "warning_signs": ["...", "..."],
+  "specialist": {
+    "title": "Specialist Title",
+    "description": "Why they should see this specialist..."
+  },
   "disclaimer": "This information is for general educational purposes..."
 }`
 
@@ -169,6 +184,9 @@ Response format:
         }
     }
 
+    console.log("[Assessment] Image check complete");
+    console.log("[Assessment] Gemini request started");
+
     const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
       method: "POST",
       headers: {
@@ -186,6 +204,8 @@ Response format:
       console.error(`Gemini Interactions API error: ${errorText}`)
       throw new Error('Gemini API failed')
     }
+
+    console.log("[Assessment] Gemini result generation completed");
 
     const interactionData = await geminiResponse.json()
     let aiOutputText = ""
@@ -211,29 +231,28 @@ Response format:
         throw new Error('Invalid AI response format')
     }
 
+    console.log("[Assessment] Gemini response parsed");
+
     // 7. Validate structured response
-    const validUrgencyLevels = ['emergency', 'urgent', 'routine', 'self_care']
-    if (!aiResult.summary || typeof aiResult.summary !== 'string' ||
-        !Array.isArray(aiResult.possible_causes) ||
-        !Array.isArray(aiResult.recommendations) ||
-        !Array.isArray(aiResult.warning_signs) ||
-        !aiResult.disclaimer || typeof aiResult.disclaimer !== 'string' ||
-        !validUrgencyLevels.includes(aiResult.urgency_level)) {
+    const validUrgencyLevels = ['emergency', 'urgent', 'moderate', 'routine', 'self_care']
+    if (!aiResult.summary || !validUrgencyLevels.includes(aiResult.urgency_level)) {
         console.error('AI result validation failed:', aiResult)
         throw new Error('AI result validation failed')
     }
 
     // 8. Save result (Upsert for idempotency)
+    console.log("[Assessment] Database update started");
     const { error: resultError } = await supabaseClient
       .from('assessment_results')
       .upsert({
         assessment_id: assessmentId,
         summary: aiResult.summary,
-        possible_causes: aiResult.possible_causes,
-        recommendations: aiResult.recommendations,
-        warning_signs: aiResult.warning_signs,
         urgency_level: aiResult.urgency_level,
-        disclaimer: aiResult.disclaimer
+        disclaimer: aiResult.disclaimer,
+        risk_score: aiResult.risk_score,
+        possible_causes: aiResult.conditions?.map((c: any) => `${c.name} (${c.confidence}%)`) || [],
+        recommendations: aiResult.recommendation_items?.map((r: any) => r.title) || [],
+        warning_signs: aiResult.warning_signs || []
       })
 
     if (resultError) {
@@ -254,6 +273,9 @@ Response format:
         console.error('Database assessment update error:', updateError)
         throw new Error('Failed to update assessment status')
     }
+
+    console.log("[Assessment] Database update completed");
+    console.log("[Assessment] HTTP response being returned");
 
     return new Response(JSON.stringify(aiResult), {
       headers: { 'Content-Type': 'application/json' },

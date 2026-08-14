@@ -34,11 +34,11 @@ fun HomeHeader(
     onNotificationClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var greeting by remember { mutableStateOf(getGreetingMessage()) }
+    var greetingInfo by remember { mutableStateOf(getGreetingInfo()) }
 
     LaunchedEffect(Unit) {
         while (true) {
-            greeting = getGreetingMessage()
+            greetingInfo = getGreetingInfo()
             delay(60000) // Check every minute
         }
     }
@@ -61,7 +61,7 @@ fun HomeHeader(
         ) {
             Column {
                 Text(
-                    text = "$greeting,",
+                    text = "${greetingInfo.emoji} ${greetingInfo.text},",
                     color = Color.White.copy(alpha = 0.8f),
                     fontSize = 14.sp
                 )
@@ -127,12 +127,14 @@ fun HomeHeader(
     }
 }
 
-private fun getGreetingMessage(): String {
+data class GreetingInfo(val text: String, val emoji: String)
+
+private fun getGreetingInfo(): GreetingInfo {
     val hour = LocalTime.now().hour
     return when (hour) {
-        in 5..11 -> "Good morning"
-        in 12..16 -> "Good afternoon"
-        in 17..20 -> "Good evening"
-        else -> "Good night"
+        in 5..11 -> GreetingInfo("Good morning", "☀️")
+        in 12..16 -> GreetingInfo("Good afternoon", "☀️")
+        in 17..20 -> GreetingInfo("Good evening", "🌅")
+        else -> GreetingInfo("Good night", "🌙")
     }
 }

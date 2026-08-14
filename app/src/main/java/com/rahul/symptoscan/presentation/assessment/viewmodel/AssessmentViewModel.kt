@@ -7,10 +7,7 @@ import com.rahul.symptoscan.data.remote.model.DbAssessmentSymptom
 import com.rahul.symptoscan.domain.model.Symptom
 import com.rahul.symptoscan.presentation.assessment.state.AssessmentUiState
 import com.rahul.symptoscan.presentation.assessment.state.SymptomDetails
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class AssessmentViewModel(
@@ -217,11 +214,34 @@ class AssessmentViewModel(
     }
 
     private suspend fun generateFinalResult(onComplete: () -> Unit) {
-        repository.generateResult(_uiState.value.assessmentId!!).onSuccess { result ->
+        val assessmentId = _uiState.value.assessmentId!!
+        android.util.Log.d("AssessmentViewModel", "Requesting final result for: $assessmentId")
+        
+        repository.generateResult(assessmentId).onSuccess { result ->
+            android.util.Log.d("AssessmentViewModel", "Successfully received assessment result")
             _uiState.update { it.copy(isLoading = false, result = result) }
             onComplete()
         }.onFailure { e ->
-            _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to generate result") }
+            android.util.Log.e("AssessmentViewModel", "Failed to generate result: ${e.message}")
+            val userMessage = when {
+                e.message?.contains("timeout", ignoreCase = true) == true -> 
+                    "Assessment is taking longer than expected. Please wait a moment and try again."
+                else -> "Failed to generate result. Please try again."
+            }
+            _uiState.update { it.copy(isLoading = false, error = userMessage) }
+        }
+    }
+
+    fun loadAssessmentResult(id: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true, assessmentId = id, result = null, error = null) }
+            repository.getAssessmentReport(id)
+                .catch { e ->
+                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load result") }
+                }
+                .collect { result ->
+                    _uiState.update { it.copy(isLoading = false, result = result) }
+                }
         }
     }
 }

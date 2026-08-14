@@ -21,6 +21,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.createSavedStateHandle
+import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.domain.model.HealthConversation
 import com.rahul.symptoscan.presentation.ai.component.HealthConversationCard
 import com.rahul.symptoscan.presentation.ai.viewmodel.HealthAssistantViewModel
@@ -34,7 +38,17 @@ fun HealthAssistantHistoryScreen(
     onBackClick: () -> Unit,
     onConversationClick: (String) -> Unit,
     onNewChatClick: () -> Unit,
-    viewModel: HealthAssistantViewModel = viewModel()
+    viewModel: HealthAssistantViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                HealthAssistantViewModel(
+                    repository = Injection.healthAssistantRepository,
+                    authRepository = Injection.authRepository,
+                    savedStateHandle = createSavedStateHandle()
+                )
+            }
+        }
+    )
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 

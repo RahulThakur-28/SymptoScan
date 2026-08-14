@@ -7,6 +7,7 @@ import io.github.jan.supabase.functions.functions
 import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
+import io.ktor.client.call.body
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -25,9 +26,11 @@ class AssessmentRepository {
         runCatching {
             val userId = auth.currentUserOrNull()?.id ?: throw IllegalStateException("User not authenticated")
             val path = "$userId/$fileName"
+            android.util.Log.d("AssessmentRepository", "[Assessment] Uploading image: $path")
             storage.from("assessment-images").upload(path, bytes) {
                 upsert = true
             }
+            android.util.Log.d("AssessmentRepository", "[Assessment] Image upload complete")
             path
         }
     }
@@ -84,10 +87,27 @@ class AssessmentRepository {
 
     suspend fun generateQuestions(assessmentId: String): Result<List<DbAssessmentQuestion>> = withContext(Dispatchers.IO) {
         runCatching {
-            android.util.Log.d("AssessmentRepository", "Generating questions for assessmentId = $assessmentId")
-            functions.invoke("generate-assessment-questions", body = buildJsonObject {
-                put("assessmentId", assessmentId)
-            })
+            android.util.Log.d("AssessmentRepository", "[Questions] Request received for id: $assessmentId")
+            
+            // Check if questions already exist
+            val existing = postgrest.from("assessment_questions")
+                .select() {
+                    filter { eq("assessment_id", assessmentId) }
+                }.decodeList<DbAssessmentQuestion>()
+            
+            if (existing.isNotEmpty()) {
+                android.util.Log.d("AssessmentRepository", "[Questions] Existing questions found, skipping generation")
+                return@runCatching existing.sortedBy { it.questionOrder }
+            }
+
+            android.util.Log.d("AssessmentRepository", "[Questions] Gemini request started")
+            functions.invoke(
+                function = "generate-assessment-questions",
+                body = buildJsonObject {
+                    put("assessmentId", assessmentId)
+                }
+            )
+            android.util.Log.d("AssessmentRepository", "[Questions] Gemini result generation completed")
             
             val questions = postgrest.from("assessment_questions")
                 .select() {
@@ -96,7 +116,7 @@ class AssessmentRepository {
                 }
                 .decodeList<DbAssessmentQuestion>()
             
-            android.util.Log.d("AssessmentRepository", "Received ${questions.size} questions from Edge Function/DB")
+            android.util.Log.d("AssessmentRepository", "[Questions] Received ${questions.size} questions from DB")
             questions
         }
     }
@@ -116,40 +136,53 @@ class AssessmentRepository {
 
     suspend fun generateResult(assessmentId: String): Result<DbAssessmentResult> = withContext(Dispatchers.IO) {
         runCatching {
-            functions.invoke("generate-assessment-result", body = buildJsonObject {
-                put("assessmentId", assessmentId)
-            })
+            android.util.Log.d("AssessmentRepository", "[Assessment] Request received for id: $assessmentId")
             
-            postgrest.from("assessment_results")
-                .select() {
-                    filter { eq("assessment_id", assessmentId) }
+            // 1. Invoke Edge Function and get the FULL result back
+            val response = functions.invoke(
+                function = "generate-assessment-result",
+                body = buildJsonObject {
+                    put("assessmentId", assessmentId)
                 }
-                .decodeSingle<DbAssessmentResult>()
+            )
+            
+            val result = response.body<DbAssessmentResult>()
+            android.util.Log.d("AssessmentRepository", "[Assessment] Received structured result from AI")
+            result
         }
     }
 
     fun getAssessmentHistory(): Flow<List<AssessmentSummary>> = flow {
         val userId = auth.currentUserOrNull()?.id ?: return@flow
         try {
+            android.util.Log.d("AssessmentRepository", "Fetching history for userId: $userId")
+            // Fetch assessments with status 'completed'
             val assessments = postgrest.from("assessments")
-                .select(columns = Columns.raw("id, image_url, status, created_at, assessment_results(summary, urgency_level), assessment_symptoms(symptom_name)")) {
-                    filter { eq("user_id", userId); eq("status", "completed") }
+                .select(columns = Columns.raw("id, image_url, status, created_at, assessment_results(summary, urgency_level, risk_score), assessment_symptoms(symptom_name)")) {
+                    filter { 
+                        eq("user_id", userId)
+                        eq("status", "completed")
+                    }
                     order("created_at", Order.DESCENDING)
                 }
                 .decodeList<DbAssessmentWithResult>()
             
+            android.util.Log.d("AssessmentRepository", "Found ${assessments.size} completed assessments")
+            
             emit(assessments.map { 
+                val res = it.result
                 AssessmentSummary(
                     id = it.id,
-                    title = it.result?.summary?.take(30)?.plus("...") ?: "Health Assessment",
+                    title = res?.summary?.take(50)?.plus("...") ?: "Health Assessment",
                     time = it.createdAt ?: "",
-                    status = mapUrgency(it.result?.urgencyLevel),
-                    score = 0,
+                    status = mapUrgency(res?.urgencyLevel),
+                    score = res?.riskScore ?: 0,
                     symptoms = it.symptoms.map { s -> s.symptomName },
                     hasImage = !it.imageUrl.isNullOrBlank()
                 )
             })
         } catch (e: Exception) {
+            android.util.Log.e("AssessmentRepository", "Error fetching history: ${e.message}")
             e.printStackTrace()
             emit(emptyList())
         }

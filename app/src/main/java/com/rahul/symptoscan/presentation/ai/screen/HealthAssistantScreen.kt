@@ -1,10 +1,13 @@
 package com.rahul.symptoscan.presentation.ai.screen
 
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyListState
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.lazy.rememberLazyListState
+import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
@@ -14,13 +17,21 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.createSavedStateHandle
+import com.rahul.symptoscan.core.di.Injection
+import com.rahul.symptoscan.R
 import com.rahul.symptoscan.domain.model.HealthMessage
 import com.rahul.symptoscan.presentation.ai.component.HealthAssistantEmptyState
 import com.rahul.symptoscan.presentation.ai.component.HealthAssistantInput
@@ -36,7 +47,17 @@ fun HealthAssistantScreen(
     onNavigate: (String) -> Unit,
     onBackClick: () -> Unit,
     onHistoryClick: () -> Unit,
-    viewModel: HealthAssistantViewModel = viewModel(),
+    viewModel: HealthAssistantViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                HealthAssistantViewModel(
+                    repository = Injection.healthAssistantRepository,
+                    authRepository = Injection.authRepository,
+                    savedStateHandle = createSavedStateHandle()
+                )
+            }
+        }
+    ),
     showScaffold: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -113,49 +134,10 @@ fun HealthAssistantContent(
             containerColor = MaterialTheme.colorScheme.background,
             snackbarHost = { SnackbarHost(snackbarHostState) },
             topBar = {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text(
-                                text = "Health Assistant",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "General health information",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onHistoryClick) {
-                            Icon(
-                                Icons.Default.History, 
-                                contentDescription = "History",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                        TextButton(
-                            onClick = onNewChatClick,
-                            colors = ButtonDefaults.textButtonColors(contentColor = BluePrimary)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("New", fontWeight = FontWeight.SemiBold)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                HealthAssistantHeader(
+                    onBackClick = onBackClick,
+                    onHistoryClick = onHistoryClick,
+                    onNewChatClick = onNewChatClick
                 )
             },
             bottomBar = {
@@ -178,52 +160,12 @@ fun HealthAssistantContent(
         }
     } else {
         Column(modifier = Modifier.fillMaxSize()) {
-            Surface(shadowElevation = 2.dp) {
-                TopAppBar(
-                    title = {
-                        Column {
-                            Text(
-                                text = "Health Assistant",
-                                fontSize = 18.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onBackground
-                            )
-                            Text(
-                                text = "General health information",
-                                fontSize = 12.sp,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    },
-                    navigationIcon = {
-                        IconButton(onClick = onBackClick) {
-                            Icon(
-                                imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                                contentDescription = "Back",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                    },
-                    actions = {
-                        IconButton(onClick = onHistoryClick) {
-                            Icon(
-                                Icons.Default.History, 
-                                contentDescription = "History",
-                                tint = MaterialTheme.colorScheme.onBackground
-                            )
-                        }
-                        TextButton(
-                            onClick = onNewChatClick,
-                            colors = ButtonDefaults.textButtonColors(contentColor = BluePrimary)
-                        ) {
-                            Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
-                            Spacer(modifier = Modifier.width(4.dp))
-                            Text("New", fontWeight = FontWeight.SemiBold)
-                        }
-                    },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-                )
-            }
+            HealthAssistantHeader(
+                onBackClick = onBackClick,
+                onHistoryClick = onHistoryClick,
+                onNewChatClick = onNewChatClick,
+                elevation = 2.dp
+            )
             AssistantMainLayout(
                 paddingValues = PaddingValues(0.dp),
                 uiState = uiState,
@@ -233,6 +175,92 @@ fun HealthAssistantContent(
                 onSendClick = onSendClick
             )
         }
+    }
+}
+
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+private fun HealthAssistantHeader(
+    onBackClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onNewChatClick: () -> Unit,
+    elevation: androidx.compose.ui.unit.Dp = 0.dp
+) {
+    Surface(shadowElevation = elevation) {
+        TopAppBar(
+            title = {
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        modifier = Modifier.size(36.dp),
+                        color = BluePrimary.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Image(
+                                painter = painterResource(id = R.drawable.app_logo),
+                                contentDescription = null,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                    
+                    Spacer(modifier = Modifier.width(10.dp))
+                    
+                    Column {
+                        Text(
+                            text = "AI Health Assistant",
+                            fontSize = 17.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis
+                        )
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Box(
+                                modifier = Modifier
+                                    .size(7.dp)
+                                    .clip(CircleShape)
+                                    .background(Color(0xFF22C55E))
+                            )
+                            Spacer(modifier = Modifier.width(5.dp))
+                            Text(
+                                text = "Online",
+                                fontSize = 11.sp,
+                                color = Color(0xFF22C55E),
+                                fontWeight = FontWeight.SemiBold
+                            )
+                        }
+                    }
+                }
+            },
+            navigationIcon = {
+                IconButton(onClick = onBackClick) {
+                    Icon(
+                        imageVector = Icons.AutoMirrored.Filled.ArrowBack,
+                        contentDescription = "Back",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+            },
+            actions = {
+                IconButton(onClick = onHistoryClick) {
+                    Icon(
+                        Icons.Default.History, 
+                        contentDescription = "History",
+                        tint = MaterialTheme.colorScheme.onBackground
+                    )
+                }
+                TextButton(
+                    onClick = onNewChatClick,
+                    colors = ButtonDefaults.textButtonColors(contentColor = BluePrimary)
+                ) {
+                    Icon(Icons.Default.Add, contentDescription = null, modifier = Modifier.size(18.dp))
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("New", fontWeight = FontWeight.SemiBold)
+                }
+            },
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+        )
     }
 }
 

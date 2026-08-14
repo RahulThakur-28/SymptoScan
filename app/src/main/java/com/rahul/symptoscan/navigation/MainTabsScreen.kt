@@ -1,6 +1,5 @@
-package com.rahul.symptoscan.presentation.main
+package com.rahul.symptoscan.navigation
 
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.pager.HorizontalPager
@@ -9,7 +8,10 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavController
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
+import androidx.lifecycle.createSavedStateHandle
+import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.presentation.ai.screen.HealthAssistantScreen
 import com.rahul.symptoscan.presentation.ai.viewmodel.HealthAssistantViewModel
 import com.rahul.symptoscan.presentation.assessment.screen.SymptomAssessmentScreen
@@ -21,12 +23,12 @@ import com.rahul.symptoscan.presentation.home.screen.HomeScreen
 import com.rahul.symptoscan.presentation.home.viewmodel.HomeViewModel
 import com.rahul.symptoscan.presentation.profile.screen.ProfileScreen
 import com.rahul.symptoscan.presentation.profile.viewmodel.ProfileViewModel
-import com.rahul.symptoscan.navigation.Screen
 import kotlinx.coroutines.launch
 
 @Composable
 fun MainTabsScreen(
     initialTabRoute: String = "home",
+    initialConversationId: String? = null,
     onNavigate: (String) -> Unit,
     onLogout: () -> Unit
 ) {
@@ -39,21 +41,51 @@ fun MainTabsScreen(
     )
     val scope = rememberCoroutineScope()
 
+    // Shared ViewModels (scoped to this screen)
+    // We provide factories for all to avoid zero-arg constructor crashes
+    val homeViewModel: HomeViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { HomeViewModel() }
+        }
+    )
+    val historyViewModel: HistoryViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { HistoryViewModel() }
+        }
+    )
+    val assessmentViewModel: AssessmentViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { AssessmentViewModel() }
+        }
+    )
+    val aiViewModel: HealthAssistantViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer {
+                HealthAssistantViewModel(
+                    repository = Injection.healthAssistantRepository,
+                    authRepository = Injection.authRepository,
+                    savedStateHandle = createSavedStateHandle()
+                )
+            }
+        }
+    )
+    val profileViewModel: ProfileViewModel = viewModel(
+        factory = viewModelFactory {
+            initializer { ProfileViewModel() }
+        }
+    )
+
     // Update pager if route changes externally
-    LaunchedEffect(initialTabRoute) {
+    LaunchedEffect(initialTabRoute, initialConversationId) {
         val index = mainTabs.indexOf(initialTabRoute)
         if (index != -1 && index != pagerState.currentPage) {
             pagerState.scrollToPage(index)
         }
+        
+        if (initialTabRoute == "ai" && initialConversationId != null) {
+            aiViewModel.openConversation(initialConversationId)
+        }
     }
-
-    // Shared ViewModels (scoped to this screen or used via viewModel())
-    // Note: They are defined here to keep them alive while swiping
-    val homeViewModel: HomeViewModel = viewModel()
-    val historyViewModel: HistoryViewModel = viewModel()
-    val assessmentViewModel: AssessmentViewModel = viewModel()
-    val aiViewModel: HealthAssistantViewModel = viewModel()
-    val profileViewModel: ProfileViewModel = viewModel()
 
     Scaffold(
         bottomBar = {

@@ -76,7 +76,35 @@ data class DbAssessmentResult(
     @SerialName("urgency_level")
     val urgencyLevel: String? = null,
     @SerialName("disclaimer")
-    val disclaimer: String? = null
+    val disclaimer: String? = null,
+    @SerialName("risk_score")
+    val riskScore: Int? = null,
+    @SerialName("conditions")
+    val conditions: List<DbAssessmentCondition>? = null,
+    @SerialName("specialist")
+    val specialist: DbRecommendedSpecialist? = null,
+    @SerialName("recommendation_items")
+    val recommendationItems: List<DbRecommendationItem>? = null
+)
+
+@Serializable
+data class DbAssessmentCondition(
+    val name: String,
+    val severity: String,
+    val confidence: Int,
+    val icon: String? = null
+)
+
+@Serializable
+data class DbRecommendedSpecialist(
+    val title: String,
+    val description: String
+)
+
+@Serializable
+data class DbRecommendationItem(
+    val title: String,
+    val icon: String
 )
 
 @Serializable
@@ -84,6 +112,8 @@ data class DbAssessmentWithResult(
     val id: String,
     @SerialName("image_url") val imageUrl: String? = null,
     @SerialName("created_at") val createdAt: String?,
-    @SerialName("assessment_results") val result: DbAssessmentResult? = null,
+    @SerialName("assessment_results") val results: List<DbAssessmentResult> = emptyList(),
     @SerialName("assessment_symptoms") val symptoms: List<DbAssessmentSymptom> = emptyList()
-)
+) {
+    val result: DbAssessmentResult? get() = results.firstOrNull()
+}

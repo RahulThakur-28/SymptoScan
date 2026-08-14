@@ -4,10 +4,6 @@ import androidx.compose.runtime.Composable
 import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier
 import androidx.navigation.navDeepLink
 import com.rahul.symptoscan.presentation.healthprofile.screen.HealthProfileScreen
 import com.rahul.symptoscan.presentation.helpsupport.screen.HelpSupportScreen
@@ -19,26 +15,19 @@ import com.rahul.symptoscan.presentation.auth.forgotpassword.screen.ForgotPasswo
 import com.rahul.symptoscan.presentation.auth.login.screen.LoginScreen
 import com.rahul.symptoscan.presentation.auth.register.screen.RegisterScreen
 import com.rahul.symptoscan.presentation.auth.resetpassword.screen.ResetPasswordScreen
-import androidx.navigation.compose.navigation
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.rahul.symptoscan.presentation.history.screen.HistoryScreen
-import com.rahul.symptoscan.presentation.home.screen.HomeScreen
-import com.rahul.symptoscan.presentation.profile.screen.ProfileScreen
 import com.rahul.symptoscan.presentation.profile.screen.EditProfileScreen
 import com.rahul.symptoscan.presentation.settings.screen.SettingsScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
-import com.rahul.symptoscan.presentation.ai.screen.HealthAssistantScreen
 import com.rahul.symptoscan.presentation.ai.screen.HealthAssistantHistoryScreen
-import com.rahul.symptoscan.presentation.ai.viewmodel.HealthAssistantViewModel
-import androidx.compose.runtime.LaunchedEffect
 import com.rahul.symptoscan.presentation.assessment.screen.*
 import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentViewModel
 import com.rahul.symptoscan.presentation.onboarding.screen.OnboardingScreen
 import com.rahul.symptoscan.presentation.splash.screen.SplashScreen
 import com.rahul.symptoscan.presentation.splash.viewmodel.SplashNavigationState
-import com.rahul.symptoscan.presentation.main.MainTabsScreen
 
 sealed class Screen(val route: String) {
     object Splash : Screen("splash")
@@ -227,17 +216,24 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable(
-            route = Screen.Main.route + "?tab={tab}",
+            route = Screen.Main.route + "?tab={tab}&conversationId={conversationId}",
             arguments = listOf(
                 navArgument("tab") { 
                     type = NavType.StringType
                     defaultValue = "home"
+                },
+                navArgument("conversationId") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
                 }
             )
         ) { backStackEntry ->
             val tab = backStackEntry.arguments?.getString("tab") ?: "home"
+            val conversationId = backStackEntry.arguments?.getString("conversationId")
             MainTabsScreen(
                 initialTabRoute = tab,
+                initialConversationId = conversationId,
                 onNavigate = { route ->
                     // Handle specific tab routes by updating the pager (if we were to re-navigate to main)
                     // Or navigate to sub-screens
@@ -301,21 +297,40 @@ fun AppNavGraph(navController: NavHostController) {
                 viewModel = assessmentViewModel
             )
         }
-        composable(route = "assessment_result") { backStackEntry ->
+        composable(
+            route = "assessment_result?id={id}",
+            arguments = listOf(
+                navArgument("id") {
+                    type = NavType.StringType
+                    nullable = true
+                    defaultValue = null
+                }
+            )
+        ) { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id")
             val parentEntry = remember(backStackEntry) {
                 navController.getBackStackEntry(Screen.Main.route)
             }
             val assessmentViewModel: AssessmentViewModel = viewModel(parentEntry)
+            
+            LaunchedEffect(id) {
+                if (id != null) {
+                    assessmentViewModel.loadAssessmentResult(id)
+                }
+            }
+
             AssessmentResultScreen(
                 onNavigateBack = { 
-                    navController.navigate(Screen.Main.route) {
-                        popUpTo(Screen.Main.route) { inclusive = true }
+                    navController.popBackStack()
+                },
+                onViewFullReport = { 
+                    val targetId = id ?: assessmentViewModel.uiState.value.assessmentId
+                    if (targetId != null) {
+                        navController.navigate("assessment_report/$targetId")
                     }
                 },
-                onViewFullReport = { /* ... */ },
                 onAskAI = { 
-                    // Should navigate to AI tab. Pager handles this if we go back to Main.
-                    navController.navigate(Screen.Main.route) 
+                    navController.navigate(Screen.Main.route + "?tab=ai")
                 },
                 viewModel = assessmentViewModel
             )
@@ -325,11 +340,14 @@ fun AppNavGraph(navController: NavHostController) {
             HealthAssistantHistoryScreen(
                 onBackClick = { navController.popBackStack() },
                 onConversationClick = { id ->
-                    // Deep navigation to AI tab with specific conversation is currently simplified
-                    navController.navigate(Screen.Main.route)
+                    navController.navigate(Screen.Main.route + "?tab=ai&conversationId=$id") {
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                    }
                 },
                 onNewChatClick = {
-                    navController.navigate(Screen.Main.route)
+                    navController.navigate(Screen.Main.route + "?tab=ai") {
+                        popUpTo(Screen.Main.route) { inclusive = true }
+                    }
                 }
             )
         }
@@ -416,6 +434,11 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
         composable(route = "assessment_details/{id}") { backStackEntry ->
+            val id = backStackEntry.arguments?.getString("id") ?: return@composable
+            navController.navigate("assessment_result?id=$id")
+        }
+
+        composable(route = "assessment_report/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: return@composable
             AssessmentReportScreen(
                 assessmentId = id,

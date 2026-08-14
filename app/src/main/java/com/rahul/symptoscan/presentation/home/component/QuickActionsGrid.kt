@@ -6,6 +6,7 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.filled.MonitorHeart
 import androidx.compose.material.icons.rounded.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.Composable
@@ -15,6 +16,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 
@@ -46,7 +48,7 @@ fun QuickActionsGrid(
             Spacer(modifier = Modifier.width(16.dp))
             QuickActionCard(
                 title = "View\nHistory",
-                icon = Icons.Rounded.Assignment,
+                icon = Icons.Rounded.MonitorHeart,
                 containerColor = com.rahul.symptoscan.ui.theme.SuccessGreen.copy(alpha = 0.1f),
                 iconColor = com.rahul.symptoscan.ui.theme.SuccessGreen,
                 onClick = onViewHistory,
@@ -99,12 +101,13 @@ private fun QuickActionCard(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(16.dp),
-            verticalArrangement = Arrangement.SpaceBetween
+            verticalArrangement = Arrangement.Center,
+            horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(10.dp))
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(MaterialTheme.colorScheme.surface),
                 contentAlignment = Alignment.Center
             ) {
@@ -115,12 +118,16 @@ private fun QuickActionCard(
                     modifier = Modifier.size(24.dp)
                 )
             }
+            
+            Spacer(modifier = Modifier.height(12.dp))
+            
             Text(
                 text = title,
                 fontSize = 14.sp,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface,
-                lineHeight = 18.sp
+                lineHeight = 18.sp,
+                textAlign = TextAlign.Center
             )
         }
     }

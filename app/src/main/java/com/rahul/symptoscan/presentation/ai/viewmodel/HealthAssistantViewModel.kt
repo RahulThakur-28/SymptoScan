@@ -1,27 +1,32 @@
 package com.rahul.symptoscan.presentation.ai.viewmodel
 
+import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
 import com.rahul.symptoscan.data.repository.HealthAssistantRepository
 import com.rahul.symptoscan.domain.model.HealthMessage
 import com.rahul.symptoscan.presentation.ai.state.HealthAssistantUiState
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class HealthAssistantViewModel(
     private val repository: HealthAssistantRepository = Injection.healthAssistantRepository,
-    private val authRepository: com.rahul.symptoscan.data.repository.AuthRepository = Injection.authRepository
+    private val authRepository: com.rahul.symptoscan.data.repository.AuthRepository = Injection.authRepository,
+    private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
 
-    private val _uiState = MutableStateFlow(HealthAssistantUiState())
+    private val _uiState = MutableStateFlow(HealthAssistantUiState(
+        currentConversationId = savedStateHandle.get<String>("conversation_id")
+    ))
     val uiState: StateFlow<HealthAssistantUiState> = _uiState.asStateFlow()
 
     init {
         loadConversations()
+        // If we restored a conversation ID, load its messages
+        _uiState.value.currentConversationId?.let { id ->
+            openConversation(id)
+        }
     }
 
     fun loadConversations() {
@@ -46,6 +51,7 @@ class HealthAssistantViewModel(
     }
 
     fun startNewConversation() {
+        savedStateHandle["conversation_id"] = null
         _uiState.update {
             it.copy(
                 currentConversationId = null,
@@ -58,6 +64,7 @@ class HealthAssistantViewModel(
     }
 
     fun openConversation(conversationId: String) {
+        savedStateHandle["conversation_id"] = conversationId
         _uiState.update { it.copy(currentConversationId = conversationId, isLoadingMessages = true, error = null) }
         viewModelScope.launch {
             repository.getMessages(conversationId)
@@ -143,6 +150,7 @@ class HealthAssistantViewModel(
                             inputText = ""
                         ) 
                     }
+                    savedStateHandle["conversation_id"] = newConv.id
                     newConv.id
                 }
                 else -> {
@@ -173,9 +181,8 @@ class HealthAssistantViewModel(
                             isConversationCreated = false
                         ) 
                     }
+                    savedStateHandle["conversation_id"] = null
                 } else {
-                    // Remove the optimistic message on failure? 
-                    // Better to just show error.
                     _uiState.update { it.copy(isSendingMessage = false, error = e.message) }
                 }
             }
@@ -194,6 +201,7 @@ class HealthAssistantViewModel(
                 _uiState.update { state ->
                     val newList = state.conversations.filter { it.id != conversationId }
                     if (state.currentConversationId == conversationId) {
+                        savedStateHandle["conversation_id"] = null
                         state.copy(
                             conversations = newList,
                             currentConversationId = null,
@@ -219,8 +227,6 @@ class HealthAssistantViewModel(
     }
 
     fun retry() {
-        // Simple retry: if we have an input text and no active send, try sending again.
-        // If we are opening a conversation, try loading messages.
         val state = _uiState.value
         if (state.inputText.isNotBlank() && !state.isSendingMessage) {
             sendMessage()
