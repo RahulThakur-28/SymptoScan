@@ -2,6 +2,7 @@ package com.rahul.symptoscan.navigation
 
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
 import androidx.compose.material3.Scaffold
@@ -76,18 +77,21 @@ fun MainTabsScreen(
     )
 
     // Update pager if route changes externally
-    LaunchedEffect(initialTabRoute, initialConversationId) {
+    LaunchedEffect(initialTabRoute) {
         val index = mainTabs.indexOf(initialTabRoute)
         if (index != -1 && index != pagerState.currentPage) {
             pagerState.scrollToPage(index)
         }
-        
+    }
+
+    LaunchedEffect(initialConversationId) {
         if (initialTabRoute == "ai" && initialConversationId != null) {
             aiViewModel.openConversation(initialConversationId)
         }
     }
 
     Scaffold(
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         bottomBar = {
             HomeBottomNavigation(
                 currentRoute = mainTabs[pagerState.currentPage],
@@ -125,7 +129,7 @@ fun MainTabsScreen(
                 )
                 2 -> HistoryScreen(
                     onNavigate = onNavigate,
-                    onAssessmentClick = { id -> onNavigate("assessment_details/$id") },
+                    onAssessmentClick = { id -> onNavigate("assessment_result?id=$id") },
                     viewModel = historyViewModel,
                     showScaffold = false
                 )

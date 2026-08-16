@@ -21,6 +21,8 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
@@ -49,6 +51,13 @@ fun AssessmentResultScreen(
     val result = uiState.result
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
+    val view = LocalView.current
+    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    SideEffect {
+        val window = (view.context as android.app.Activity).window
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -69,7 +78,7 @@ fun AssessmentResultScreen(
                         }
                     },
                     actions = {
-                    IconButton(onClick = { 
+                    IconButton(onClick = {
                         if (result != null) {
                             val shareText = "My SymptoScan Assessment Result: ${deriveRiskLevelText(result.urgencyLevel)} (${result.riskScore ?: deriveRiskScore(result.urgencyLevel)}/100). Summary: ${result.summary}"
                             val sendIntent: Intent = Intent().apply {
@@ -176,7 +185,8 @@ fun AssessmentResultScreen(
 
 @Composable
 private fun ResultHero(result: DbAssessmentResult, symptomCount: Int) {
-    val riskScore = result.riskScore ?: deriveRiskScore(result.urgencyLevel)
+    val rawRiskScore = result.riskScore ?: deriveRiskScore(result.urgencyLevel)
+    val riskScore = rawRiskScore.coerceIn(0, 100)
     val riskLevel = deriveRiskLevelText(result.urgencyLevel)
     val riskColor = deriveRiskColor(result.urgencyLevel)
     
@@ -274,64 +284,97 @@ private fun AiExplanationSection(explanation: String) {
 
 @Composable
 private fun PossibleConditionsSection(result: DbAssessmentResult) {
-    Text(
-        text = "POSSIBLE CONDITIONS",
-        fontSize = 12.sp,
-        fontWeight = FontWeight.Bold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        letterSpacing = 1.sp
-    )
-    Spacer(modifier = Modifier.height(16.dp))
-    
-    val conditions = result.conditions ?: deriveConditions(result.possibleCauses)
-    
-    conditions.forEach { condition ->
-        Card(
-            modifier = Modifier.fillMaxWidth().padding(bottom = 12.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-        ) {
-            Column(modifier = Modifier.padding(16.dp)) {
-                Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Surface(
-                            modifier = Modifier.size(40.dp),
-                            color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
-                            shape = RoundedCornerShape(10.dp)
-                        ) {
-                            Box(contentAlignment = Alignment.Center) {
-                                Text(text = condition.icon ?: "🤒", fontSize = 20.sp)
-                            }
-                        }
-                        Spacer(modifier = Modifier.width(12.dp))
-                        Column {
-                            Text(text = condition.name, fontWeight = FontWeight.Bold, fontSize = 15.sp)
-                            Text(text = condition.severity, fontSize = 12.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
+    Column {
+        Text(
+            text = "POSSIBLE CONDITIONS",
+            fontSize = 13.sp,
+            fontWeight = FontWeight.Bold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            letterSpacing = 1.sp
+        )
+        Spacer(modifier = Modifier.height(16.dp))
+        
+        val conditions = result.conditions ?: deriveConditions(result.possibleCauses)
+        
+        conditions.forEach { condition ->
+            ConditionCard(condition)
+            Spacer(modifier = Modifier.height(12.dp))
+        }
+    }
+}
+
+@Composable
+private fun ConditionCard(condition: com.rahul.symptoscan.data.remote.model.DbAssessmentCondition) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+        border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+    ) {
+        Column(modifier = Modifier.padding(20.dp)) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.Top
+            ) {
+                Row(modifier = Modifier.weight(1f)) {
+                    Surface(
+                        modifier = Modifier.size(44.dp),
+                        color = BluePrimary.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Text(text = condition.icon ?: "🤒", fontSize = 22.sp)
                         }
                     }
-                    Text(
-                        text = "${condition.confidence}%", 
-                        fontWeight = FontWeight.Bold, 
-                        color = MaterialTheme.colorScheme.primary,
-                        fontSize = 15.sp
-                    )
+                    Spacer(modifier = Modifier.width(16.dp))
+                    Column {
+                        Text(
+                            text = condition.name,
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 16.sp,
+                            color = MaterialTheme.colorScheme.onSurface,
+                            lineHeight = 22.sp
+                        )
+                        Text(
+                            text = condition.severity,
+                            fontSize = 13.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
-                Spacer(modifier = Modifier.height(12.dp))
+                
+                Text(
+                    text = "${condition.confidence}%",
+                    fontWeight = FontWeight.Black,
+                    color = BluePrimary,
+                    fontSize = 18.sp
+                )
+            }
+            
+            Spacer(modifier = Modifier.height(20.dp))
+            
+            Column {
                 LinearProgressIndicator(
                     progress = { condition.confidence / 100f },
-                    modifier = Modifier.fillMaxWidth().height(6.dp).clip(CircleShape),
-                    color = MaterialTheme.colorScheme.primary,
-                    trackColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .clip(CircleShape),
+                    color = BluePrimary,
+                    trackColor = BluePrimary.copy(alpha = 0.1f),
                     strokeCap = StrokeCap.Round
                 )
+                Spacer(modifier = Modifier.height(6.dp))
                 Text(
-                    text = "Confidence", 
-                    modifier = Modifier.fillMaxWidth().padding(top = 4.dp),
+                    text = "Confidence",
+                    modifier = Modifier.fillMaxWidth(),
                     textAlign = TextAlign.End,
-                    fontSize = 10.sp,
+                    fontSize = 11.sp,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.Bold
                 )
             }
         }

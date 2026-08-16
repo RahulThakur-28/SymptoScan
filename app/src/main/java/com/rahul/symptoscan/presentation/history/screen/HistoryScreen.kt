@@ -1,8 +1,10 @@
 package com.rahul.symptoscan.presentation.history.screen
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
@@ -23,6 +25,7 @@ import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.SideEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -34,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.tooling.preview.Preview
 import com.rahul.symptoscan.domain.model.AssessmentStatus
 import com.rahul.symptoscan.presentation.home.component.HomeBottomNavigation
@@ -52,6 +57,13 @@ fun HistoryScreen(
     showScaffold: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val view = LocalView.current
+    val darkTheme = isSystemInDarkTheme()
+
+    SideEffect {
+        val window = (view.context as android.app.Activity).window
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+    }
 
     LaunchedEffect(Unit) {
         viewModel.onRefresh()
@@ -113,7 +125,7 @@ fun HistoryScreen(
             )
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             Surface(shadowElevation = 2.dp) {
                 TopAppBar(
                     title = { 
@@ -302,17 +314,77 @@ fun HistoryScreenContent(
                         itemsIndexed(
                             items = uiState.filteredAssessments,
                             key = { _, item -> item.id }
-                        ) { _, assessment ->
-                            Box(modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)) {
-                                AssessmentHistoryCard(
-                                    assessment = assessment,
-                                    onClick = { onAssessmentClick(assessment.id) }
-                                )
-                            }
+                        ) { index, assessment ->
+                            TimelineItem(
+                                assessment = assessment,
+                                isFirst = index == 0,
+                                isLast = index == uiState.filteredAssessments.size - 1,
+                                onClick = { onAssessmentClick(assessment.id) }
+                            )
                         }
                     }
                 }
             }
+        }
+    }
+}
+
+@Composable
+private fun TimelineItem(
+    assessment: com.rahul.symptoscan.domain.model.AssessmentSummary,
+    isFirst: Boolean,
+    isLast: Boolean,
+    onClick: () -> Unit
+) {
+    val statusColor = when (assessment.status) {
+        AssessmentStatus.Low -> SuccessGreen
+        AssessmentStatus.Moderate -> WarningAmber
+        AssessmentStatus.High -> DangerRed
+        AssessmentStatus.Pending -> MaterialTheme.colorScheme.outline
+    }
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .height(IntrinsicSize.Min)
+            .padding(horizontal = 24.dp)
+    ) {
+        // Timeline Column
+        Box(
+            modifier = Modifier
+                .width(24.dp)
+                .fillMaxHeight(),
+            contentAlignment = Alignment.TopCenter
+        ) {
+            // Vertical Line
+            Box(
+                modifier = Modifier
+                    .width(1.7.dp)
+                    .fillMaxHeight()
+                    .padding(top = if (isFirst) 12.dp else 0.dp)
+                    .background(MaterialTheme.colorScheme.outline.copy(alpha = 0.5f))
+            )
+            
+            // Dot
+            Box(
+                modifier = Modifier
+                    .padding(top = 10.dp)
+                    .size(10.dp)
+                    .clip(CircleShape)
+                    .background(statusColor)
+                    .border(2.dp, MaterialTheme.colorScheme.background, CircleShape)
+            )
+        }
+        
+        // Card Column
+        Box(modifier = Modifier
+            .padding(bottom = 20.dp, start = 8.dp)
+            .weight(1f)
+        ) {
+            AssessmentHistoryCard(
+                assessment = assessment,
+                onClick = onClick
+            )
         }
     }
 }

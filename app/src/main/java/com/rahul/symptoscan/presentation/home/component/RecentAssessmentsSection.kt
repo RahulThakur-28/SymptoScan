@@ -71,6 +71,7 @@ private fun AssessmentSmallCard(
         AssessmentStatus.Low -> SuccessGreen
         AssessmentStatus.Moderate -> WarningAmber
         AssessmentStatus.High -> DangerRed
+        AssessmentStatus.Pending -> MaterialTheme.colorScheme.outline
     }
 
     val statusIcon = when (assessment.status) {

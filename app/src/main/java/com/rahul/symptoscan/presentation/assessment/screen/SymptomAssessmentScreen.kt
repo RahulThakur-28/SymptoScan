@@ -71,7 +71,7 @@ fun SymptomAssessmentScreen(
             )
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             Surface(shadowElevation = 2.dp) {
                 TopAppBar(
                     title = { 

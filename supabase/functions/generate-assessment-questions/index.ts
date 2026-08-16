@@ -32,15 +32,27 @@ serve(async (req) => {
 
     console.log(`Processing generate-assessment-questions for assessmentId: ${assessmentId}, userId: ${user.id}`)
 
-    // 2. Verify ownership
-    const { data: assessment, error: assessmentError } = await supabaseClient
-      .from('assessments')
-      .select('user_id, body_temperature, additional_notes, image_url')
-      .eq('id', assessmentId)
-      .single()
+    // 2. Fetch all data in parallel
+    const [assessmentRes, symptomsRes, profileRes] = await Promise.all([
+      supabaseClient
+        .from('assessments')
+        .select('user_id, body_temperature, additional_notes, image_url')
+        .eq('id', assessmentId)
+        .single(),
+      supabaseClient
+        .from('assessment_symptoms')
+        .select('*')
+        .eq('assessment_id', assessmentId),
+      supabaseClient
+        .from('health_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle()
+    ])
 
-    if (assessmentError || !assessment) {
-      console.error('Assessment not found or error:', assessmentError, 'assessmentId:', assessmentId)
+    const assessment = assessmentRes.data
+    if (assessmentRes.error || !assessment) {
+      console.error('Assessment not found or error:', assessmentRes.error, 'assessmentId:', assessmentId)
       return new Response(JSON.stringify({ error: 'Assessment not found', assessmentId: assessmentId }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
 
@@ -49,20 +61,28 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Assessment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
 
-    // 3. Fetch symptoms
-    const { data: symptoms, error: symptomsError } = await supabaseClient
-      .from('assessment_symptoms')
-      .select('*')
-      .eq('assessment_id', assessmentId)
-
-    if (symptomsError || !symptoms || symptoms.length === 0) {
-      console.error('No symptoms found:', symptomsError)
+    const symptoms = symptomsRes.data || []
+    if (symptoms.length === 0) {
       return new Response(JSON.stringify({ error: 'No symptoms found for this assessment' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
     }
 
+    const profile = profileRes.data
+
+    // 3. Build context strings
     const symptomsDescription = symptoms.map((s: any) =>
       `- ${s.symptom_name} (Severity: ${s.severity}/10, Pain: ${s.pain_level}/10, Duration: ${s.duration}, Frequency: ${s.frequency}, Onset: ${s.onset})`
     ).join('\n')
+
+    let profileText = "None provided"
+    if (profile) {
+        profileText = `
+Biological Sex: ${profile.biological_sex || 'Not provided'}
+Height: ${profile.height_cm || '--'}cm, Weight: ${profile.weight_kg || '--'}kg
+Allergies: ${profile.allergies || 'None'}
+Chronic Conditions: ${profile.medical_conditions || 'None'}
+Current Medications: ${profile.medications || 'None'}
+`.trim()
+    }
 
     const contextText = `
 Body Temperature: ${assessment.body_temperature}°C
@@ -70,25 +90,32 @@ Additional Notes: ${assessment.additional_notes || 'None'}
 `.trim()
 
     // 4. AI Prompt
-    let prompt = `You are a medical health assistant for SymptoScan. Based on the following symptoms and health context reported by a user, generate 3 to 5 concise, relevant follow-up questions to better understand their condition.`
+    let prompt = `You are a medical health assistant for SymptoScan. Based on the user's health profile and the current assessment data, generate 3 to 5 concise, relevant follow-up questions to better understand their condition.
+
+USER HEALTH CONTEXT:
+${profileText}
+
+CURRENT ASSESSMENT:
+${contextText}
+
+SYMPTOMS:
+${symptomsDescription}
+`
 
     if (assessment.image_url) {
-        prompt += `\nAn image has been provided by the user for visual context. Use it to help determine relevant questions.`
+        prompt += `\nAn image has been provided by the user for visual context. Use it to help determine relevant questions.
+        IMPORTANT: If the image is irrelevant, unclear, or poor quality, do NOT invent observations. Rely more heavily on the text-based symptoms and description.`
     }
 
     prompt += `
 
-Health Context:
-${contextText}
-
-Symptoms:
-${symptomsDescription}
-
 Instructions:
-1. Questions must be concise, understandable, and non-leading.
-2. Do NOT provide any diagnosis or prescriptions.
-3. Focus on clarifying the symptoms (e.g., when it happens, what makes it better/worse).
-4. Return ONLY a JSON object with a "questions" field containing an array of strings.
+1. Identify information gaps between the health profile, reported symptoms, and description.
+2. Questions must be concise, understandable, and non-leading.
+3. Do NOT ask questions already answered in the context above (e.g., don't ask about medications if they are listed).
+4. Do NOT provide any diagnosis or prescriptions.
+5. Focus on clarifying the symptoms (e.g., when it happens, what makes it better/worse).
+6. Return ONLY a JSON object with a "questions" field containing an array of strings.
 
 Response format:
 {

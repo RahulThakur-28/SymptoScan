@@ -18,6 +18,7 @@ import com.rahul.symptoscan.presentation.auth.resetpassword.screen.ResetPassword
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.rahul.symptoscan.presentation.profile.screen.EditProfileScreen
 import com.rahul.symptoscan.presentation.settings.screen.SettingsScreen
 import androidx.navigation.navArgument
@@ -235,11 +236,10 @@ fun AppNavGraph(navController: NavHostController) {
                 initialTabRoute = tab,
                 initialConversationId = conversationId,
                 onNavigate = { route ->
-                    // Handle specific tab routes by updating the pager (if we were to re-navigate to main)
-                    // Or navigate to sub-screens
                     if (route in listOf("home", "assess", "history", "ai", "profile")) {
+                        // Simply update the URL without popping the Main screen
                         navController.navigate(Screen.Main.route + "?tab=$route") {
-                            popUpTo(Screen.Main.route) { inclusive = true }
+                            launchSingleTop = true
                         }
                     } else {
                         navController.navigate(route)
@@ -255,19 +255,19 @@ fun AppNavGraph(navController: NavHostController) {
 
         // Redirections for backward compatibility and deep links
         composable(route = Screen.Home.route) { 
-            navController.navigate(Screen.Main.route + "?tab=home") { popUpTo(0) } 
+            navController.navigate(Screen.Main.route + "?tab=home") { launchSingleTop = true } 
         }
         composable(route = Screen.Assess.route) { 
-            navController.navigate(Screen.Main.route + "?tab=assess") { popUpTo(0) } 
+            navController.navigate(Screen.Main.route + "?tab=assess") { launchSingleTop = true } 
         }
         composable(route = Screen.History.route) { 
-            navController.navigate(Screen.Main.route + "?tab=history") { popUpTo(0) } 
+            navController.navigate(Screen.Main.route + "?tab=history") { launchSingleTop = true } 
         }
         composable(route = Screen.AI.route) { 
-            navController.navigate(Screen.Main.route + "?tab=ai") { popUpTo(0) } 
+            navController.navigate(Screen.Main.route + "?tab=ai") { launchSingleTop = true } 
         }
         composable(route = Screen.Profile.route) { 
-            navController.navigate(Screen.Main.route + "?tab=profile") { popUpTo(0) } 
+            navController.navigate(Screen.Main.route + "?tab=profile") { launchSingleTop = true }
         }
 
         // Assessment sub-screens
@@ -432,10 +432,6 @@ fun AppNavGraph(navController: NavHostController) {
             com.rahul.symptoscan.presentation.emergency.screen.AddEmergencyContactScreen(
                 onNavigateBack = { navController.popBackStack() }
             )
-        }
-        composable(route = "assessment_details/{id}") { backStackEntry ->
-            val id = backStackEntry.arguments?.getString("id") ?: return@composable
-            navController.navigate("assessment_result?id=$id")
         }
 
         composable(route = "assessment_report/{id}") { backStackEntry ->

@@ -52,7 +52,8 @@ fun HomeHeader(
                     colors = listOf(DeepBlue, BluePrimary, CyanBlue)
                 )
             )
-            .padding(top = 48.dp, bottom = 120.dp, start = 24.dp, end = 24.dp)
+            .statusBarsPadding()
+            .padding(top = 24.dp, bottom = 120.dp, start = 24.dp, end = 24.dp)
     ) {
         Row(
             modifier = Modifier.fillMaxWidth(),

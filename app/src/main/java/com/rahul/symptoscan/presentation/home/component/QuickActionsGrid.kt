@@ -39,7 +39,7 @@ fun QuickActionsGrid(
         Row(modifier = Modifier.fillMaxWidth()) {
             QuickActionCard(
                 title = "New\nAssessment",
-                icon = Icons.Rounded.MedicalServices,
+                icon = Icons.Rounded.MonitorHeart,
                 containerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
                 iconColor = MaterialTheme.colorScheme.primary,
                 onClick = onNewAssessment,
@@ -48,7 +48,7 @@ fun QuickActionsGrid(
             Spacer(modifier = Modifier.width(16.dp))
             QuickActionCard(
                 title = "View\nHistory",
-                icon = Icons.Rounded.MonitorHeart,
+                icon = Icons.Rounded.History,
                 containerColor = com.rahul.symptoscan.ui.theme.SuccessGreen.copy(alpha = 0.1f),
                 iconColor = com.rahul.symptoscan.ui.theme.SuccessGreen,
                 onClick = onViewHistory,

@@ -60,7 +60,7 @@ class ProfileViewModel(
                 
                 if (baseProfile == null) return@combine null
 
-                val healthScore = calculateHealthScore(history, healthProfile)
+                val healthScore = assessmentRepository.calculateHealthScore(history)
 
                 baseProfile.copy(
                     email = email,
@@ -103,37 +103,6 @@ class ProfileViewModel(
                 }
             }
         }
-    }
-
-    private fun calculateHealthScore(
-        history: List<com.rahul.symptoscan.domain.model.AssessmentSummary>, 
-        healthProfile: com.rahul.symptoscan.domain.model.HealthProfile?
-    ): Int {
-        var score = 100
-        
-        // Deduction for poor assessment results
-        history.forEach { assessment ->
-            when (assessment.status) {
-                com.rahul.symptoscan.domain.model.AssessmentStatus.High -> score -= 15
-                com.rahul.symptoscan.domain.model.AssessmentStatus.Moderate -> score -= 5
-                else -> {}
-            }
-        }
-        
-        // Deduction for incomplete profile
-        if (healthProfile?.profileCompleted != true) score -= 10
-        
-        // Deduction for unhealthy BMI
-        val h = healthProfile?.heightCm ?: 0.0
-        val w = healthProfile?.weightKg ?: 0.0
-        if (h > 0 && w > 0) {
-            val hMeters = h / 100.0
-            val bmi = w / (hMeters * hMeters)
-            if (bmi < 18.5 || bmi > 25.0) score -= 5
-            if (bmi > 30.0) score -= 5
-        }
-
-        return score.coerceIn(0, 100)
     }
 
     fun logout(onSuccess: () -> Unit) {

@@ -13,7 +13,6 @@ import com.rahul.symptoscan.domain.model.HealthProfile
 import com.rahul.symptoscan.presentation.home.model.HomeUiState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
-import java.text.SimpleDateFormat
 import java.util.*
 
 class HomeViewModel(
@@ -54,10 +53,11 @@ class HomeViewModel(
             combine(
                 profileRepository.getUserProfile(user.id),
                 healthProfileRepository.getHealthProfile(user.id),
-                assessmentRepository.getAssessmentHistory()
-            ) { profile, healthProfile, history ->
+                assessmentRepository.getAssessmentHistory(),
+                assessmentRepository.getLatestCompletedAssessment()
+            ) { profile, healthProfile, history, latestAssessment ->
+                val healthScore = assessmentRepository.calculateHealthScore(history)
                 val bmi = calculateBmi(healthProfile)
-                val healthScore = calculateHealthScore(history, healthProfile)
                 
                 _uiState.update { it.copy(
                     userName = profile?.fullName ?: "User",
@@ -66,11 +66,13 @@ class HomeViewModel(
                     bmi = bmi,
                     assessmentCount = history.size,
                     recentAssessments = history.take(3),
-                    lastCheck = history.firstOrNull()?.let { formatTime(it.time) } ?: "No assessments",
+                    lastCheck = latestAssessment?.createdAt?.let { 
+                        com.rahul.symptoscan.core.utils.DateUtils.formatIsoToReadable(it).split(",").firstOrNull() ?: "No assessments"
+                    } ?: "No assessments",
                     healthScore = healthScore,
                     healthStatus = deriveHealthStatus(healthScore, history),
                     dailyHealthTip = healthTips.random(),
-                    notificationCount = 0, // No real notification source yet
+                    notificationCount = 0,
                     isLoading = false,
                     isRefreshing = false
                 ) }
@@ -88,57 +90,12 @@ class HomeViewModel(
         return w / (hMeters * hMeters)
     }
 
-    private fun calculateHealthScore(history: List<AssessmentSummary>, healthProfile: HealthProfile?): Int {
-        var score = 100
-        
-        // Deduction for poor assessment results
-        history.forEach { assessment ->
-            when (assessment.status) {
-                AssessmentStatus.High -> score -= 15
-                AssessmentStatus.Moderate -> score -= 5
-                else -> {}
-            }
-        }
-        
-        // Deduction for incomplete profile
-        if (healthProfile?.profileCompleted != true) score -= 10
-        
-        // Deduction for unhealthy BMI (very simple logic)
-        val bmi = calculateBmi(healthProfile)
-        if (bmi != null) {
-            if (bmi < 18.5 || bmi > 25.0) score -= 5
-            if (bmi > 30.0) score -= 5
-        }
-
-        return score.coerceIn(0, 100)
-    }
-
     private fun deriveHealthStatus(score: Int, history: List<AssessmentSummary>): String {
         if (history.any { it.status == AssessmentStatus.High }) return "Attention needed"
         return when {
             score >= 80 -> "Good health status"
             score >= 60 -> "Fair health status"
             else -> "Needs improvement"
-        }
-    }
-
-    private fun formatTime(isoString: String): String {
-        return try {
-            val sdf = SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss", Locale.US)
-            sdf.timeZone = TimeZone.getTimeZone("UTC")
-            val date = sdf.parse(isoString.substring(0, 19)) ?: return "Recently"
-            
-            val now = Calendar.getInstance()
-            val diff = now.timeInMillis - date.time
-            
-            when {
-                diff < 3600000 -> "${diff / 60000}m ago"
-                diff < 86400000 -> "${diff / 3600000}h ago"
-                else -> "${diff / 86400000}d ago"
-            }
-        } catch (e: Exception) {
-            e.printStackTrace()
-            "Recently"
         }
     }
 }

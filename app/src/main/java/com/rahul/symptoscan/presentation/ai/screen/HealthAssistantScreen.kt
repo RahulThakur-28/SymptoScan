@@ -159,7 +159,7 @@ fun HealthAssistantContent(
             )
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
             HealthAssistantHeader(
                 onBackClick = onBackClick,
                 onHistoryClick = onHistoryClick,

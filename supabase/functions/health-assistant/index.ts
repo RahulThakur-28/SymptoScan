@@ -46,18 +46,34 @@ serve(async (req) => {
 
     console.log(`Processing health assistant request for conversationId: ${conversationId}, authenticated user: ${user.id}`)
 
-    // 3. Conversation Ownership
-    const { data: conversation, error: convError } = await supabaseClient
-      .from('health_conversations')
-      .select('user_id')
-      .eq('id', conversationId)
-      .maybeSingle()
+    // 3. Fetch all required data in parallel
+    const [convRes, profileRes, latestAssessmentRes] = await Promise.all([
+      supabaseClient
+        .from('health_conversations')
+        .select('user_id')
+        .eq('id', conversationId)
+        .maybeSingle(),
+      supabaseClient
+        .from('health_profiles')
+        .select('*')
+        .eq('user_id', user.id)
+        .maybeSingle(),
+      supabaseClient
+        .from('assessments')
+        .select('id, created_at, assessment_results(summary, urgency_level, risk_score)')
+        .eq('user_id', user.id)
+        .eq('status', 'completed')
+        .order('created_at', { ascending: false })
+        .limit(1)
+        .maybeSingle()
+    ])
 
-    if (convError) {
-      console.error(`Database error during conversation lookup: ${convError.message}`)
+    if (convRes.error) {
+      console.error(`Database error during conversation lookup: ${convRes.error.message}`)
       throw new Error('Database lookup failed')
     }
 
+    const conversation = convRes.data
     if (!conversation) {
       console.error(`Conversation not found in database for ID: ${conversationId}`)
       return new Response(JSON.stringify({ error: 'NOT_FOUND', message: 'Conversation not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
@@ -67,6 +83,9 @@ serve(async (req) => {
       console.error(`Ownership mismatch. Conversation owner: ${conversation.user_id}, Authenticated user: ${user.id}`)
       return new Response(JSON.stringify({ error: 'NOT_FOUND', message: 'Conversation not found.' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
+
+    const profile = profileRes.data
+    const latestAssessment = latestAssessmentRes.data
 
     // 4. Save User Message
     const { error: msgInsertError } = await supabaseClient
@@ -83,13 +102,13 @@ serve(async (req) => {
       throw new Error('Database error')
     }
 
-    // 5. Load History (max 20)
+    // 5. Load History (max 10 for assistant to keep prompt small)
     const { data: history, error: historyError } = await supabaseClient
       .from('health_messages')
       .select('role, content')
       .eq('conversation_id', conversationId)
       .order('created_at', { ascending: false })
-      .limit(20)
+      .limit(10)
 
     if (historyError) {
       console.error('Failed to load history:', historyError)
@@ -101,19 +120,29 @@ serve(async (req) => {
       parts: [{ text: m.content }]
     }))
 
-    // 6. Gemini System Prompt & API Call
-    const systemInstruction = `You are SymptoScan Health Assistant.
-You provide general health education and wellness information.
-You are not a doctor.
-You must not provide definitive medical diagnoses.
-You must not prescribe medication.
-You must not provide medication dosage.
-You must not claim certainty.
-Use cautious language such as "may be associated with", "possible explanations include", "can sometimes occur with".
-You may explain common health concepts, explain symptoms generally, provide general wellness information, provide general self-care information, explain warning signs, and recommend professional medical care when appropriate.
-You must NOT diagnose diseases, prescribe medication, provide dosage, perform pregnancy assessment, perform pediatric assessment, diagnose mental health conditions, diagnose chronic diseases, or replace professional medical evaluation.
-If potentially serious warning signs are described, clearly recommend urgent or emergency medical evaluation.
-Respond in the requested language: ${language === 'hi' ? 'Hindi' : 'English'}.`
+    // 6. Build Context strings
+    let profileText = "Not provided"
+    if (profile) {
+        profileText = `Sex: ${profile.biological_sex || '--'}, Height: ${profile.height_cm || '--'}cm, Weight: ${profile.weight_kg || '--'}kg, Allergies: ${profile.allergies || 'None'}, Chronic Conditions: ${profile.medical_conditions || 'None'}, Medications: ${profile.medications || 'None'}`
+    }
+
+    let assessmentText = "None"
+    if (latestAssessment && latestAssessment.assessment_results) {
+        const res = latestAssessment.assessment_results as any
+        assessmentText = `Date: ${latestAssessment.created_at}, Risk: ${res.urgency_level} (${res.risk_score}/100), Summary: ${res.summary}`
+    }
+
+    // 7. Gemini System Prompt & API Call
+    const systemInstruction = `You are SymptoScan Health Assistant. You provide general health education and wellness information.
+USER BACKGROUND: ${profileText}
+LATEST ASSESSMENT: ${assessmentText}
+
+Safety Rules:
+- You are not a doctor. No definitive diagnoses.
+- No prescribing medication or providing dosages.
+- Do not claim certainty. Use cautious language (e.g., "may be associated with").
+- If symptoms seem serious, recommend professional medical care immediately.
+- Respond in ${language === 'hi' ? 'Hindi' : 'English'}.`
 
     const geminiBody = {
       model: "gemini-3.6-flash",

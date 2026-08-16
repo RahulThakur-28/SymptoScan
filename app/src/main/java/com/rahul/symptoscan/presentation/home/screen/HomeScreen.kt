@@ -11,6 +11,8 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
+import androidx.core.view.WindowCompat
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
@@ -19,6 +21,7 @@ import com.rahul.symptoscan.presentation.auth.common.AuthViewModel
 import com.rahul.symptoscan.presentation.home.component.*
 import com.rahul.symptoscan.presentation.home.viewmodel.HomeViewModel
 import com.rahul.symptoscan.ui.theme.BackgroundLight
+import com.rahul.symptoscan.ui.theme.DeepBlue
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -31,6 +34,12 @@ fun HomeScreen(
 ) {
     val uiState by homeViewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val view = LocalView.current
+
+    SideEffect {
+        val window = (view.context as android.app.Activity).window
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+    }
 
     LaunchedEffect(Unit) {
         authViewModel.navigationEvent.collect { event ->
@@ -84,20 +93,24 @@ fun HomeScreenContent(
     modifier: Modifier = Modifier
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
+    val statusBarHeight = WindowInsets.statusBars.asPaddingValues().calculateTopPadding()
+    
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
         onRefresh = onRefresh,
         state = pullToRefreshState,
         modifier = modifier
             .fillMaxSize()
-            .padding(paddingValues),
+            .padding(bottom = paddingValues.calculateBottomPadding()),
         indicator = {
             PullToRefreshDefaults.Indicator(
                 state = pullToRefreshState,
                 isRefreshing = uiState.isRefreshing,
                 containerColor = MaterialTheme.colorScheme.surface,
                 color = MaterialTheme.colorScheme.primary,
-                modifier = Modifier.align(Alignment.TopCenter)
+                modifier = Modifier
+                    .align(Alignment.TopCenter)
+                    .padding(top = statusBarHeight)
             )
         }
     ) {
@@ -155,7 +168,7 @@ fun HomeScreenContent(
                 RecentAssessmentsSection(
                     assessments = uiState.recentAssessments,
                     onSeeAllClick = { onNavigate("history") },
-                    onAssessmentClick = { id -> onNavigate("assessment_details/$id") }
+                    onAssessmentClick = { id -> onNavigate("assessment_result?id=$id") }
                 )
 
                 Spacer(modifier = Modifier.height(12.dp))

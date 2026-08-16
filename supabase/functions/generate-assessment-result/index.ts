@@ -33,22 +33,36 @@ serve(async (req) => {
 
     console.log(`Processing generate-assessment-result for assessmentId: ${assessmentId}, userId: ${user.id}`)
 
-    // 2. Verify ownership & Fetch data
-    const { data: assessment, error: assessmentError } = await supabaseClient
-      .from('assessments')
-      .select(`
-        user_id,
-        body_temperature,
-        additional_notes,
-        image_url,
-        assessment_symptoms (*),
-        assessment_questions (*)
-      `)
-      .eq('id', assessmentId)
-      .single()
+    // 2. Fetch all data in parallel
+    const [assessmentRes, symptomsRes, questionsRes, profileRes] = await Promise.all([
+        supabaseClient
+          .from('assessments')
+          .select(`
+            user_id,
+            body_temperature,
+            additional_notes,
+            image_url
+          `)
+          .eq('id', assessmentId)
+          .single(),
+        supabaseClient
+          .from('assessment_symptoms')
+          .select('*')
+          .eq('assessment_id', assessmentId),
+        supabaseClient
+          .from('assessment_questions')
+          .select('*')
+          .eq('assessment_id', assessmentId),
+        supabaseClient
+          .from('health_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle()
+    ])
 
-    if (assessmentError || !assessment) {
-      console.error('Assessment not found or error:', assessmentError, 'assessmentId:', assessmentId)
+    const assessment = assessmentRes.data
+    if (assessmentRes.error || !assessment) {
+      console.error('Assessment not found or error:', assessmentRes.error, 'assessmentId:', assessmentId)
       return new Response(JSON.stringify({ error: 'Assessment not found', assessmentId: assessmentId }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
 
@@ -57,10 +71,11 @@ serve(async (req) => {
         return new Response(JSON.stringify({ error: 'Assessment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
 
-    console.log("[Assessment] Assessment loaded");
+    console.log("[Assessment] Data loaded");
 
-    const symptoms = assessment.assessment_symptoms || []
-    const questions = assessment.assessment_questions || []
+    const symptoms = symptomsRes.data || []
+    const questions = questionsRes.data || []
+    const profile = profileRes.data
 
     // 3. Validate presence of data
     if (symptoms.length === 0) {
@@ -86,34 +101,51 @@ serve(async (req) => {
       `Q: ${q.question}\nA: ${q.answer}`
     ).join('\n\n')
 
+    let profileText = "None provided"
+    if (profile) {
+        profileText = `
+Biological Sex: ${profile.biological_sex || 'Not provided'}
+Height: ${profile.height_cm || '--'}cm, Weight: ${profile.weight_kg || '--'}kg
+Allergies: ${profile.allergies || 'None'}
+Chronic Conditions: ${profile.medical_conditions || 'None'}
+Current Medications: ${profile.medications || 'None'}
+`.trim()
+    }
+
     const contextText = `
 Body Temperature: ${assessment.body_temperature}°C
 Additional Notes: ${assessment.additional_notes || 'None'}
 `.trim()
 
-    let prompt = `You are a medical AI assistant for SymptoScan. Analyze the following user health report and provide general health guidance.`
+    let prompt = `You are a medical AI assistant for SymptoScan. Analyze the following user health report, considering their medical background, reported symptoms, and follow-up answers. Provide general health guidance and a risk assessment.
+
+USER HEALTH CONTEXT:
+${profileText}
+
+CURRENT ASSESSMENT:
+${contextText}
+
+SYMPTOMS:
+${symptomsText}
+
+FOLLOW-UP Q&A:
+${qaText}
+`
 
     if (assessment.image_url) {
-        prompt += `\nAn image has been provided by the user for visual context. Use it to inform your analysis but prioritize safety and mention that visual analysis is limited.`
+        prompt += `\nAn image has been provided by the user for visual context. Use it to inform your analysis but prioritize safety and mention that visual analysis is limited.
+        IMPORTANT: If the image is irrelevant, unclear, or poor quality, do NOT invent observations. Rely more heavily on the text-based symptoms and description.`
     }
 
     prompt += `
 
-Health Context:
-${contextText}
-
-Symptoms:
-${symptomsText}
-
-Follow-up Questions & Answers:
-${qaText}
-
 Instructions:
-1. Provide a concise summary of the reported symptoms.
+1. Provide a concise summary of the reported symptoms and the analysis.
 2. List possible conditions (at least 2-3). For each, provide a name, severity level (Mild, Moderate, Severe), and a confidence percentage (1-100).
-3. Provide general health recommendations.
+3. Provide general health recommendations (lifestyle, first aid, OTC if appropriate, but avoid specific dosages).
 4. List specific warning signs that would require immediate medical attention.
-5. Assign an overall risk score (0-100) and an urgency level: "emergency", "urgent", "moderate", "routine", or "self_care".
+5. Assign an overall risk score as an integer from 0 to 100 and an urgency level: "emergency", "urgent", "moderate", "routine", or "self_care".
+   - risk_score: 0 = lowest overall risk, 100 = highest overall risk. Never return null.
 6. Provide a recommendation for which type of medical specialist to see (e.g., "General Practitioner", "Cardiologist").
 7. Include a clear medical disclaimer.
 8. Return strictly valid JSON.
@@ -123,12 +155,13 @@ Constraints:
 - DO NOT prescribe specific medications or dosages.
 - DO NOT claim certainty.
 - DO NOT replace a professional medical evaluation.
+- DO NOT recommend starting or stopping prescription medicines.
 - Return ONLY valid JSON.
 
 Response format:
 {
   "summary": "...",
-  "risk_score": 34,
+  "risk_score": 32,
   "urgency_level": "routine",
   "conditions": [
     { "name": "Condition Name", "severity": "Mild", "confidence": 75, "icon": "🤒" }
@@ -236,12 +269,22 @@ Response format:
     // 7. Validate structured response
     const validUrgencyLevels = ['emergency', 'urgent', 'moderate', 'routine', 'self_care']
     if (!aiResult.summary || !validUrgencyLevels.includes(aiResult.urgency_level)) {
-        console.error('AI result validation failed:', aiResult)
+        console.error('AI result basic validation failed:', aiResult)
         throw new Error('AI result validation failed')
     }
 
+    // Risk score validation (0-100)
+    console.log(`[AI][Result] Generated risk score: ${aiResult.risk_score}`)
+    if (aiResult.risk_score === undefined || aiResult.risk_score === null || typeof aiResult.risk_score !== "number" || !Number.isFinite(aiResult.risk_score)) {
+        console.error('[AI][Result] ERROR: Invalid risk score type or missing:', aiResult.risk_score)
+        throw new Error("Invalid risk_score returned by AI")
+    }
+
+    const validatedRiskScore = Math.round(Math.max(0, Math.min(100, aiResult.risk_score)))
+    console.log(`[AI][Result] Validated risk score: ${validatedRiskScore}`)
+
     // 8. Save result (Upsert for idempotency)
-    console.log("[Assessment] Database update started");
+    console.log(`[AI][Result] Saving assessment result: ${assessmentId}`);
     const { error: resultError } = await supabaseClient
       .from('assessment_results')
       .upsert({
@@ -249,7 +292,7 @@ Response format:
         summary: aiResult.summary,
         urgency_level: aiResult.urgency_level,
         disclaimer: aiResult.disclaimer,
-        risk_score: aiResult.risk_score,
+        risk_score: validatedRiskScore,
         possible_causes: aiResult.conditions?.map((c: any) => `${c.name} (${c.confidence}%)`) || [],
         recommendations: aiResult.recommendation_items?.map((r: any) => r.title) || [],
         warning_signs: aiResult.warning_signs || []
@@ -275,9 +318,10 @@ Response format:
     }
 
     console.log("[Assessment] Database update completed");
+    console.log(`[AI][Result] Saved risk score: ${validatedRiskScore}`);
     console.log("[Assessment] HTTP response being returned");
 
-    return new Response(JSON.stringify(aiResult), {
+    return new Response(JSON.stringify({ ...aiResult, risk_score: validatedRiskScore }), {
       headers: { 'Content-Type': 'application/json' },
     })
 

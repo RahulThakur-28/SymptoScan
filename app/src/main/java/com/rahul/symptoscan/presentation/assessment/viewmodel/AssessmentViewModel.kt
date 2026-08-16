@@ -7,6 +7,8 @@ import com.rahul.symptoscan.data.remote.model.DbAssessmentSymptom
 import com.rahul.symptoscan.domain.model.Symptom
 import com.rahul.symptoscan.presentation.assessment.state.AssessmentUiState
 import com.rahul.symptoscan.presentation.assessment.state.SymptomDetails
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
@@ -103,6 +105,8 @@ class AssessmentViewModel(
 
     fun startAssessment(onComplete: () -> Unit) {
         viewModelScope.launch {
+            val startTime = System.currentTimeMillis()
+            android.util.Log.d("AssessmentViewModel", "[AI][Assessment] Start triggered")
             _uiState.update { it.copy(isLoading = true, error = null) }
             
             val state = _uiState.value
@@ -111,45 +115,63 @@ class AssessmentViewModel(
             // Convert to Celsius for backend storage
             val tempCelsius = fahrenheitToCelsius(state.bodyTemperature)
 
-            var uploadedImagePath: String? = null
-            if (state.selectedImageUri != null) {
-                _uiState.update { it.copy(isImageUploading = true) }
-                val bytes = com.rahul.symptoscan.core.utils.ImageUtils.uriToByteArray(
-                    Injection.applicationContext,
-                    state.selectedImageUri
-                )
-                if (bytes != null) {
-                    val fileName = "assessment_${System.currentTimeMillis()}.jpg"
-                    repository.uploadAssessmentImage(bytes, fileName).onSuccess { path ->
-                        uploadedImagePath = path
-                    }.onFailure { e ->
-                        _uiState.update { it.copy(isLoading = false, isImageUploading = false, error = "Failed to upload image: ${e.message}") }
-                        return@launch
+            // Step 1: Parallelize Image Upload and Assessment Row Creation/Update
+            val uploadedImagePathDeferred = async(Dispatchers.IO) {
+                if (state.selectedImageUri != null) {
+                    _uiState.update { it.copy(isImageUploading = true) }
+                    val bytes = com.rahul.symptoscan.core.utils.ImageUtils.uriToByteArray(
+                        Injection.applicationContext,
+                        state.selectedImageUri
+                    )
+                    if (bytes != null) {
+                        val fileName = "assessment_${System.currentTimeMillis()}.jpg"
+                        val result = repository.uploadAssessmentImage(bytes, fileName)
+                        _uiState.update { it.copy(isImageUploading = false) }
+                        result.getOrNull()
+                    } else {
+                        _uiState.update { it.copy(isImageUploading = false) }
+                        null
                     }
-                } else {
-                    _uiState.update { it.copy(isLoading = false, isImageUploading = false, error = "Failed to process image") }
-                    return@launch
-                }
-                _uiState.update { it.copy(isImageUploading = false) }
+                } else null
             }
-            
-            if (currentId != null) {
-                // Update context for existing assessment
-                repository.updateAssessmentContext(currentId, tempCelsius, state.additionalNotes, uploadedImagePath)
-                saveSymptoms(onComplete)
+
+            val assessmentIdDeferred = async(Dispatchers.IO) {
+                if (currentId != null) {
+                    // Update context for existing assessment - we'll handle imageUrl separately after upload
+                    repository.updateAssessmentContext(currentId, tempCelsius, state.additionalNotes, null)
+                    currentId
+                } else {
+                    // Create new assessment
+                    repository.createAssessment(tempCelsius, state.additionalNotes, null).getOrNull()
+                }
+            }
+
+            // Wait for both
+            val uploadedImagePath = uploadedImagePathDeferred.await()
+            val assessmentId = assessmentIdDeferred.await()
+
+            if (assessmentId == null) {
+                _uiState.update { it.copy(isLoading = false, error = "Failed to initiate assessment") }
                 return@launch
             }
 
-            repository.createAssessment(tempCelsius, state.additionalNotes, uploadedImagePath).onSuccess { id ->
-                _uiState.update { it.copy(assessmentId = id) }
-                saveSymptoms(onComplete)
-            }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to start assessment") }
+            // Update state with ID
+            _uiState.update { it.copy(assessmentId = assessmentId) }
+
+            // If image was uploaded, update the assessment row with the path
+            if (uploadedImagePath != null) {
+                repository.updateAssessmentContext(assessmentId, tempCelsius, state.additionalNotes, uploadedImagePath)
             }
+
+            android.util.Log.d("AssessmentViewModel", "[AI][Assessment] Basic info ready: ${System.currentTimeMillis() - startTime}ms")
+
+            // Step 2: Save Symptoms
+            saveSymptoms(onComplete)
         }
     }
 
     private suspend fun saveSymptoms(onComplete: () -> Unit) {
+        val stepStartTime = System.currentTimeMillis()
         val state = _uiState.value
         val assessmentId = state.assessmentId!!
         val dbSymptoms = state.selectedSymptoms.map { symptom ->
@@ -167,6 +189,7 @@ class AssessmentViewModel(
         }
         
         repository.saveSymptoms(assessmentId, dbSymptoms).onSuccess {
+            android.util.Log.d("AssessmentViewModel", "[AI][Symptoms] Saved: ${System.currentTimeMillis() - stepStartTime}ms")
             generateQuestions(onComplete)
         }.onFailure { e ->
             _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to save symptoms") }
@@ -174,7 +197,11 @@ class AssessmentViewModel(
     }
 
     private suspend fun generateQuestions(onComplete: () -> Unit) {
+        val stepStartTime = System.currentTimeMillis()
+        android.util.Log.d("AssessmentViewModel", "[AI][Questions] Generation started")
+        
         repository.generateQuestions(_uiState.value.assessmentId!!).onSuccess { questions ->
+            android.util.Log.d("AssessmentViewModel", "[AI][Questions] Request completed: ${System.currentTimeMillis() - stepStartTime}ms")
             _uiState.update { it.copy(isLoading = false, questions = questions, currentQuestionIndex = 0) }
             onComplete()
         }.onFailure { e ->
@@ -204,8 +231,10 @@ class AssessmentViewModel(
 
     fun submitAnswers(onComplete: () -> Unit) {
         viewModelScope.launch {
+            val startTime = System.currentTimeMillis()
             _uiState.update { it.copy(isLoading = true, error = null) }
             repository.saveAnswers(_uiState.value.questions).onSuccess {
+                android.util.Log.d("AssessmentViewModel", "[AI][Answers] Saved: ${System.currentTimeMillis() - startTime}ms")
                 generateFinalResult(onComplete)
             }.onFailure { e ->
                 _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to save answers") }
@@ -214,15 +243,16 @@ class AssessmentViewModel(
     }
 
     private suspend fun generateFinalResult(onComplete: () -> Unit) {
+        val stepStartTime = System.currentTimeMillis()
         val assessmentId = _uiState.value.assessmentId!!
-        android.util.Log.d("AssessmentViewModel", "Requesting final result for: $assessmentId")
+        android.util.Log.d("AssessmentViewModel", "[AI][Result] Requesting final result for: $assessmentId")
         
         repository.generateResult(assessmentId).onSuccess { result ->
-            android.util.Log.d("AssessmentViewModel", "Successfully received assessment result")
+            android.util.Log.d("AssessmentViewModel", "[AI][Result] Request completed: ${System.currentTimeMillis() - stepStartTime}ms")
             _uiState.update { it.copy(isLoading = false, result = result) }
             onComplete()
         }.onFailure { e ->
-            android.util.Log.e("AssessmentViewModel", "Failed to generate result: ${e.message}")
+            android.util.Log.e("AssessmentViewModel", "[AI][Result] Failed: ${e.message}")
             val userMessage = when {
                 e.message?.contains("timeout", ignoreCase = true) == true -> 
                     "Assessment is taking longer than expected. Please wait a moment and try again."
@@ -233,13 +263,25 @@ class AssessmentViewModel(
     }
 
     fun loadAssessmentResult(id: String) {
+        if (_uiState.value.assessmentId == id && _uiState.value.result != null) {
+            android.util.Log.d("AssessmentViewModel", "[Report] Result already loaded for id: $id")
+            return
+        }
+        
         viewModelScope.launch {
+            val startTime = System.currentTimeMillis()
+            android.util.Log.d("AssessmentViewModel", "[Report] Opening assessment: $id")
+            android.util.Log.d("AssessmentViewModel", "[Report] Fetch started: $id")
             _uiState.update { it.copy(isLoading = true, assessmentId = id, result = null, error = null) }
             repository.getAssessmentReport(id)
                 .catch { e ->
+                    android.util.Log.e("AssessmentViewModel", "[Report] Fetch failed: ${e.message}")
                     _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load result") }
                 }
                 .collect { result ->
+                    val duration = System.currentTimeMillis() - startTime
+                    android.util.Log.d("AssessmentViewModel", "[Report] Fetch completed: $id")
+                    android.util.Log.d("AssessmentViewModel", "[Report] Fetch duration: $duration ms")
                     _uiState.update { it.copy(isLoading = false, result = result) }
                 }
         }

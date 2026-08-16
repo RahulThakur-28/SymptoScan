@@ -5,11 +5,11 @@ data class AssessmentSummary(
     val title: String,
     val time: String,
     val status: AssessmentStatus,
-    val score: Int,
+    val score: Int? = null,
     val symptoms: List<String> = emptyList(),
     val hasImage: Boolean = false
 )
 
 enum class AssessmentStatus {
-    Low, Moderate, High
+    Low, Moderate, High, Pending
 }

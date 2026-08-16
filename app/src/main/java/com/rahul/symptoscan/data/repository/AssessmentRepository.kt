@@ -155,36 +155,69 @@ class AssessmentRepository {
     fun getAssessmentHistory(): Flow<List<AssessmentSummary>> = flow {
         val userId = auth.currentUserOrNull()?.id ?: return@flow
         try {
-            android.util.Log.d("AssessmentRepository", "Fetching history for userId: $userId")
-            // Fetch assessments with status 'completed'
+            android.util.Log.d("AssessmentRepository", "[History] Fetching history for userId: $userId")
+            
+            // We fetch all assessments for the user and then filter for those that have a generated result.
+            // This is more robust than relying on a 'status' flag that might have failed to update.
             val assessments = postgrest.from("assessments")
-                .select(columns = Columns.raw("id, image_url, status, created_at, assessment_results(summary, urgency_level, risk_score), assessment_symptoms(symptom_name)")) {
+                .select(columns = Columns.raw("id, image_url, status, created_at, assessment_results(summary, urgency_level, risk_score, assessment_id), assessment_symptoms(symptom_name)")) {
                     filter { 
                         eq("user_id", userId)
-                        eq("status", "completed")
                     }
                     order("created_at", Order.DESCENDING)
                 }
                 .decodeList<DbAssessmentWithResult>()
             
-            android.util.Log.d("AssessmentRepository", "Found ${assessments.size} completed assessments")
+            android.util.Log.d("AssessmentRepository", "[History] Total assessments found: ${assessments.size}")
             
-            emit(assessments.map { 
-                val res = it.result
-                AssessmentSummary(
-                    id = it.id,
-                    title = res?.summary?.take(50)?.plus("...") ?: "Health Assessment",
-                    time = it.createdAt ?: "",
-                    status = mapUrgency(res?.urgencyLevel),
-                    score = res?.riskScore ?: 0,
-                    symptoms = it.symptoms.map { s -> s.symptomName },
-                    hasImage = !it.imageUrl.isNullOrBlank()
-                )
-            })
+            val historyItems = assessments
+                .filter { it.result != null } // Only show assessments with AI results
+                .map {
+                    val res = it.result!!
+                    AssessmentSummary(
+                        id = it.id,
+                        title = res.summary?.take(50)?.plus("...") ?: "Health Assessment",
+                        time = com.rahul.symptoscan.core.utils.DateUtils.formatIsoToReadable(it.createdAt),
+                        status = mapUrgency(res.urgencyLevel),
+                        score = res.riskScore,
+                        symptoms = it.symptoms.map { s -> s.symptomName },
+                        hasImage = !it.imageUrl.isNullOrBlank()
+                    )
+                }
+            
+            android.util.Log.d("AssessmentRepository", "[History] Mapped ${historyItems.size} items to history")
+            emit(historyItems)
         } catch (e: Exception) {
-            android.util.Log.e("AssessmentRepository", "Error fetching history: ${e.message}")
-            e.printStackTrace()
+            android.util.Log.e("AssessmentRepository", "[History] Error fetching history: ${e.message}", e)
             emit(emptyList())
+        }
+    }
+
+    fun calculateHealthScore(history: List<AssessmentSummary>): Int {
+        val validAssessments = history.filter { it.score != null }.take(5)
+        if (validAssessments.isEmpty()) return 100
+        
+        val averageRisk = validAssessments.map { it.score!! }.average()
+        
+        return (100 - averageRisk.toInt()).coerceIn(0, 100)
+    }
+
+    fun getLatestCompletedAssessment(): Flow<DbAssessmentWithResult?> = flow {
+        val userId = auth.currentUserOrNull()?.id ?: return@flow
+        try {
+            val assessment = postgrest.from("assessments")
+                .select(columns = Columns.raw("id, image_url, status, created_at, assessment_results(risk_score)")) {
+                    filter {
+                        eq("user_id", userId)
+                        eq("status", "completed")
+                    }
+                    order("created_at", Order.DESCENDING)
+                    limit(1)
+                }
+                .decodeSingleOrNull<DbAssessmentWithResult>()
+            emit(assessment)
+        } catch (e: Exception) {
+            emit(null)
         }
     }
 
