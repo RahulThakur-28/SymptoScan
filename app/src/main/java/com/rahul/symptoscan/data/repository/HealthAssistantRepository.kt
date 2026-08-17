@@ -59,14 +59,18 @@ class HealthAssistantRepository {
     suspend fun sendMessage(
         conversationId: String,
         message: String,
-        language: String
+        language: String,
+        healthContext: AiHealthProfileContext? = null,
+        latestAssessment: String? = null
     ): Result<HealthAssistantResponseDto> = withContext(Dispatchers.IO) {
         runCatching {
             android.util.Log.d("HealthAssistantRepo", "Edge Function request conversationId = $conversationId")
             val request = HealthAssistantRequest(
                 conversationId = conversationId,
                 message = message,
-                language = language
+                language = language,
+                healthContext = healthContext,
+                latestAssessment = latestAssessment
             )
             // Use the non-generic invoke and manually decode with Ktor's body()
             val response = functions.invoke("health-assistant", body = request)

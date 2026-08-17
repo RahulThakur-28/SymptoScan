@@ -33,18 +33,6 @@ class PreferenceManager(context: Context) {
         return prefs.getBoolean("dark_mode", false)
     }
 
-    private val _language = MutableStateFlow(prefs.getString("language", "English") ?: "English")
-    val language: StateFlow<String> = _language.asStateFlow()
-
-    fun setLanguage(language: String) {
-        prefs.edit().putString("language", language).apply()
-        _language.value = language
-    }
-
-    fun getLanguage(): String {
-        return prefs.getString("language", "English") ?: "English"
-    }
-
     fun setPushNotifications(enabled: Boolean) {
         prefs.edit().putBoolean("push_notifications", enabled).apply()
     }

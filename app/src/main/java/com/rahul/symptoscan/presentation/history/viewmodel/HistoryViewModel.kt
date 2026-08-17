@@ -86,4 +86,27 @@ class HistoryViewModel(
             )
         }
     }
+
+    fun deleteAssessment(assessmentId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isRefreshing = true) }
+            val result = repository.deleteAssessment(assessmentId)
+            
+            result.onSuccess {
+                // Update local list
+                val updatedList = _uiState.value.assessments.filter { it.id != assessmentId }
+                _uiState.update { it.copy(
+                    assessments = updatedList,
+                    isRefreshing = false
+                ) }
+                applyFilters()
+                calculateStats()
+            }.onFailure { error ->
+                _uiState.update { it.copy(
+                    isRefreshing = false,
+                    error = error.message ?: "Failed to delete assessment"
+                ) }
+            }
+        }
+    }
 }

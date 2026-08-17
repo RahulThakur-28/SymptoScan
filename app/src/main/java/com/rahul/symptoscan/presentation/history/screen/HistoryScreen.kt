@@ -8,6 +8,7 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -23,10 +24,7 @@ import androidx.compose.material3.*
 import androidx.compose.material3.pulltorefresh.PullToRefreshBox
 import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
 import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.SideEffect
-import androidx.compose.runtime.getValue
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -59,6 +57,7 @@ fun HistoryScreen(
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val view = LocalView.current
     val darkTheme = isSystemInDarkTheme()
+    var assessmentToDelete by remember { mutableStateOf<com.rahul.symptoscan.domain.model.AssessmentSummary?>(null) }
 
     SideEffect {
         val window = (view.context as android.app.Activity).window
@@ -67,6 +66,33 @@ fun HistoryScreen(
 
     LaunchedEffect(Unit) {
         viewModel.onRefresh()
+    }
+
+    if (assessmentToDelete != null) {
+        AlertDialog(
+            onDismissRequest = { assessmentToDelete = null },
+            title = { Text("Delete Assessment?") },
+            text = { Text("Are you sure you want to delete this assessment? This action cannot be undone.") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val assessment = assessmentToDelete
+                        if (assessment != null) {
+                            viewModel.deleteAssessment(assessment.id)
+                        }
+                        assessmentToDelete = null
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = MaterialTheme.colorScheme.error)
+                ) {
+                    Text("Delete")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { assessmentToDelete = null }) {
+                    Text("Cancel")
+                }
+            }
+        )
     }
 
     if (showScaffold) {
@@ -121,12 +147,16 @@ fun HistoryScreen(
                 onSearchQueryChange = viewModel::onSearchQueryChange,
                 onFilterSelected = viewModel::onFilterSelected,
                 onAssessmentClick = onAssessmentClick,
+                onDeleteClick = { assessmentToDelete = it },
                 onNavigate = onNavigate
             )
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            Surface(shadowElevation = 2.dp) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Surface(
+                shadowElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
                 TopAppBar(
                     title = { 
                         Column {
@@ -156,7 +186,8 @@ fun HistoryScreen(
                             Icon(Icons.Default.FilterList, contentDescription = "Filter", tint = MaterialTheme.colorScheme.primary)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = TopAppBarDefaults.windowInsets
                 )
             }
             HistoryScreenContent(
@@ -166,6 +197,7 @@ fun HistoryScreen(
                 onSearchQueryChange = viewModel::onSearchQueryChange,
                 onFilterSelected = viewModel::onFilterSelected,
                 onAssessmentClick = onAssessmentClick,
+                onDeleteClick = { assessmentToDelete = it },
                 onNavigate = onNavigate
             )
         }
@@ -181,10 +213,13 @@ fun HistoryScreenContent(
     onSearchQueryChange: (String) -> Unit,
     onFilterSelected: (AssessmentStatus?) -> Unit,
     onAssessmentClick: (String) -> Unit,
+    onDeleteClick: (com.rahul.symptoscan.domain.model.AssessmentSummary) -> Unit,
     onNavigate: (String) -> Unit,
     modifier: Modifier = Modifier
 ) {
     val pullToRefreshState = rememberPullToRefreshState()
+    val lazyListState = rememberLazyListState()
+
     PullToRefreshBox(
         isRefreshing = uiState.isRefreshing,
         onRefresh = onRefresh,
@@ -215,7 +250,7 @@ fun HistoryScreenContent(
                 placeholder = { 
                     Text(
                         "Search assessments...", 
-                        fontSize = 14.sp, 
+                        fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     ) 
                 },
@@ -279,6 +314,7 @@ fun HistoryScreenContent(
                 }
             } else {
                 LazyColumn(
+                    state = lazyListState,
                     modifier = Modifier.fillMaxSize(),
                     contentPadding = PaddingValues(bottom = 24.dp)
                 ) {
@@ -319,7 +355,8 @@ fun HistoryScreenContent(
                                 assessment = assessment,
                                 isFirst = index == 0,
                                 isLast = index == uiState.filteredAssessments.size - 1,
-                                onClick = { onAssessmentClick(assessment.id) }
+                                onClick = { onAssessmentClick(assessment.id) },
+                                onDeleteClick = { onDeleteClick(assessment) }
                             )
                         }
                     }
@@ -334,7 +371,8 @@ private fun TimelineItem(
     assessment: com.rahul.symptoscan.domain.model.AssessmentSummary,
     isFirst: Boolean,
     isLast: Boolean,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onDeleteClick: () -> Unit
 ) {
     val statusColor = when (assessment.status) {
         AssessmentStatus.Low -> SuccessGreen
@@ -383,7 +421,8 @@ private fun TimelineItem(
         ) {
             AssessmentHistoryCard(
                 assessment = assessment,
-                onClick = onClick
+                onClick = onClick,
+                onDeleteClick = onDeleteClick
             )
         }
     }

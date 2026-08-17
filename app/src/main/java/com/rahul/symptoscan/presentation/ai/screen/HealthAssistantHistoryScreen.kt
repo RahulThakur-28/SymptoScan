@@ -79,35 +79,41 @@ fun HealthAssistantHistoryContent(
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { 
-                    Text(
-                        "Conversations", 
-                        fontSize = 20.sp, 
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ) 
-                },
-                navigationIcon = {
-                    IconButton(onClick = onBackClick) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onBackground
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = onNewChatClick) {
-                        Icon(
-                            Icons.Default.Add, 
-                            contentDescription = "New Chat",
-                            tint = BluePrimary
-                        )
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
+            Surface(
+                shadowElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                TopAppBar(
+                    title = { 
+                        Text(
+                            "Conversations", 
+                            fontSize = 20.sp, 
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        ) 
+                    },
+                    navigationIcon = {
+                        IconButton(onClick = onBackClick) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onBackground
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = onNewChatClick) {
+                            Icon(
+                                Icons.Default.Add, 
+                                contentDescription = "New Chat",
+                                tint = BluePrimary
+                            )
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = TopAppBarDefaults.windowInsets
+                )
+            }
         }
     ) { paddingValues ->
         Box(

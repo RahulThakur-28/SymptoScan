@@ -139,7 +139,11 @@ class AuthService {
                         errorBody.contains("invalid_credentials", ignoreCase = true) || 
                         errorBody.contains("Invalid login credentials", ignoreCase = true) -> 
                             "Incorrect email or password."
-                        
+
+                        errorBody.contains("user_not_found", ignoreCase = true) ||
+                        errorBody.contains("User not found", ignoreCase = true) ->
+                            "No account exists with this email. Please check your email or create an account."
+
                         errorBody.contains("Email not confirmed", ignoreCase = true) -> 
                             "Please verify your email before logging in."
                             

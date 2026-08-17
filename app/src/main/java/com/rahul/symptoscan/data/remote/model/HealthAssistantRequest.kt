@@ -1,5 +1,6 @@
 package com.rahul.symptoscan.data.remote.model
 
+import com.rahul.symptoscan.domain.model.AiHealthProfileContext
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 
@@ -10,5 +11,9 @@ data class HealthAssistantRequest(
     @SerialName("message")
     val message: String,
     @SerialName("language")
-    val language: String
+    val language: String,
+    @SerialName("healthContext")
+    val healthContext: AiHealthProfileContext? = null,
+    @SerialName("latestAssessment")
+    val latestAssessment: String? = null
 )

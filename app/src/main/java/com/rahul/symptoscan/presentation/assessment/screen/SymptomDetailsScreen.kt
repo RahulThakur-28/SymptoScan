@@ -9,10 +9,14 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.DeviceThermostat
+import androidx.compose.material.icons.filled.Notes
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -32,10 +36,18 @@ import com.rahul.symptoscan.ui.theme.TextDark
 fun SymptomDetailsScreen(
     onNavigateBack: () -> Unit,
     onProceed: () -> Unit,
+    onAddSymptoms: () -> Unit,
     viewModel: AssessmentViewModel = viewModel()
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
+    val view = androidx.compose.ui.platform.LocalView.current
+    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    SideEffect {
+        val window = (view.context as android.app.Activity).window
+        androidx.core.view.WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+    }
 
     LaunchedEffect(uiState.error) {
         uiState.error?.let {
@@ -47,7 +59,10 @@ fun SymptomDetailsScreen(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Surface(shadowElevation = 3.dp) {
+            Surface(
+                shadowElevation = 3.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
                 TopAppBar(
                     title = { 
                         Text(
@@ -66,7 +81,8 @@ fun SymptomDetailsScreen(
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = TopAppBarDefaults.windowInsets
                 )
             }
         }
@@ -79,22 +95,24 @@ fun SymptomDetailsScreen(
         ) {
             LazyColumn(
                 modifier = Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 24.dp),
+                contentPadding = PaddingValues(horizontal = 20.dp, vertical = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(20.dp)
             ) {
                 item {
-                    Text(
-                        text = "Refine your symptoms",
-                        fontSize = 20.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                    Text(
-                        text = "The more details you provide, the more accurate the guidance will be.",
-                        fontSize = 14.sp,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(top = 4.dp)
-                    )
+                    Column(modifier = Modifier.padding(horizontal = 4.dp)) {
+                        Text(
+                            text = "Refine your symptoms",
+                            fontSize = 22.sp,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = MaterialTheme.colorScheme.onBackground
+                        )
+                        Text(
+                            text = "Providing details helps our AI give more precise guidance.",
+                            fontSize = 14.sp,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(top = 6.dp)
+                        )
+                    }
                 }
 
                 items(uiState.selectedSymptoms) { symptom ->
@@ -104,6 +122,22 @@ fun SymptomDetailsScreen(
                         details = uiState.symptomDetails[symptom.id] ?: SymptomDetails(),
                         onDetailsChange = { viewModel.onSymptomDetailsChange(symptom.id, it) }
                     )
+                }
+
+                item {
+                    OutlinedButton(
+                        onClick = onAddSymptoms,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(56.dp),
+                        shape = RoundedCornerShape(16.dp),
+                        border = androidx.compose.foundation.BorderStroke(1.5.dp, MaterialTheme.colorScheme.primary.copy(alpha = 0.4f)),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.primary)
+                    ) {
+                        Icon(Icons.Default.Add, contentDescription = null)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Add Symptoms", fontWeight = FontWeight.Bold, fontSize = 15.sp)
+                    }
                 }
 
                 item {
@@ -157,18 +191,19 @@ private fun SymptomDetailItem(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
             Row(verticalAlignment = Alignment.CenterVertically) {
                 Box(
                     modifier = Modifier
-                        .size(48.dp)
+                        .size(44.dp)
                         .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.1f), RoundedCornerShape(12.dp)),
                     contentAlignment = Alignment.Center
                 ) {
-                    Text(text = icon, fontSize = 24.sp)
+                    Text(text = icon, fontSize = 22.sp)
                 }
                 Spacer(modifier = Modifier.width(16.dp))
                 Text(
@@ -179,7 +214,7 @@ private fun SymptomDetailItem(
                 )
             }
             
-            Spacer(modifier = Modifier.height(24.dp))
+            HorizontalDivider(modifier = Modifier.padding(vertical = 20.dp), color = MaterialTheme.colorScheme.outline.copy(alpha = 0.05f))
             
             DetailSlider(
                 label = "Severity",
@@ -231,16 +266,21 @@ private fun AssessmentLevelInfo(
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-        shape = RoundedCornerShape(20.dp),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         border = androidx.compose.foundation.BorderStroke(1.dp, MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
     ) {
         Column(modifier = Modifier.padding(20.dp)) {
-            Text(
-                "Body Temperature", 
-                fontSize = 16.sp, 
-                fontWeight = FontWeight.Bold, 
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.DeviceThermostat, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Body Temperature", 
+                    fontSize = 16.sp, 
+                    fontWeight = FontWeight.Bold, 
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
 
             val tempStatus = when {
                 temperature < 97.7 -> "Low"
@@ -249,13 +289,13 @@ private fun AssessmentLevelInfo(
             }
             
             Row(
-                modifier = Modifier.fillMaxWidth().padding(top = 8.dp),
+                modifier = Modifier.fillMaxWidth().padding(top = 16.dp),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
                 Text(
                     text = "${String.format("%.1f", temperature)}°F", 
-                    fontSize = 24.sp, 
+                    fontSize = 28.sp, 
                     fontWeight = FontWeight.Black, 
                     color = MaterialTheme.colorScheme.primary
                 )
@@ -283,22 +323,28 @@ private fun AssessmentLevelInfo(
                 value = temperature.toFloat(),
                 onValueChange = { onTemperatureChange(it.toDouble()) },
                 valueRange = 91f..108f,
-                steps = 170, // 0.1 increments roughly
+                steps = 170,
                 colors = SliderDefaults.colors(
                     thumbColor = MaterialTheme.colorScheme.primary,
                     activeTrackColor = MaterialTheme.colorScheme.primary,
-                    inactiveTrackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                    inactiveTrackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                    activeTickColor = Color.Transparent,
+                    inactiveTickColor = Color.Transparent
                 )
             )
 
             Spacer(modifier = Modifier.height(24.dp))
 
-            Text(
-                "Additional Notes", 
-                fontSize = 16.sp, 
-                fontWeight = FontWeight.Bold, 
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(verticalAlignment = Alignment.CenterVertically) {
+                Icon(Icons.Default.Notes, contentDescription = null, tint = MaterialTheme.colorScheme.primary)
+                Spacer(modifier = Modifier.width(8.dp))
+                Text(
+                    "Additional Notes", 
+                    fontSize = 16.sp, 
+                    fontWeight = FontWeight.Bold, 
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             Spacer(modifier = Modifier.height(12.dp))
             OutlinedTextField(
                 value = notes,
@@ -331,11 +377,23 @@ private fun DetailSlider(
     steps: Int,
     onValueChange: (Float) -> Unit
 ) {
-    Column(modifier = Modifier.padding(bottom = 16.dp)) {
-        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween) {
-            Text(label, fontSize = 14.sp, color = MaterialTheme.colorScheme.onSurfaceVariant)
-            Text("${value.toInt()}/10", fontSize = 14.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.primary)
+    Column(modifier = Modifier.padding(bottom = 20.dp)) {
+        Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+            Text(label, fontSize = 15.sp, fontWeight = FontWeight.SemiBold, color = MaterialTheme.colorScheme.onSurface)
+            Surface(
+                color = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Text(
+                    text = "${value.toInt()}/10", 
+                    modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                    fontSize = 13.sp, 
+                    fontWeight = FontWeight.Bold, 
+                    color = MaterialTheme.colorScheme.primary
+                )
+            }
         }
+        Spacer(modifier = Modifier.height(12.dp))
         Slider(
             value = value,
             onValueChange = onValueChange,
@@ -344,7 +402,9 @@ private fun DetailSlider(
             colors = SliderDefaults.colors(
                 thumbColor = MaterialTheme.colorScheme.primary,
                 activeTrackColor = MaterialTheme.colorScheme.primary,
-                inactiveTrackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f)
+                inactiveTrackColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.15f),
+                activeTickColor = Color.Transparent,
+                inactiveTickColor = Color.Transparent
             )
         )
     }
@@ -358,25 +418,33 @@ private fun DetailChips(
     options: List<String>,
     onSelected: (String) -> Unit
 ) {
-    Column(modifier = Modifier.padding(bottom = 16.dp)) {
+    Column(modifier = Modifier.padding(bottom = 20.dp)) {
         Text(
             label, 
-            fontSize = 14.sp, 
-            color = MaterialTheme.colorScheme.onSurfaceVariant, 
-            modifier = Modifier.padding(bottom = 8.dp)
+            fontSize = 15.sp, 
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurface, 
+            modifier = Modifier.padding(bottom = 12.dp)
         )
         FlowRow(
-            horizontalArrangement = Arrangement.spacedBy(8.dp),
-            verticalArrangement = Arrangement.spacedBy(8.dp)
+            horizontalArrangement = Arrangement.spacedBy(10.dp),
+            verticalArrangement = Arrangement.spacedBy(10.dp)
         ) {
             options.forEach { option ->
                 val isSelected = option == selected
                 FilterChip(
                     selected = isSelected,
                     onClick = { onSelected(option) },
-                    label = { Text(option) },
+                    label = { 
+                        Text(
+                            text = option,
+                            fontSize = 13.sp,
+                            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium
+                        ) 
+                    },
+                    shape = RoundedCornerShape(12.dp),
                     colors = FilterChipDefaults.filterChipColors(
-                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.1f),
+                        selectedContainerColor = MaterialTheme.colorScheme.primary.copy(alpha = 0.15f),
                         selectedLabelColor = MaterialTheme.colorScheme.primary,
                         containerColor = MaterialTheme.colorScheme.surface,
                         labelColor = MaterialTheme.colorScheme.onSurfaceVariant
@@ -384,8 +452,9 @@ private fun DetailChips(
                     border = FilterChipDefaults.filterChipBorder(
                         enabled = true,
                         selected = isSelected,
-                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                        selectedBorderColor = MaterialTheme.colorScheme.primary
+                        borderColor = MaterialTheme.colorScheme.outline.copy(alpha = 0.2f),
+                        selectedBorderColor = MaterialTheme.colorScheme.primary,
+                        borderWidth = 1.dp
                     )
                 )
             }

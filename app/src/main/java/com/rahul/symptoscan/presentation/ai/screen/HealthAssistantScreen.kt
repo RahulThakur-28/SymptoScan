@@ -61,7 +61,14 @@ fun HealthAssistantScreen(
     showScaffold: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
-    
+    val view = androidx.compose.ui.platform.LocalView.current
+    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    SideEffect {
+        val window = (view.context as android.app.Activity).window
+        androidx.core.view.WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+    }
+
     if (showScaffold) {
         HealthAssistantContent(
             uiState = uiState,
@@ -159,12 +166,13 @@ fun HealthAssistantContent(
             )
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
+        Column(modifier = Modifier.fillMaxSize()) {
             HealthAssistantHeader(
                 onBackClick = onBackClick,
                 onHistoryClick = onHistoryClick,
                 onNewChatClick = onNewChatClick,
-                elevation = 2.dp
+                elevation = 2.dp,
+                windowInsets = TopAppBarDefaults.windowInsets
             )
             AssistantMainLayout(
                 paddingValues = PaddingValues(0.dp),
@@ -184,9 +192,13 @@ private fun HealthAssistantHeader(
     onBackClick: () -> Unit,
     onHistoryClick: () -> Unit,
     onNewChatClick: () -> Unit,
-    elevation: androidx.compose.ui.unit.Dp = 0.dp
+    elevation: androidx.compose.ui.unit.Dp = 0.dp,
+    windowInsets: WindowInsets = TopAppBarDefaults.windowInsets
 ) {
-    Surface(shadowElevation = elevation) {
+    Surface(
+        shadowElevation = elevation,
+        color = MaterialTheme.colorScheme.surface
+    ) {
         TopAppBar(
             title = {
                 Row(verticalAlignment = Alignment.CenterVertically) {
@@ -259,7 +271,8 @@ private fun HealthAssistantHeader(
                     Text("New", fontWeight = FontWeight.SemiBold)
                 }
             },
-            colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+            colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+            windowInsets = windowInsets
         )
     }
 }

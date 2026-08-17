@@ -35,6 +35,13 @@ fun SymptomAssessmentScreen(
     showScaffold: Boolean = true
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+    val view = androidx.compose.ui.platform.LocalView.current
+    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    SideEffect {
+        val window = (view.context as android.app.Activity).window
+        androidx.core.view.WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+    }
 
     if (showScaffold) {
         Scaffold(
@@ -71,18 +78,22 @@ fun SymptomAssessmentScreen(
             )
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            Surface(shadowElevation = 2.dp) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Surface(
+                shadowElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
                 TopAppBar(
                     title = { 
                         Text(
                             "New Assessment", 
-                            fontSize = 18.sp, 
+                            fontSize = 20.sp,
                             fontWeight = FontWeight.Bold, 
                             color = MaterialTheme.colorScheme.onSurface
                         ) 
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = TopAppBarDefaults.windowInsets
                 )
             }
             SymptomAssessmentContent(

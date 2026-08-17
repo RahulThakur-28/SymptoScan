@@ -31,7 +31,6 @@ class SettingsViewModel(
         
         _uiState.update { it.copy(
             themeMode = themeMode,
-            currentLanguage = preferenceManager.getLanguage(),
             pushNotifications = preferenceManager.arePushNotificationsEnabled(),
             emailReports = preferenceManager.areEmailReportsEnabled()
         ) }
@@ -55,11 +54,6 @@ class SettingsViewModel(
     fun toggleEmailReports(enabled: Boolean) {
         preferenceManager.setEmailReports(enabled)
         _uiState.update { it.copy(emailReports = enabled) }
-    }
-
-    fun setLanguage(language: String) {
-        preferenceManager.setLanguage(language)
-        _uiState.update { it.copy(currentLanguage = language) }
     }
 
     fun onDeleteAccountClicked() {

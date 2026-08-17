@@ -69,7 +69,10 @@ fun AssessmentResultScreen(
         containerColor = MaterialTheme.colorScheme.background,
         snackbarHost = { SnackbarHost(snackbarHostState) },
         topBar = {
-            Surface(shadowElevation = 0.dp) {
+            Surface(
+                shadowElevation = 0.dp, 
+                color = MaterialTheme.colorScheme.background
+            ) {
                 TopAppBar(
                     title = { Text("Assessment Complete", fontSize = 18.sp, fontWeight = FontWeight.Bold) },
                     navigationIcon = {
@@ -93,7 +96,8 @@ fun AssessmentResultScreen(
                         Icon(Icons.Default.Share, contentDescription = "Share")
                     }
                 },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.background)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = TopAppBarDefaults.windowInsets
                 )
             }
         }
@@ -185,8 +189,7 @@ fun AssessmentResultScreen(
 
 @Composable
 private fun ResultHero(result: DbAssessmentResult, symptomCount: Int) {
-    val rawRiskScore = result.riskScore ?: deriveRiskScore(result.urgencyLevel)
-    val riskScore = rawRiskScore.coerceIn(0, 100)
+    val riskScore = result.riskScore
     val riskLevel = deriveRiskLevelText(result.urgencyLevel)
     val riskColor = deriveRiskColor(result.urgencyLevel)
     
@@ -199,7 +202,7 @@ private fun ResultHero(result: DbAssessmentResult, symptomCount: Int) {
     ) {
         Box(contentAlignment = Alignment.Center) {
             CircularProgressIndicator(
-                progress = { riskScore / 100f },
+                progress = { (riskScore ?: 0) / 100f },
                 modifier = Modifier.size(160.dp),
                 color = riskColor,
                 strokeWidth = 12.dp,
@@ -208,7 +211,7 @@ private fun ResultHero(result: DbAssessmentResult, symptomCount: Int) {
             )
             Column(horizontalAlignment = Alignment.CenterHorizontally) {
                 Text(
-                    text = riskScore.toString(),
+                    text = riskScore?.toString() ?: "--",
                     fontSize = 42.sp,
                     fontWeight = FontWeight.Black,
                     color = MaterialTheme.colorScheme.onSurface

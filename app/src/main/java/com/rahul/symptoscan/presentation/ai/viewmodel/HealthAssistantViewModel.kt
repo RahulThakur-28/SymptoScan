@@ -4,14 +4,21 @@ import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
+import com.rahul.symptoscan.data.repository.AssessmentRepository
 import com.rahul.symptoscan.data.repository.HealthAssistantRepository
+import com.rahul.symptoscan.data.repository.HealthProfileRepository
+import com.rahul.symptoscan.domain.model.AiHealthProfileContext
 import com.rahul.symptoscan.domain.model.HealthMessage
 import com.rahul.symptoscan.presentation.ai.state.HealthAssistantUiState
+import kotlinx.coroutines.async
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
 
 class HealthAssistantViewModel(
     private val repository: HealthAssistantRepository = Injection.healthAssistantRepository,
+    private val healthProfileRepository: HealthProfileRepository = Injection.healthProfileRepository,
+    private val assessmentRepository: AssessmentRepository = Injection.assessmentRepository,
     private val authRepository: com.rahul.symptoscan.data.repository.AuthRepository = Injection.authRepository,
     private val savedStateHandle: SavedStateHandle
 ) : ViewModel() {
@@ -21,11 +28,49 @@ class HealthAssistantViewModel(
     ))
     val uiState: StateFlow<HealthAssistantUiState> = _uiState.asStateFlow()
 
+    private var healthContext: AiHealthProfileContext? = null
+    private var latestAssessmentSummary: String? = null
+
     init {
         loadConversations()
+        loadAiContext()
         // If we restored a conversation ID, load its messages
         _uiState.value.currentConversationId?.let { id ->
             openConversation(id)
+        }
+    }
+
+    private fun loadAiContext() {
+        val userId = authRepository.getCurrentUser()?.id ?: return
+        viewModelScope.launch {
+            coroutineScope {
+                val profileDeferred = async { healthProfileRepository.getHealthProfile(userId).firstOrNull() }
+                val assessmentDeferred = async { assessmentRepository.getLatestCompletedAssessment().firstOrNull() }
+
+                val profile = profileDeferred.await()
+                val latest = assessmentDeferred.await()
+
+                healthContext = profile?.let {
+                    val age = it.dateOfBirth?.let { dob ->
+                        try {
+                            val birthDate = java.time.LocalDate.parse(dob)
+                            java.time.Period.between(birthDate, java.time.LocalDate.now()).years
+                        } catch (e: Exception) { null }
+                    }
+                    AiHealthProfileContext(
+                        age = age,
+                        biologicalSex = it.biologicalSex,
+                        bloodGroup = it.bloodGroup,
+                        heightCm = it.heightCm,
+                        weightKg = it.weightKg,
+                        allergies = it.allergies,
+                        existingConditions = it.medicalConditions,
+                        currentMedicines = it.medications
+                    )
+                }
+
+                latestAssessmentSummary = latest?.result?.summary
+            }
         }
     }
 
@@ -131,7 +176,7 @@ class HealthAssistantViewModel(
                     }
 
                     android.util.Log.d("HealthAssistantVM", "Created conversation successfully with ID: ${newConv.id}")
-                    
+
                     // Show message optimistically for the NEW conversation now that we have ID
                     val tempMsg = HealthMessage(
                         id = "temp_${System.currentTimeMillis()}",
@@ -141,7 +186,7 @@ class HealthAssistantViewModel(
                         content = text,
                         createdAt = null
                     )
-                    
+
                     _uiState.update { 
                         it.copy(
                             currentConversationId = newConv.id,
@@ -161,11 +206,13 @@ class HealthAssistantViewModel(
 
             android.util.Log.d("HealthAssistantVM", "Sending message with conversationId: $activeConversationId")
 
-            // 2. Send Message using the verified ID
+            // 2. Send Message using the verified ID and include cached context
             repository.sendMessage(
                 conversationId = activeConversationId,
                 message = text,
-                language = _uiState.value.language
+                language = _uiState.value.language,
+                healthContext = healthContext,
+                latestAssessment = latestAssessmentSummary
             ).onSuccess {
                 // Success, reload messages to get the latest state (user + assistant message)
                 loadMessages(activeConversationId)

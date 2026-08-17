@@ -28,28 +28,41 @@ fun FullReportScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val result = uiState.result ?: return
+    val view = androidx.compose.ui.platform.LocalView.current
+    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    androidx.compose.runtime.SideEffect {
+        val window = (view.context as android.app.Activity).window
+        androidx.core.view.WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            TopAppBar(
-                title = { Text("Health Report", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
-                navigationIcon = {
-                    IconButton(onClick = onNavigateBack) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
-                            contentDescription = "Back",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-                },
-                actions = {
-                    IconButton(onClick = { }) {
-                        Icon(Icons.Default.Download, contentDescription = "Download", tint = MaterialTheme.colorScheme.onSurface)
-                    }
-                },
-                colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
-            )
+            Surface(
+                shadowElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
+                TopAppBar(
+                    title = { Text("Health Report", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                    navigationIcon = {
+                        IconButton(onClick = onNavigateBack) {
+                            Icon(
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
+                                contentDescription = "Back",
+                                tint = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    },
+                    actions = {
+                        IconButton(onClick = { }) {
+                            Icon(Icons.Default.Download, contentDescription = "Download", tint = MaterialTheme.colorScheme.onSurface)
+                        }
+                    },
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = TopAppBarDefaults.windowInsets
+                )
+            }
         }
     ) { paddingValues ->
         Column(

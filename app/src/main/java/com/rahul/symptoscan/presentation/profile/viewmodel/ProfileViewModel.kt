@@ -3,7 +3,6 @@ package com.rahul.symptoscan.presentation.profile.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.core.di.Injection
-import com.rahul.symptoscan.data.local.PreferenceManager
 import com.rahul.symptoscan.data.repository.AssessmentRepository
 import com.rahul.symptoscan.data.repository.AuthRepository
 import com.rahul.symptoscan.data.repository.EmergencyContactRepository
@@ -20,8 +19,7 @@ class ProfileViewModel(
     private val healthProfileRepository: HealthProfileRepository = Injection.healthProfileRepository,
     private val emergencyRepository: EmergencyContactRepository = Injection.emergencyContactRepository,
     private val assessmentRepository: AssessmentRepository = Injection.assessmentRepository,
-    private val authRepository: AuthRepository = Injection.authRepository,
-    private val preferenceManager: PreferenceManager = Injection.preferenceManager
+    private val authRepository: AuthRepository = Injection.authRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(ProfileUiState())
@@ -95,7 +93,6 @@ class ProfileViewModel(
                         it.copy(
                             user = fullProfile,
                             achievements = achievements,
-                            currentLanguage = preferenceManager.getLanguage(),
                             isLoading = false,
                             isRefreshing = false
                         )

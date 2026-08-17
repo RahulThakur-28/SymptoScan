@@ -5,7 +5,7 @@ data class AssessmentSummary(
     val title: String,
     val time: String,
     val status: AssessmentStatus,
-    val score: Int? = null,
+    val score: Int?,
     val symptoms: List<String> = emptyList(),
     val hasImage: Boolean = false
 )

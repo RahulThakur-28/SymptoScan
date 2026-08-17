@@ -85,9 +85,13 @@ class AssessmentRepository {
         }
     }
 
-    suspend fun generateQuestions(assessmentId: String): Result<List<DbAssessmentQuestion>> = withContext(Dispatchers.IO) {
+    suspend fun generateQuestions(
+        assessmentId: String,
+        context: AiAssessmentContext
+    ): Result<List<DbAssessmentQuestion>> = withContext(Dispatchers.IO) {
         runCatching {
-            android.util.Log.d("AssessmentRepository", "[Questions] Request received for id: $assessmentId")
+            val startTime = System.currentTimeMillis()
+            android.util.Log.d("AssessmentRepository", "[AI][Questions] Started for id: $assessmentId")
             
             // Check if questions already exist
             val existing = postgrest.from("assessment_questions")
@@ -100,14 +104,16 @@ class AssessmentRepository {
                 return@runCatching existing.sortedBy { it.questionOrder }
             }
 
-            android.util.Log.d("AssessmentRepository", "[Questions] Gemini request started")
+            android.util.Log.d("AssessmentRepository", "[AI][Questions] Gemini request started")
             functions.invoke(
                 function = "generate-assessment-questions",
                 body = buildJsonObject {
                     put("assessmentId", assessmentId)
+                    put("context", kotlinx.serialization.json.Json.encodeToJsonElement(AiAssessmentContext.serializer(), context))
                 }
             )
-            android.util.Log.d("AssessmentRepository", "[Questions] Gemini result generation completed")
+            val requestEndTime = System.currentTimeMillis()
+            android.util.Log.d("AssessmentRepository", "[AI][Questions] Request completed: ${requestEndTime - startTime} ms")
             
             val questions = postgrest.from("assessment_questions")
                 .select() {
@@ -116,7 +122,8 @@ class AssessmentRepository {
                 }
                 .decodeList<DbAssessmentQuestion>()
             
-            android.util.Log.d("AssessmentRepository", "[Questions] Received ${questions.size} questions from DB")
+            val totalTime = System.currentTimeMillis() - startTime
+            android.util.Log.d("AssessmentRepository", "[AI][Questions] Received ${questions.size} questions. Total: $totalTime ms")
             questions
         }
     }
@@ -134,27 +141,47 @@ class AssessmentRepository {
         }
     }
 
-    suspend fun generateResult(assessmentId: String): Result<DbAssessmentResult> = withContext(Dispatchers.IO) {
+    suspend fun generateResult(
+        assessmentId: String,
+        context: CompleteAiAssessmentContext
+    ): Result<DbAssessmentResult> = withContext(Dispatchers.IO) {
         runCatching {
-            android.util.Log.d("AssessmentRepository", "[Assessment] Request received for id: $assessmentId")
+            val startTime = System.currentTimeMillis()
+            android.util.Log.d("AssessmentRepository", "[AI][Result] Started for id: $assessmentId")
             
             // 1. Invoke Edge Function and get the FULL result back
             val response = functions.invoke(
                 function = "generate-assessment-result",
                 body = buildJsonObject {
                     put("assessmentId", assessmentId)
+                    put("completeContext", kotlinx.serialization.json.Json.encodeToJsonElement(CompleteAiAssessmentContext.serializer(), context))
                 }
             )
             
+            val requestEndTime = System.currentTimeMillis()
+            android.util.Log.d("AssessmentRepository", "[AI][Result] Request completed: ${requestEndTime - startTime} ms")
+
             val result = response.body<DbAssessmentResult>()
-            android.util.Log.d("AssessmentRepository", "[Assessment] Received structured result from AI")
+            
+            val dbSaveStartTime = System.currentTimeMillis()
+            // The result is already saved by the Edge Function in the DB, 
+            // but we might want to ensure consistency or update status.
+            postgrest.from("assessments").update(buildJsonObject {
+                put("status", "completed")
+                put("completed_at", com.rahul.symptoscan.core.utils.DateUtils.getCurrentIsoTimestamp())
+            }) {
+                filter { eq("id", assessmentId) }
+            }
+
+            val totalTime = System.currentTimeMillis() - startTime
+            android.util.Log.d("AssessmentRepository", "[AI][Result] Database update: ${System.currentTimeMillis() - dbSaveStartTime} ms. Total: $totalTime ms")
             result
         }
     }
 
     fun getAssessmentHistory(): Flow<List<AssessmentSummary>> = flow {
         val userId = auth.currentUserOrNull()?.id ?: return@flow
-        try {
+        val historyItems = try {
             android.util.Log.d("AssessmentRepository", "[History] Fetching history for userId: $userId")
             
             // We fetch all assessments for the user and then filter for those that have a generated result.
@@ -169,8 +196,8 @@ class AssessmentRepository {
                 .decodeList<DbAssessmentWithResult>()
             
             android.util.Log.d("AssessmentRepository", "[History] Total assessments found: ${assessments.size}")
-            
-            val historyItems = assessments
+
+            assessments
                 .filter { it.result != null } // Only show assessments with AI results
                 .map {
                     val res = it.result!!
@@ -184,28 +211,31 @@ class AssessmentRepository {
                         hasImage = !it.imageUrl.isNullOrBlank()
                     )
                 }
-            
-            android.util.Log.d("AssessmentRepository", "[History] Mapped ${historyItems.size} items to history")
-            emit(historyItems)
         } catch (e: Exception) {
             android.util.Log.e("AssessmentRepository", "[History] Error fetching history: ${e.message}", e)
-            emit(emptyList())
+            emptyList<AssessmentSummary>()
         }
+        
+        android.util.Log.d("AssessmentRepository", "[History] Emitting ${historyItems.size} items to history")
+        emit(historyItems)
     }
 
     fun calculateHealthScore(history: List<AssessmentSummary>): Int {
-        val validAssessments = history.filter { it.score != null }.take(5)
-        if (validAssessments.isEmpty()) return 100
+        if (history.isEmpty()) return 100
         
-        val averageRisk = validAssessments.map { it.score!! }.average()
+        // Take latest 5 completed assessments with valid scores
+        val validScores = history.map { it.score }.filterNotNull().take(5)
+        if (validScores.isEmpty()) return 100
+        
+        val averageRisk = validScores.average()
         
         return (100 - averageRisk.toInt()).coerceIn(0, 100)
     }
 
     fun getLatestCompletedAssessment(): Flow<DbAssessmentWithResult?> = flow {
         val userId = auth.currentUserOrNull()?.id ?: return@flow
-        try {
-            val assessment = postgrest.from("assessments")
+        val assessment = try {
+            postgrest.from("assessments")
                 .select(columns = Columns.raw("id, image_url, status, created_at, assessment_results(risk_score)")) {
                     filter {
                         eq("user_id", userId)
@@ -215,10 +245,10 @@ class AssessmentRepository {
                     limit(1)
                 }
                 .decodeSingleOrNull<DbAssessmentWithResult>()
-            emit(assessment)
         } catch (e: Exception) {
-            emit(null)
+            null
         }
+        emit(assessment)
     }
 
     private fun mapUrgency(urgency: String?): AssessmentStatus {
@@ -249,6 +279,31 @@ class AssessmentRepository {
             response.decodeList<DbAssessment>().size
         } catch (e: Exception) {
             0
+        }
+    }
+
+    suspend fun deleteAssessment(assessmentId: String): Result<Unit> = withContext(Dispatchers.IO) {
+        runCatching {
+            android.util.Log.d("AssessmentRepository", "[Delete] Deleting assessment: $assessmentId")
+            
+            // Delete related records manually if cascade is not enabled in DB
+            postgrest.from("assessment_symptoms").delete {
+                filter { eq("assessment_id", assessmentId) }
+            }
+            postgrest.from("assessment_questions").delete {
+                filter { eq("assessment_id", assessmentId) }
+            }
+            postgrest.from("assessment_results").delete {
+                filter { eq("assessment_id", assessmentId) }
+            }
+            
+            // Delete the main assessment record
+            postgrest.from("assessments").delete {
+                filter { eq("id", assessmentId) }
+            }
+            
+            android.util.Log.d("AssessmentRepository", "[Delete] Assessment deleted successfully")
+            Unit
         }
     }
 }

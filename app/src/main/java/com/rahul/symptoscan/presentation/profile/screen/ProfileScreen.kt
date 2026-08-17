@@ -110,8 +110,11 @@ fun ProfileScreen(
             )
         }
     } else {
-        Column(modifier = Modifier.fillMaxSize().statusBarsPadding()) {
-            Surface(shadowElevation = 2.dp) {
+        Column(modifier = Modifier.fillMaxSize()) {
+            Surface(
+                shadowElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
                 TopAppBar(
                     title = { 
                         Text(
@@ -136,7 +139,8 @@ fun ProfileScreen(
                             Text("Settings", color = MaterialTheme.colorScheme.primary, fontWeight = FontWeight.Bold)
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = TopAppBarDefaults.windowInsets
                 )
             }
             ProfileScreenContent(
@@ -355,13 +359,6 @@ fun ProfileScreenContent(
                             title = "Medical Records",
                             subtitle = "View saved assessment records",
                             onClick = { onNavigate("history") }
-                        )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
-                        ProfileMenuItem(
-                            icon = Icons.Default.Language,
-                            title = "Language",
-                            subtitle = uiState.currentLanguage,
-                            onClick = { onNavigate("language") }
                         )
                         HorizontalDivider(color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f))
                         ProfileMenuItem(

@@ -8,9 +8,12 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Image
+import androidx.compose.material.icons.filled.MoreVert
+import androidx.compose.material.icons.filled.Visibility
 import androidx.compose.material3.*
-import androidx.compose.runtime.Composable
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -29,8 +32,10 @@ import com.rahul.symptoscan.ui.theme.*
 fun AssessmentHistoryCard(
     assessment: AssessmentSummary,
     onClick: () -> Unit,
+    onDeleteClick: () -> Unit,
     modifier: Modifier = Modifier
 ) {
+    var showMenu by remember { mutableStateOf(false) }
     val statusColor = when (assessment.status) {
         AssessmentStatus.Low -> SuccessGreen
         AssessmentStatus.Moderate -> WarningAmber
@@ -64,18 +69,65 @@ fun AssessmentHistoryCard(
                     modifier = Modifier.weight(1f)
                 )
                 
-                Surface(
-                    color = statusColor.copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(8.dp),
-                    border = BorderStroke(1.dp, statusColor.copy(alpha = 0.2f))
-                ) {
-                    Text(
-                        text = assessment.status.name,
-                        color = statusColor,
-                        fontSize = 11.sp,
-                        fontWeight = FontWeight.Bold,
-                        modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
-                    )
+                Row(verticalAlignment = Alignment.CenterVertically) {
+                    Surface(
+                        color = statusColor.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(8.dp),
+                        border = BorderStroke(1.dp, statusColor.copy(alpha = 0.2f))
+                    ) {
+                        Text(
+                            text = assessment.status.name,
+                            color = statusColor,
+                            fontSize = 11.sp,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                        )
+                    }
+                    
+                    Box {
+                        IconButton(
+                            onClick = { showMenu = true },
+                            modifier = Modifier.size(32.dp)
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.MoreVert,
+                                contentDescription = "More",
+                                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                        
+                        DropdownMenu(
+                            expanded = showMenu,
+                            onDismissRequest = { showMenu = false },
+                            modifier = Modifier.background(MaterialTheme.colorScheme.surface)
+                        ) {
+                            DropdownMenuItem(
+                                text = { Text("View Assessment") },
+                                onClick = {
+                                    showMenu = false
+                                    onClick()
+                                },
+                                leadingIcon = {
+                                    Icon(Icons.Default.Visibility, contentDescription = null, modifier = Modifier.size(18.dp))
+                                }
+                            )
+                            DropdownMenuItem(
+                                text = { Text("Delete", color = MaterialTheme.colorScheme.error) },
+                                onClick = {
+                                    showMenu = false
+                                    onDeleteClick()
+                                },
+                                leadingIcon = {
+                                    Icon(
+                                        Icons.Default.Delete, 
+                                        contentDescription = null, 
+                                        tint = MaterialTheme.colorScheme.error,
+                                        modifier = Modifier.size(18.dp)
+                                    )
+                                }
+                            )
+                        }
+                    }
                 }
             }
 
@@ -114,13 +166,13 @@ fun AssessmentHistoryCard(
                     modifier = Modifier.weight(1f)
                 ) {
                      LinearProgressIndicator(
-                        progress = { ((assessment.score ?: 0).coerceIn(0, 100)) / 100f },
+                        progress = { (assessment.score ?: 0) / 100f },
                         modifier = Modifier
                             .width(80.dp)
                             .height(6.dp)
                             .clip(CircleShape),
-                        color = if (assessment.score != null) statusColor else MaterialTheme.colorScheme.outline.copy(alpha = 0.3f),
-                        trackColor = if (assessment.score != null) statusColor.copy(alpha = 0.1f) else MaterialTheme.colorScheme.outline.copy(alpha = 0.1f),
+                        color = statusColor,
+                        trackColor = statusColor.copy(alpha = 0.1f),
                         strokeCap = StrokeCap.Round
                     )
                     Spacer(modifier = Modifier.width(10.dp))

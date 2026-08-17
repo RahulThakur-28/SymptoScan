@@ -1,13 +1,19 @@
 package com.rahul.symptoscan.navigation
 
+import androidx.activity.compose.BackHandler
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.pager.HorizontalPager
 import androidx.compose.foundation.pager.rememberPagerState
+import androidx.compose.material3.AlertDialog
+import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.LocalContext
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.viewmodel.initializer
 import androidx.lifecycle.viewmodel.viewModelFactory
@@ -41,6 +47,43 @@ fun MainTabsScreen(
         pageCount = { mainTabs.size }
     )
     val scope = rememberCoroutineScope()
+    val context = LocalContext.current
+    var showExitDialog by remember { mutableStateOf(false) }
+
+    // Exit confirmation handler
+    BackHandler {
+        if (pagerState.currentPage != 0) {
+            scope.launch {
+                pagerState.animateScrollToPage(0)
+            }
+        } else {
+            showExitDialog = true
+        }
+    }
+
+    if (showExitDialog) {
+        // ... (rest of the dialog code)
+        AlertDialog(
+            onDismissRequest = { showExitDialog = false },
+            title = { Text("Exit SymptoScan?") },
+            text = { Text("Are you sure you want to exit SymptoScan?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showExitDialog = false
+                        (context as? android.app.Activity)?.finish()
+                    }
+                ) {
+                    Text("YES")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showExitDialog = false }) {
+                    Text("NO")
+                }
+            }
+        )
+    }
 
     // Shared ViewModels (scoped to this screen)
     // We provide factories for all to avoid zero-arg constructor crashes
@@ -76,6 +119,20 @@ fun MainTabsScreen(
         }
     )
 
+    val view = androidx.compose.ui.platform.LocalView.current
+    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    SideEffect {
+        val window = (context as android.app.Activity).window
+        // Home tab (index 0) has a blue header, so we want light icons.
+        // Other tabs have a surface (light) background, so we want dark icons (on light theme).
+        if (pagerState.currentPage == 0) {
+            androidx.core.view.WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = false
+        } else {
+            androidx.core.view.WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+        }
+    }
+
     // Update pager if route changes externally
     LaunchedEffect(initialTabRoute) {
         val index = mainTabs.indexOf(initialTabRoute)
@@ -84,9 +141,28 @@ fun MainTabsScreen(
         }
     }
 
+    // Sync current tab with route argument when swiping
+//    LaunchedEffect(pagerState.currentPage) {
+//        val currentRoute = mainTabs[pagerState.currentPage]
+//        if (currentRoute != initialTabRoute) {
+//            onNavigate(currentRoute)
+//        }
+//    }
+
     LaunchedEffect(initialConversationId) {
         if (initialTabRoute == "ai" && initialConversationId != null) {
             aiViewModel.openConversation(initialConversationId)
+        }
+    }
+
+    val internalOnNavigate: (String) -> Unit = { route ->
+        val index = mainTabs.indexOf(route)
+        if (index != -1) {
+            scope.launch {
+                pagerState.animateScrollToPage(index)
+            }
+        } else {
+            onNavigate(route)
         }
     }
 
@@ -95,53 +171,52 @@ fun MainTabsScreen(
         bottomBar = {
             HomeBottomNavigation(
                 currentRoute = mainTabs[pagerState.currentPage],
-                onNavigate = { route ->
-                    val index = mainTabs.indexOf(route)
-                    if (index != -1) {
-                        scope.launch {
-                            pagerState.animateScrollToPage(index)
-                        }
-                    } else {
-                        onNavigate(route)
-                    }
-                }
+                onNavigate = internalOnNavigate
             )
         }
     ) { paddingValues ->
         HorizontalPager(
             state = pagerState,
             modifier = Modifier.fillMaxSize().padding(paddingValues),
-            beyondViewportPageCount = 1,
+            beyondViewportPageCount = 2,
             userScrollEnabled = true // Enable swiping
         ) { page ->
             when (page) {
                 0 -> HomeScreen(
-                    onNavigate = onNavigate,
+                    onNavigate = internalOnNavigate,
                     onLogout = onLogout,
                     homeViewModel = homeViewModel,
                     showScaffold = false
                 )
                 1 -> SymptomAssessmentScreen(
-                    onNavigate = onNavigate,
-                    onNavigateToDetails = { onNavigate("symptom_details") },
+                    onNavigate = internalOnNavigate,
+                    onNavigateToDetails = { internalOnNavigate("symptom_details") },
                     viewModel = assessmentViewModel,
                     showScaffold = false
                 )
                 2 -> HistoryScreen(
-                    onNavigate = onNavigate,
-                    onAssessmentClick = { id -> onNavigate("assessment_result?id=$id") },
+                    onNavigate = internalOnNavigate,
+                    onAssessmentClick = { id ->
+                        internalOnNavigate("assessment_result?id=$id")
+                    },
                     viewModel = historyViewModel,
                     showScaffold = false
                 )
                 3 -> HealthAssistantScreen(
-                    onNavigate = onNavigate,
-                    onBackClick = { /* No back in tab */ },
-                    onHistoryClick = { onNavigate(Screen.AIHistory.route) },
+                    onNavigate = internalOnNavigate,
+                    onBackClick = {
+                        if (initialConversationId != null) {
+                            internalOnNavigate("ai")
+                        } else if (pagerState.currentPage != 0) {
+                            internalOnNavigate("home")
+                        }
+                    },
+                    onHistoryClick = { internalOnNavigate(Screen.AIHistory.route) },
                     viewModel = aiViewModel,
                     showScaffold = false
                 )
                 4 -> ProfileScreen(
-                    onNavigate = onNavigate,
+                    onNavigate = internalOnNavigate,
                     onLogout = onLogout,
                     viewModel = profileViewModel,
                     showScaffold = false

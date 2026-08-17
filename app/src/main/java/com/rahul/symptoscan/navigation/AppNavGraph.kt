@@ -18,12 +18,12 @@ import com.rahul.symptoscan.presentation.auth.resetpassword.screen.ResetPassword
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.remember
 import androidx.lifecycle.viewmodel.compose.viewModel
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import com.rahul.symptoscan.presentation.profile.screen.EditProfileScreen
 import com.rahul.symptoscan.presentation.settings.screen.SettingsScreen
 import androidx.navigation.navArgument
 import androidx.navigation.NavType
 import com.rahul.symptoscan.presentation.ai.screen.HealthAssistantHistoryScreen
+import com.rahul.symptoscan.presentation.ai.screen.HealthAssistantScreen
 import com.rahul.symptoscan.presentation.assessment.screen.*
 import com.rahul.symptoscan.presentation.assessment.viewmodel.AssessmentViewModel
 import com.rahul.symptoscan.presentation.onboarding.screen.OnboardingScreen
@@ -47,12 +47,12 @@ sealed class Screen(val route: String) {
     object History : Screen("history")
     object AI : Screen("ai")
     object AIHistory : Screen("ai_history")
+    object AIDetail : Screen("ai_detail/{conversation_id}")
     object Profile : Screen("profile")
     object EditProfile : Screen("edit_profile")
     object Settings : Screen("settings")
     object Notifications : Screen("notifications")
     object PrivacySecurity : Screen("privacy_security")
-    object Language : Screen("language")
     object HelpSupport : Screen("help_support")
     object RateApp : Screen("rate_app")
     object PrivacyPolicy : Screen("privacy_policy")
@@ -217,31 +217,19 @@ fun AppNavGraph(navController: NavHostController) {
         }
 
         composable(
-            route = Screen.Main.route + "?tab={tab}&conversationId={conversationId}",
+            route = Screen.Main.route + "?tab={tab}",
             arguments = listOf(
                 navArgument("tab") { 
                     type = NavType.StringType
                     defaultValue = "home"
-                },
-                navArgument("conversationId") {
-                    type = NavType.StringType
-                    nullable = true
-                    defaultValue = null
                 }
             )
         ) { backStackEntry ->
             val tab = backStackEntry.arguments?.getString("tab") ?: "home"
-            val conversationId = backStackEntry.arguments?.getString("conversationId")
             MainTabsScreen(
                 initialTabRoute = tab,
-                initialConversationId = conversationId,
                 onNavigate = { route ->
-                    if (route in listOf("home", "assess", "history", "ai", "profile")) {
-                        // Simply update the URL without popping the Main screen
-                        navController.navigate(Screen.Main.route + "?tab=$route") {
-                            launchSingleTop = true
-                        }
-                    } else {
+                    if (route !in listOf("home", "assess", "history", "ai", "profile")) {
                         navController.navigate(route)
                     }
                 },
@@ -255,22 +243,41 @@ fun AppNavGraph(navController: NavHostController) {
 
         // Redirections for backward compatibility and deep links
         composable(route = Screen.Home.route) { 
-            navController.navigate(Screen.Main.route + "?tab=home") { launchSingleTop = true } 
+            navController.navigate(Screen.Main.route + "?tab=home") {
+                popUpTo(Screen.Main.route) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            } 
         }
         composable(route = Screen.Assess.route) { 
-            navController.navigate(Screen.Main.route + "?tab=assess") { launchSingleTop = true } 
+            navController.navigate(Screen.Main.route + "?tab=assess") {
+                popUpTo(Screen.Main.route) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            } 
         }
         composable(route = Screen.History.route) { 
-            navController.navigate(Screen.Main.route + "?tab=history") { launchSingleTop = true } 
+            navController.navigate(Screen.Main.route + "?tab=history") {
+                popUpTo(Screen.Main.route) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            } 
         }
         composable(route = Screen.AI.route) { 
-            navController.navigate(Screen.Main.route + "?tab=ai") { launchSingleTop = true } 
+            navController.navigate(Screen.Main.route + "?tab=ai") {
+                popUpTo(Screen.Main.route) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            } 
         }
         composable(route = Screen.Profile.route) { 
-            navController.navigate(Screen.Main.route + "?tab=profile") { launchSingleTop = true }
+            navController.navigate(Screen.Main.route + "?tab=profile") {
+                popUpTo(Screen.Main.route) { saveState = true }
+                launchSingleTop = true
+                restoreState = true
+            }
         }
 
-        // Assessment sub-screens
         composable(route = "symptom_details") { backStackEntry ->
             val parentEntry = remember(backStackEntry) {
                 navController.getBackStackEntry(Screen.Main.route)
@@ -278,6 +285,7 @@ fun AppNavGraph(navController: NavHostController) {
             val assessmentViewModel: AssessmentViewModel = viewModel(parentEntry)
             SymptomDetailsScreen(
                 onNavigateBack = { navController.popBackStack() },
+                onAddSymptoms = { navController.popBackStack() },
                 onProceed = { navController.navigate("ai_follow_up") },
                 viewModel = assessmentViewModel
             )
@@ -336,26 +344,42 @@ fun AppNavGraph(navController: NavHostController) {
             )
         }
 
-        composable(route = Screen.AIHistory.route) {
+        composable(
+            route = Screen.AIHistory.route
+        ) {
             HealthAssistantHistoryScreen(
                 onBackClick = { navController.popBackStack() },
                 onConversationClick = { id ->
-                    navController.navigate(Screen.Main.route + "?tab=ai&conversationId=$id") {
-                        popUpTo(Screen.Main.route) { inclusive = true }
-                    }
+                    navController.navigate("ai_detail/$id")
                 },
                 onNewChatClick = {
                     navController.navigate(Screen.Main.route + "?tab=ai") {
-                        popUpTo(Screen.Main.route) { inclusive = true }
+                        popUpTo(Screen.Main.route) { saveState = true }
+                        launchSingleTop = true
+                        restoreState = true
                     }
                 }
+            )
+        }
+
+        composable(
+            route = Screen.AIDetail.route,
+            arguments = listOf(navArgument("conversation_id") { type = NavType.StringType })
+        ) { 
+            HealthAssistantScreen(
+                onNavigate = { route -> navController.navigate(route) },
+                onBackClick = { navController.popBackStack() },
+                onHistoryClick = { /* Coming from history */ },
+                showScaffold = true 
             )
         }
 
         // ... Settings and other screens
         composable(route = Screen.EditProfile.route) {
             EditProfileScreen(
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
         composable(route = Screen.Settings.route) {
@@ -380,11 +404,6 @@ fun AppNavGraph(navController: NavHostController) {
                 onNavigateToPrivacyPolicy = { navController.navigate(Screen.PrivacyPolicy.route) },
                 onNavigateToTerms = { navController.navigate(Screen.TermsOfService.route) },
                 onNavigateToDeleteAccount = { }
-            )
-        }
-        composable(route = Screen.Language.route) {
-            LanguageSelectionScreen(
-                onNavigateBack = { navController.popBackStack() }
             )
         }
         composable(route = Screen.HelpSupport.route) {
@@ -436,9 +455,12 @@ fun AppNavGraph(navController: NavHostController) {
 
         composable(route = "assessment_report/{id}") { backStackEntry ->
             val id = backStackEntry.arguments?.getString("id") ?: return@composable
+
             AssessmentReportScreen(
                 assessmentId = id,
-                onNavigateBack = { navController.popBackStack() }
+                onNavigateBack = {
+                    navController.popBackStack()
+                }
             )
         }
     }

@@ -39,4 +39,8 @@ object DateUtils {
             isoString
         }
     }
+
+    fun getCurrentIsoTimestamp(): String {
+        return ZonedDateTime.now().format(isoFormatter)
+    }
 }

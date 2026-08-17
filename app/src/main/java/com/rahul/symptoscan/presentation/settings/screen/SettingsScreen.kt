@@ -11,10 +11,11 @@ import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalView
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.tooling.preview.Preview
+import androidx.core.view.WindowCompat
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.rahul.symptoscan.presentation.settings.component.SettingsItem
@@ -22,7 +23,6 @@ import com.rahul.symptoscan.presentation.settings.component.SettingsSection
 import com.rahul.symptoscan.presentation.settings.component.SettingsSwitchItem
 import com.rahul.symptoscan.ui.theme.ThemeMode
 import com.rahul.symptoscan.presentation.settings.viewmodel.SettingsViewModel
-import com.rahul.symptoscan.ui.theme.SymptoScanTheme
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -34,23 +34,34 @@ fun SettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     var showThemeDialog by remember { mutableStateOf(false) }
+    val view = LocalView.current
+    val darkTheme = androidx.compose.foundation.isSystemInDarkTheme()
+
+    SideEffect {
+        val window = (view.context as android.app.Activity).window
+        WindowCompat.getInsetsController(window, view).isAppearanceLightStatusBars = !darkTheme
+    }
 
     Scaffold(
         containerColor = MaterialTheme.colorScheme.background,
         topBar = {
-            Surface(shadowElevation = 2.dp) {
+            Surface(
+                shadowElevation = 2.dp,
+                color = MaterialTheme.colorScheme.surface
+            ) {
                 TopAppBar(
-                    title = { Text("Settings", fontSize = 18.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
+                    title = { Text("Settings", fontSize = 20.sp, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface) },
                     navigationIcon = {
                         IconButton(onClick = onNavigateBack) {
                             Icon(
-                                Icons.AutoMirrored.Filled.ArrowBack, 
+                                imageVector = Icons.AutoMirrored.Filled.ArrowBack, 
                                 contentDescription = "Back",
                                 tint = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     },
-                    colors = TopAppBarDefaults.topAppBarColors(containerColor = MaterialTheme.colorScheme.surface)
+                    colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+                    windowInsets = TopAppBarDefaults.windowInsets
                 )
             }
         }
@@ -72,16 +83,6 @@ fun SettingsScreen(
                     },
                     icon = Icons.Outlined.DarkMode,
                     onClick = { showThemeDialog = true }
-                )
-                HorizontalDivider(
-                    modifier = Modifier.padding(horizontal = 16.dp), 
-                    color = MaterialTheme.colorScheme.outline.copy(alpha = 0.1f)
-                )
-                SettingsItem(
-                    title = "Language",
-                    subtitle = uiState.currentLanguage,
-                    icon = Icons.Outlined.Language,
-                    onClick = { onNavigate("language") }
                 )
             }
 
@@ -231,13 +232,5 @@ private fun ThemeOption(
         RadioButton(selected = selected, onClick = onClick)
         Spacer(modifier = Modifier.width(12.dp))
         Text(text = label, style = MaterialTheme.typography.bodyLarge)
-    }
-}
-
-@Preview(showBackground = true)
-@Composable
-fun SettingsScreenPreview() {
-    SymptoScanTheme {
-        SettingsScreen(onNavigate = {}, onNavigateBack = {}, onAccountDeleted = {})
     }
 }

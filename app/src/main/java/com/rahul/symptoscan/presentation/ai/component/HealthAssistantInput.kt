@@ -45,7 +45,7 @@ fun HealthAssistantInput(
                     .padding(end = 8.dp),
                 placeholder = { 
                     Text(
-                        text = "Ask a health question...", 
+                        text = "Ask a health question...",
                         fontSize = 14.sp,
                         color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.6f)
                     ) 
