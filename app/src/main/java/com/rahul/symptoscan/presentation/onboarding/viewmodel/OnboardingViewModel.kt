@@ -3,7 +3,7 @@ package com.rahul.symptoscan.presentation.onboarding.viewmodel
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.rahul.symptoscan.presentation.onboarding.event.OnboardingEvent
-import com.rahul.symptoscan.presentation.onboarding.model.OnboardingData
+import com.rahul.symptoscan.presentation.onboarding.data.OnboardingData
 import com.rahul.symptoscan.presentation.onboarding.state.OnboardingState
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch

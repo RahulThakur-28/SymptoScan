@@ -37,7 +37,6 @@ object ImageUtils {
 
             bytes
         } catch (e: Exception) {
-            e.printStackTrace()
             null
         }
     }

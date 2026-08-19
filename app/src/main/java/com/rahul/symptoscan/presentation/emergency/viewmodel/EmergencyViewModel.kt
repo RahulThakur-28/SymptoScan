@@ -30,7 +30,7 @@ class EmergencyViewModel(
                     _uiState.update { it.copy(emergencyContact = contact, isLoading = false) }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message, isLoading = false) }
+                    _uiState.update { it.copy(error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e), isLoading = false) }
                 }
         }
     }
@@ -43,7 +43,7 @@ class EmergencyViewModel(
                     _uiState.update { it.copy(emergencyContact = null, isLoading = false) }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message, isLoading = false) }
+                    _uiState.update { it.copy(error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e), isLoading = false) }
                 }
         }
     }

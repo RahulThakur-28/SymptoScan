@@ -174,7 +174,7 @@ class AssessmentViewModel(
                     repository.uploadAssessmentImage(bytes, fileName).onSuccess { path ->
                         uploadedImagePath = path
                     }.onFailure { e ->
-                        _uiState.update { it.copy(isLoading = false, isImageUploading = false, error = "Failed to upload image: ${e.message}") }
+                        _uiState.update { it.copy(isLoading = false, isImageUploading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
                         return@launch
                     }
                 }
@@ -199,7 +199,7 @@ class AssessmentViewModel(
                 _uiState.update { it.copy(assessmentId = id) }
                 saveSymptoms(onComplete)
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to start assessment") }
+                _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
             }
         }
     }
@@ -224,7 +224,7 @@ class AssessmentViewModel(
         repository.saveSymptoms(assessmentId, dbSymptoms).onSuccess {
             generateQuestions(onComplete)
         }.onFailure { e ->
-            _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to save symptoms") }
+            _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
         }
     }
 
@@ -236,7 +236,7 @@ class AssessmentViewModel(
             _uiState.update { it.copy(isLoading = false, questions = questions, currentQuestionIndex = 0) }
             onComplete()
         }.onFailure { e ->
-            _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to generate questions") }
+            _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
         }
     }
 
@@ -266,7 +266,7 @@ class AssessmentViewModel(
             repository.saveAnswers(_uiState.value.questions).onSuccess {
                 generateFinalResult(onComplete)
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to save answers") }
+                _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
             }
         }
     }
@@ -283,20 +283,20 @@ class AssessmentViewModel(
             }
         )
         
-        android.util.Log.d("AssessmentViewModel", "Requesting final result for: $assessmentId")
+        val startTime = System.currentTimeMillis()
+        android.util.Log.d("AssessmentViewModel", "[AI][Result] Requesting final result for: $assessmentId")
         
         repository.generateResult(assessmentId, completeContext).onSuccess { result ->
-            android.util.Log.d("AssessmentViewModel", "Successfully received assessment result")
+            val totalTime = System.currentTimeMillis() - startTime
+            android.util.Log.d("AssessmentViewModel", "[AI][Result] Successfully received assessment result. riskScore = ${result.riskScore}. Total: $totalTime ms")
             _uiState.update { it.copy(isLoading = false, result = result) }
             onComplete()
         }.onFailure { e ->
-            android.util.Log.e("AssessmentViewModel", "Failed to generate result: ${e.message}")
-            val userMessage = when {
-                e.message?.contains("timeout", ignoreCase = true) == true -> 
-                    "Assessment is taking longer than expected. Please wait a moment and try again."
-                else -> "Failed to generate result. Please try again."
+            val totalTime = System.currentTimeMillis() - startTime
+            if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                android.util.Log.e("AssessmentViewModel", "[AI][Result] Failed to generate result after $totalTime ms: ${e.message}")
             }
-            _uiState.update { it.copy(isLoading = false, error = userMessage) }
+            _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
         }
     }
 
@@ -313,8 +313,10 @@ class AssessmentViewModel(
             _uiState.update { it.copy(isLoading = true, assessmentId = id, result = null, error = null) }
             repository.getAssessmentReport(id)
                 .catch { e ->
-                    android.util.Log.e("AssessmentViewModel", "[Report] Fetch failed: ${e.message}")
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load result") }
+                    if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                        android.util.Log.e("AssessmentViewModel", "[Report] Fetch failed: ${e.message}")
+                    }
+                    _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
                 }
                 .collect { result ->
                     val duration = System.currentTimeMillis() - startTime

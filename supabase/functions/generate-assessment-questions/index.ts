@@ -23,56 +23,92 @@ serve(async (req) => {
       return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
     }
 
+    const startTime = Date.now()
     const body = await req.json()
-    const assessmentId = body.assessmentId
+    const { assessmentId, context } = body
 
     if (!assessmentId) {
       return new Response(JSON.stringify({ error: 'assessmentId is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
     }
 
-    console.log(`Processing generate-assessment-questions for assessmentId: ${assessmentId}, userId: ${user.id}`)
+    console.log(`[AI][Questions] Processing for assessmentId: ${assessmentId}, userId: ${user.id}`)
 
-    // 2. Verify ownership
-    const { data: assessment, error: assessmentError } = await supabaseClient
-      .from('assessments')
-      .select('user_id, body_temperature, additional_notes, image_url')
-      .eq('id', assessmentId)
-      .single()
+    // 2. Verify ownership and fetch data
+    const [assessmentRes, symptomsRes, profileRes] = await Promise.all([
+        supabaseClient
+          .from('assessments')
+          .select('user_id, body_temperature, additional_notes, image_url')
+          .eq('id', assessmentId)
+          .single(),
+        supabaseClient
+          .from('assessment_symptoms')
+          .select('*')
+          .eq('assessment_id', assessmentId),
+        supabaseClient
+          .from('health_profiles')
+          .select('*')
+          .eq('user_id', user.id)
+          .maybeSingle()
+    ])
 
-    if (assessmentError || !assessment) {
-      console.error('Assessment not found or error:', assessmentError, 'assessmentId:', assessmentId)
-      return new Response(JSON.stringify({ error: 'Assessment not found', assessmentId: assessmentId }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    if (assessmentRes.error || !assessmentRes.data) {
+        console.error('Assessment not found:', assessmentRes.error)
+        return new Response(JSON.stringify({ error: 'Assessment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
     }
 
-    if (assessment.user_id !== user.id) {
-      console.error('Assessment ownership mismatch. Assessment owner:', assessment.user_id, 'Authenticated user:', user.id)
-      return new Response(JSON.stringify({ error: 'Assessment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    if (assessmentRes.data.user_id !== user.id) {
+        return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 403, headers: { 'Content-Type': 'application/json' } })
     }
 
-    // 3. Fetch symptoms
-    const { data: symptoms, error: symptomsError } = await supabaseClient
-      .from('assessment_symptoms')
-      .select('*')
-      .eq('assessment_id', assessmentId)
+    const assessment = assessmentRes.data
+    const symptoms = symptomsRes.data || []
+    const profile = profileRes.data
 
-    if (symptomsError || !symptoms || symptoms.length === 0) {
-      console.error('No symptoms found:', symptomsError)
-      return new Response(JSON.stringify({ error: 'No symptoms found for this assessment' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    let assessmentData = context
+    let symptomsDescription = ""
+
+    if (!assessmentData) {
+        console.log("[AI][Questions] Using DB data as context")
+        assessmentData = {
+            bodyTemperature: assessment.body_temperature,
+            additionalNotes: assessment.additional_notes,
+            imageUrl: assessment.image_url,
+            healthProfile: profile ? {
+                age: profile.age,
+                biologicalSex: profile.biological_sex,
+                existingConditions: profile.medical_conditions,
+                currentMedicines: profile.medications,
+                allergies: profile.allergies
+            } : null
+        }
+        symptomsDescription = symptoms.map((s: any) =>
+          `- ${s.symptom_name} (Severity: ${s.severity}/10, Pain: ${s.pain_level}/10, Duration: ${s.duration}, Frequency: ${s.frequency}, Onset: ${s.onset})`
+        ).join('\n')
+    } else {
+        console.log("[AI][Questions] Using provided context")
+        symptomsDescription = symptoms.map((s: any) =>
+          `- ${s.symptom_name} (Severity: ${s.severity}/10, Pain: ${s.pain_level}/10, Duration: ${s.duration}, Frequency: ${s.frequency}, Onset: ${s.onset})`
+        ).join('\n')
     }
-
-    const symptomsDescription = symptoms.map((s: any) =>
-      `- ${s.symptom_name} (Severity: ${s.severity}/10, Pain: ${s.pain_level}/10, Duration: ${s.duration}, Frequency: ${s.frequency}, Onset: ${s.onset})`
-    ).join('\n')
 
     const contextText = `
-Body Temperature: ${assessment.body_temperature}°C
-Additional Notes: ${assessment.additional_notes || 'None'}
+Body Temperature: ${assessmentData.bodyTemperature || 'Unknown'}°C
+Additional Notes: ${assessmentData.additionalNotes || 'None'}
 `.trim()
 
-    // 4. AI Prompt
+    // 3. AI Prompt
     let prompt = `You are a medical health assistant for SymptoScan. Based on the following symptoms and health context reported by a user, generate 3 to 5 concise, relevant follow-up questions to better understand their condition.`
 
-    if (assessment.image_url) {
+    if (assessmentData.healthProfile) {
+        prompt += `\n\nUser Health Profile:
+Age: ${assessmentData.healthProfile.age || 'Unknown'}
+Biological Sex: ${assessmentData.healthProfile.biologicalSex || 'Unknown'}
+Conditions: ${assessmentData.healthProfile.existingConditions || 'None'}
+Medicines: ${assessmentData.healthProfile.currentMedicines || 'None'}
+Allergies: ${assessmentData.healthProfile.allergies || 'None'}`
+    }
+
+    if (assessmentData.hasImage || assessment.image_url) {
         prompt += `\nAn image has been provided by the user for visual context. Use it to help determine relevant questions.
         IMPORTANT: If the image is irrelevant, unclear, or poor quality, do NOT invent observations. Rely more heavily on the text-based symptoms and description.`
     }
@@ -96,11 +132,11 @@ Response format:
   "questions": ["Question 1", "Question 2", ...]
 }`
 
-    // 5. Call Gemini (Multimodal support)
+    // 4. Call Gemini
     let input: any = prompt
-
-    if (assessment.image_url) {
-        console.log(`Fetching image from storage: ${assessment.image_url}`)
+    // (Multimodal logic simplified to use DB image_url if context.hasImage is true)
+    if ((assessmentData.hasImage || assessment.image_url) && assessment.image_url) {
+        console.log(`[AI][Questions] Fetching image from storage: ${assessment.image_url}`)
         const { data: imageData, error: imageError } = await supabaseClient
             .storage
             .from('assessment-images')
@@ -128,67 +164,58 @@ Response format:
                     }
                 }
             ]
-            console.log('Multimodal input prepared for questions')
-        } else {
-            console.error('Failed to download image for questions:', imageError)
         }
     }
 
-    const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
+    const aiRequestStart = Date.now()
+    const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY!
+        "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        model: "gemini-3.6-flash",
-        input: input
+        contents: [{
+            parts: Array.isArray(input) ? input : [{ text: input }]
+        }],
+        generationConfig: {
+            response_mime_type: "application/json"
+        }
       })
     })
 
     if (!geminiResponse.ok) {
       const errorText = await geminiResponse.text()
-      console.error(`Gemini Interactions API error: ${errorText}`)
+      console.error(`Gemini API error: ${errorText}`)
       throw new Error('Gemini API failed')
     }
 
-    const interactionData = await geminiResponse.json()
-    let aiOutputText = ""
+    const resultData = await geminiResponse.json()
+    console.log(`[AI][Questions] Gemini request duration: ${Date.now() - aiRequestStart} ms`)
 
-    // Extract text from model_output step
-    if (interactionData.steps && Array.isArray(interactionData.steps)) {
-      const modelOutputStep = [...interactionData.steps].reverse().find(step => step.type === "model_output")
-      if (modelOutputStep && modelOutputStep.text) {
-        aiOutputText = modelOutputStep.text
-      }
-    }
+    const aiOutputText = resultData.candidates?.[0]?.content?.parts?.[0]?.text
 
     if (!aiOutputText) {
-      console.error('No model_output found in Gemini response:', interactionData)
+      console.error('No output found in Gemini response:', resultData)
       throw new Error('Invalid AI response format')
     }
 
     let aiOutput
     try {
-      aiOutput = JSON.parse(aiOutputText)
+      const cleanJson = aiOutputText.replace(/^```json\s*/, "").replace(/```$/, "").trim()
+      aiOutput = JSON.parse(cleanJson)
     } catch (e) {
       console.error('Failed to parse Gemini JSON:', e, aiOutputText)
       throw new Error('Invalid AI response format')
     }
 
     const questionsList = aiOutput.questions
-    if (!Array.isArray(questionsList) || questionsList.length < 3 || questionsList.length > 5) {
+    if (!Array.isArray(questionsList) || questionsList.length < 2) {
       console.error('AI questions validation failed:', questionsList)
       throw new Error('AI failed to generate valid questions')
     }
 
-    // Validate that every question is a non-empty string
-    if (questionsList.some((q: any) => typeof q !== 'string' || q.trim().length === 0)) {
-       console.error('One or more AI questions are invalid:', questionsList)
-       throw new Error('AI failed to generate valid questions')
-    }
-
-    // 6. Cleanup old questions (Idempotency)
+    // 5. Cleanup old questions (Idempotency)
+    const dbSaveStart = Date.now()
     await supabaseClient
       .from('assessment_questions')
       .delete()
@@ -200,7 +227,7 @@ Response format:
       question_order: i + 1
     }))
 
-    // 7. Insert new questions
+    // 6. Insert new questions
     const { data: insertedQuestions, error: insertError } = await supabaseClient
       .from('assessment_questions')
       .insert(questionsToInsert)
@@ -211,13 +238,16 @@ Response format:
       throw new Error('Failed to save questions')
     }
 
+    console.log(`[AI][Questions] DB Save duration: ${Date.now() - dbSaveStart} ms`)
+    console.log(`[AI][Questions] Total duration: ${Date.now() - startTime} ms`)
+
     return new Response(JSON.stringify({ questions: insertedQuestions }), {
       headers: { 'Content-Type': 'application/json' },
     })
 
   } catch (err) {
     console.error('Question generation error:', err)
-    return new Response(JSON.stringify({ error: 'Unable to generate follow-up questions. Please try again.' }), {
+    return new Response(JSON.stringify({ error: 'question_generation_failed', message: 'Unable to generate follow-up questions. Please try again.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     })

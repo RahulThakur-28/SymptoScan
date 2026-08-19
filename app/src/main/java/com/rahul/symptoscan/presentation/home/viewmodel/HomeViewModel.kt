@@ -77,7 +77,7 @@ class HomeViewModel(
                     isRefreshing = false
                 ) }
             }.catch { e ->
-                _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Failed to load data") }
+                _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
             }.collect()
         }
     }

@@ -1,336 +1,963 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts"
-import { createClient } from 'https://esm.sh/@supabase/supabase-js@2'
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2"
 
-const GEMINI_API_KEY = Deno.env.get('GEMINI_API_KEY')
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+const GEMINI_API_KEY = Deno.env.get("GEMINI_API_KEY")
+const SUPABASE_URL = Deno.env.get("SUPABASE_URL")
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get(
+  "SUPABASE_SERVICE_ROLE_KEY"
+)
+
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
+  "Content-Type": "application/json",
+}
+
+function jsonResponse(body: unknown, status = 200) {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: corsHeaders,
+  })
+}
 
 serve(async (req) => {
-  const supabaseClient = createClient(SUPABASE_URL!, SUPABASE_SERVICE_ROLE_KEY!)
+  if (req.method === "OPTIONS") {
+    return new Response("ok", { headers: corsHeaders })
+  }
+
+  const supabaseClient = createClient(
+    SUPABASE_URL!,
+    SUPABASE_SERVICE_ROLE_KEY!
+  )
 
   try {
-    // 1. Authentication
-    console.log("[Assessment] Request received");
-    const authHeader = req.headers.get('Authorization')
+    // =========================================================
+    // 1. AUTHENTICATION
+    // =========================================================
+    console.log("[Assessment] Request received")
+
+    const authHeader = req.headers.get("Authorization")
+
     if (!authHeader) {
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+      return jsonResponse(
+        { error: "Unauthorized" },
+        401
+      )
     }
 
-    const token = authHeader.replace('Bearer ', '')
-    const { data: { user }, error: authError } = await supabaseClient.auth.getUser(token)
+    const token = authHeader.replace(
+      /^Bearer\s+/i,
+      ""
+    )
+
+    const {
+      data: { user },
+      error: authError,
+    } = await supabaseClient.auth.getUser(token)
 
     if (authError || !user) {
-      console.error('Auth error:', authError)
-      return new Response(JSON.stringify({ error: 'Unauthorized' }), { status: 401, headers: { 'Content-Type': 'application/json' } })
+      console.error(
+        "[Assessment] Auth error:",
+        authError
+      )
+
+      return jsonResponse(
+        { error: "Unauthorized" },
+        401
+      )
     }
 
-    console.log("[Assessment] Authentication complete");
+    console.log(
+      "[Assessment] Authentication complete"
+    )
 
-    const { assessmentId } = await req.json()
-    if (!assessmentId) {
-      return new Response(JSON.stringify({ error: 'assessmentId is required' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    // =========================================================
+    // 2. REQUEST BODY
+    // =========================================================
+    const body = await req.json()
+
+    const assessmentId =
+      body?.assessmentId
+
+    const completeContext =
+      body?.completeContext
+
+    if (
+      !assessmentId ||
+      typeof assessmentId !== "string"
+    ) {
+      return jsonResponse(
+        {
+          error:
+            "assessmentId is required",
+        },
+        400
+      )
     }
 
-    console.log(`Processing generate-assessment-result for assessmentId: ${assessmentId}, userId: ${user.id}`)
+    console.log(
+      `[Assessment] Processing assessmentId=${assessmentId}, userId=${user.id}`
+    )
 
-    // 2. Fetch all data in parallel
-    const [assessmentRes, symptomsRes, questionsRes, profileRes] = await Promise.all([
-        supabaseClient
-          .from('assessments')
-          .select(`
-            user_id,
-            body_temperature,
-            additional_notes,
-            image_url
-          `)
-          .eq('id', assessmentId)
-          .single(),
-        supabaseClient
-          .from('assessment_symptoms')
-          .select('*')
-          .eq('assessment_id', assessmentId),
-        supabaseClient
-          .from('assessment_questions')
-          .select('*')
-          .eq('assessment_id', assessmentId),
-        supabaseClient
-          .from('health_profiles')
-          .select('*')
-          .eq('user_id', user.id)
-          .maybeSingle()
+    // =========================================================
+    // 3. FETCH ASSESSMENT + PROFILE
+    // =========================================================
+    const [
+      assessmentRes,
+      profileRes,
+    ] = await Promise.all([
+      supabaseClient
+        .from("assessments")
+        .select(
+          "id, user_id, body_temperature, additional_notes, image_url"
+        )
+        .eq("id", assessmentId)
+        .single(),
+
+      supabaseClient
+        .from("health_profiles")
+        .select("*")
+        .eq("user_id", user.id)
+        .maybeSingle(),
     ])
 
-    const assessment = assessmentRes.data
-    if (assessmentRes.error || !assessment) {
-      console.error('Assessment not found or error:', assessmentRes.error, 'assessmentId:', assessmentId)
-      return new Response(JSON.stringify({ error: 'Assessment not found', assessmentId: assessmentId }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    const assessment =
+      assessmentRes.data
+
+    const profile =
+      profileRes.data
+
+    if (
+      assessmentRes.error ||
+      !assessment
+    ) {
+      console.error(
+        "[Assessment] Fetch error:",
+        assessmentRes.error
+      )
+
+      return jsonResponse(
+        {
+          error:
+            "Assessment not found",
+          assessmentId,
+        },
+        404
+      )
     }
 
-    if (assessment.user_id !== user.id) {
-        console.error('Assessment ownership mismatch. Assessment owner:', assessment.user_id, 'Authenticated user:', user.id)
-        return new Response(JSON.stringify({ error: 'Assessment not found' }), { status: 404, headers: { 'Content-Type': 'application/json' } })
+    // =========================================================
+    // 4. OWNERSHIP
+    // =========================================================
+    if (
+      assessment.user_id !== user.id
+    ) {
+      console.error(
+        "[Assessment] Ownership mismatch"
+      )
+
+      return jsonResponse(
+        {
+          error:
+            "Assessment not found",
+        },
+        404
+      )
     }
 
-    console.log("[Assessment] Data loaded");
+    console.log(
+      "[Assessment] Ownership verified"
+    )
 
-    const symptoms = symptomsRes.data || []
-    const questions = questionsRes.data || []
-    const profile = profileRes.data
+    // =========================================================
+    // 5. PREPARE ASSESSMENT CONTEXT
+    // =========================================================
+    let assessmentData =
+      completeContext?.initialContext
 
-    // 3. Validate presence of data
-    if (symptoms.length === 0) {
-      return new Response(JSON.stringify({ error: 'No symptoms found for this assessment' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
+    let symptomsText = ""
+    let qaText = ""
+
+    if (!assessmentData) {
+      console.log(
+        "[Result] Context not provided, fetching from DB"
+      )
+
+      const [
+        symptomsRes,
+        questionsRes,
+      ] = await Promise.all([
+        supabaseClient
+          .from("assessment_symptoms")
+          .select("*")
+          .eq(
+            "assessment_id",
+            assessmentId
+          ),
+
+        supabaseClient
+          .from("assessment_questions")
+          .select("*")
+          .eq(
+            "assessment_id",
+            assessmentId
+          ),
+      ])
+
+      if (symptomsRes.error) {
+        console.error(
+          "[Assessment] Symptoms fetch error:",
+          symptomsRes.error
+        )
+
+        throw new Error(
+          "Failed to fetch assessment symptoms"
+        )
+      }
+
+      if (questionsRes.error) {
+        console.error(
+          "[Assessment] Questions fetch error:",
+          questionsRes.error
+        )
+
+        throw new Error(
+          "Failed to fetch assessment questions"
+        )
+      }
+
+      const symptoms =
+        symptomsRes.data ?? []
+
+      const questions =
+        questionsRes.data ?? []
+
+      if (symptoms.length === 0) {
+        throw new Error(
+          "No symptoms found for assessment"
+        )
+      }
+
+      assessmentData = {
+        bodyTemperature:
+          assessment.body_temperature,
+
+        additionalNotes:
+          assessment.additional_notes,
+
+        imageUrl:
+          assessment.image_url,
+
+        symptoms:
+          symptoms.map(
+            (s: any) =>
+              s.symptom_name
+          ),
+
+        healthProfile:
+          profile
+            ? {
+                age:
+                  profile.age,
+
+                biologicalSex:
+                  profile.biological_sex,
+
+                existingConditions:
+                  profile.medical_conditions,
+
+                currentMedicines:
+                  profile.medications,
+
+                allergies:
+                  profile.allergies,
+              }
+            : null,
+      }
+
+      symptomsText =
+        symptoms
+          .map(
+            (s: any) =>
+              `- ${s.symptom_name} (Severity: ${
+                s.severity ?? "N/A"
+              }/10, Pain: ${
+                s.pain_level ?? "N/A"
+              }/10, Duration: ${
+                s.duration ?? "N/A"
+              }, Frequency: ${
+                s.frequency ?? "N/A"
+              }, Onset: ${
+                s.onset ?? "N/A"
+              })`
+          )
+          .join("\n")
+
+      qaText =
+        questions
+          .map(
+            (q: any) =>
+              `Q: ${q.question}\nA: ${
+                q.answer?.trim() ||
+                "Not answered"
+              }`
+          )
+          .join("\n\n")
+    } else {
+      console.log(
+        "[Result] Using provided context from request"
+      )
+
+      const symptoms =
+        Array.isArray(
+          assessmentData.symptoms
+        )
+          ? assessmentData.symptoms
+          : []
+
+      const followUpAnswers =
+        Array.isArray(
+          completeContext?.followUpAnswers
+        )
+          ? completeContext.followUpAnswers
+          : []
+
+      symptomsText =
+        symptoms.join(", ")
+
+      qaText =
+        followUpAnswers
+          .map(
+            (item: any) =>
+              `Q: ${item.question}\nA: ${item.answer}`
+          )
+          .join("\n\n")
     }
 
-    if (questions.length === 0) {
-      return new Response(JSON.stringify({ error: 'No follow-up questions found for this assessment' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
-    }
+    // =========================================================
+    // 6. BUILD PROMPT
+    // =========================================================
+    const bodyTemperature =
+      assessmentData?.bodyTemperature ??
+      assessment.body_temperature ??
+      "Unknown"
 
-    // 4. Validate all questions are answered
-    const unanswered = questions.some((q: any) => !q.answer || q.answer.trim().length === 0)
-    if (unanswered) {
-      return new Response(JSON.stringify({ error: 'Please answer all assessment questions' }), { status: 400, headers: { 'Content-Type': 'application/json' } })
-    }
-
-    // 5. Build AI prompt
-    const symptomsText = symptoms.map((s: any) =>
-      `- ${s.symptom_name} (Severity: ${s.severity}/10, Pain: ${s.pain_level}/10, Duration: ${s.duration}, Frequency: ${s.frequency}, Onset: ${s.onset})`
-    ).join('\n')
-
-    const qaText = questions.map((q: any) =>
-      `Q: ${q.question}\nA: ${q.answer}`
-    ).join('\n\n')
-
-    let profileText = "None provided"
-    if (profile) {
-        profileText = `
-Biological Sex: ${profile.biological_sex || 'Not provided'}
-Height: ${profile.height_cm || '--'}cm, Weight: ${profile.weight_kg || '--'}kg
-Allergies: ${profile.allergies || 'None'}
-Chronic Conditions: ${profile.medical_conditions || 'None'}
-Current Medications: ${profile.medications || 'None'}
-`.trim()
-    }
+    const additionalNotes =
+      assessmentData?.additionalNotes ??
+      assessment.additional_notes ??
+      "None"
 
     const contextText = `
-Body Temperature: ${assessment.body_temperature}°C
-Additional Notes: ${assessment.additional_notes || 'None'}
+Body Temperature: ${bodyTemperature}°C
+Additional Notes: ${additionalNotes}
 `.trim()
 
-    let prompt = `You are a medical AI assistant for SymptoScan. Analyze the following user health report, considering their medical background, reported symptoms, and follow-up answers. Provide general health guidance and a risk assessment.
+    let prompt = `
+You are a medical AI assistant for SymptoScan.
 
-USER HEALTH CONTEXT:
-${profileText}
+Analyze the user's reported health information and provide general health guidance.
 
-CURRENT ASSESSMENT:
+Do not provide a definitive diagnosis.
+Do not prescribe medications or dosages.
+Do not claim certainty.
+Do not replace professional medical evaluation.
+
+HEALTH CONTEXT:
 ${contextText}
+`.trim()
 
-SYMPTOMS:
-${symptomsText}
+    const healthProfile =
+      assessmentData?.healthProfile
 
-FOLLOW-UP Q&A:
-${qaText}
+    if (healthProfile) {
+      prompt += `
+
+USER HEALTH PROFILE:
+Age: ${
+        healthProfile.age ??
+        "Unknown"
+      }
+Biological Sex: ${
+        healthProfile.biologicalSex ??
+        "Unknown"
+      }
+Existing Conditions: ${
+        healthProfile.existingConditions ??
+        "None"
+      }
+Current Medicines: ${
+        healthProfile.currentMedicines ??
+        "None"
+      }
+Allergies: ${
+        healthProfile.allergies ??
+        "None"
+      }
 `
-
-    if (assessment.image_url) {
-        prompt += `\nAn image has been provided by the user for visual context. Use it to inform your analysis but prioritize safety and mention that visual analysis is limited.
-        IMPORTANT: If the image is irrelevant, unclear, or poor quality, do NOT invent observations. Rely more heavily on the text-based symptoms and description.`
     }
 
     prompt += `
 
-Instructions:
-1. Provide a concise summary of the reported symptoms and the analysis.
-2. List possible conditions (at least 2-3). For each, provide a name, severity level (Mild, Moderate, Severe), and a confidence percentage (1-100).
-3. Provide general health recommendations (lifestyle, first aid, OTC if appropriate, but avoid specific dosages).
-4. List specific warning signs that would require immediate medical attention.
-5. Assign an overall risk score as an integer from 0 to 100 and an urgency level: "emergency", "urgent", "moderate", "routine", or "self_care".
-   - risk_score: 0 = lowest overall risk, 100 = highest overall risk. Never return null.
-6. Provide a recommendation for which type of medical specialist to see (e.g., "General Practitioner", "Cardiologist").
-7. Include a clear medical disclaimer.
-8. Return strictly valid JSON.
+SYMPTOMS:
+${symptomsText || "None provided"}
 
-Constraints:
-- DO NOT provide a definitive diagnosis.
-- DO NOT prescribe specific medications or dosages.
-- DO NOT claim certainty.
-- DO NOT replace a professional medical evaluation.
-- DO NOT recommend starting or stopping prescription medicines.
-- Return ONLY valid JSON.
+FOLLOW-UP QUESTIONS AND ANSWERS:
+${qaText || "None provided"}
 
-Response format:
+INSTRUCTIONS:
+1. Provide a concise summary.
+2. Provide 2-3 possible conditions or explanations using cautious language.
+3. Provide general recommendations.
+4. Provide warning signs requiring urgent medical attention.
+5. Assign urgency using ONLY:
+   "emergency", "urgent", "moderate", "routine", "self_care".
+6. Include a medical disclaimer.
+7. Generate an overall risk_score as an INTEGER from 0 to 100.
+8. 0 = lowest overall risk.
+9. 100 = highest overall risk.
+10. risk_score MUST NOT be null.
+11. Return ONLY valid JSON.
+
+RISK SCORE:
+Base the score on:
+- reported symptoms
+- severity
+- pain
+- duration
+- frequency
+- onset
+- follow-up answers
+- warning signs
+- urgency
+
+RESPONSE FORMAT:
 {
   "summary": "...",
   "risk_score": 32,
   "urgency_level": "routine",
-  "conditions": [
-    { "name": "Condition Name", "severity": "Mild", "confidence": 75, "icon": "🤒" }
-  ],
-  "recommendation_items": [
-    { "title": "Recommendation", "icon": "💊" }
-  ],
+  "possible_causes": ["...", "..."],
+  "recommendations": ["...", "..."],
   "warning_signs": ["...", "..."],
-  "specialist": {
-    "title": "Specialist Title",
-    "description": "Why they should see this specialist..."
-  },
   "disclaimer": "This information is for general educational purposes..."
-}`
+}
+`.trim()
 
-    // 6. Call Gemini (Multimodal support)
+    // =========================================================
+    // 7. OPTIONAL IMAGE
+    // =========================================================
     let input: any = prompt
 
-    if (assessment.image_url) {
-        console.log(`Fetching image from storage: ${assessment.image_url}`)
-        const { data: imageData, error: imageError } = await supabaseClient
-            .storage
-            .from('assessment-images')
-            .download(assessment.image_url)
+    const imagePath =
+      assessment.image_url ||
+      assessmentData?.imageUrl
 
-        if (imageData && !imageError) {
-            const buffer = await imageData.arrayBuffer()
-            // Convert to base64
-            let binary = '';
-            const bytes = new Uint8Array(buffer);
-            const len = bytes.byteLength;
-            for (let i = 0; i < len; i++) {
-                binary += String.fromCharCode(bytes[i]);
-            }
-            const base64Image = btoa(binary)
+    if (imagePath) {
+      console.log(
+        "[Assessment] Fetching image"
+      )
 
-            const mimeType = assessment.image_url.toLowerCase().endsWith('.png') ? 'image/png' :
-                             assessment.image_url.toLowerCase().endsWith('.webp') ? 'image/webp' : 'image/jpeg'
+      const {
+        data: imageData,
+        error: imageError,
+      } =
+        await supabaseClient.storage
+          .from(
+            "assessment-images"
+          )
+          .download(imagePath)
 
-            input = [
-                { text: prompt },
-                {
-                    inline_data: {
-                        mime_type: mimeType,
-                        data: base64Image
-                    }
-                }
-            ]
-            console.log('Multimodal input prepared')
-        } else {
-            console.error('Failed to download image:', imageError)
-            // Fallback to text-only if image download fails
+      if (
+        imageData &&
+        !imageError
+      ) {
+        const buffer =
+          await imageData.arrayBuffer()
+
+        const bytes =
+          new Uint8Array(buffer)
+
+        let binary = ""
+
+        for (
+          let i = 0;
+          i < bytes.length;
+          i++
+        ) {
+          binary += String.fromCharCode(
+            bytes[i]
+          )
         }
+
+        const base64Image =
+          btoa(binary)
+
+        const lowerPath =
+          imagePath.toLowerCase()
+
+        const mimeType =
+          lowerPath.endsWith(
+            ".png"
+          )
+            ? "image/png"
+            : lowerPath.endsWith(
+                ".webp"
+              )
+            ? "image/webp"
+            : "image/jpeg"
+
+        input = [
+          { text: prompt },
+          {
+            inline_data: {
+              mime_type:
+                mimeType,
+              data:
+                base64Image,
+            },
+          },
+        ]
+
+        console.log(
+          "[Assessment] Multimodal input prepared"
+        )
+      } else {
+        console.warn(
+          "[Assessment] Image unavailable; using text-only analysis"
+        )
+      }
     }
 
-    console.log("[Assessment] Image check complete");
-    console.log("[Assessment] Gemini request started");
+    // =========================================================
+    // 8. GEMINI REQUEST
+    // =========================================================
+    console.log(
+      "[Assessment] Gemini request started"
+    )
 
-    const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY!
-      },
-      body: JSON.stringify({
-        model: "gemini-3.6-flash",
-        input: input
-      })
-    })
+    const geminiResponse =
+      await fetch(
+        "https://generativelanguage.googleapis.com/v1/interactions",
+        {
+          method: "POST",
+
+          headers: {
+            "Content-Type":
+              "application/json",
+            "x-goog-api-key":
+              GEMINI_API_KEY!,
+          },
+
+          body: JSON.stringify({
+            model:
+              "gemini-3.6-flash",
+
+            input,
+          }),
+        }
+      )
 
     if (!geminiResponse.ok) {
-      const errorText = await geminiResponse.text()
-      console.error(`Gemini Interactions API error: ${errorText}`)
-      throw new Error('Gemini API failed')
+      const errorText =
+        await geminiResponse.text()
+
+      console.error(
+        "[Gemini] API error:",
+        errorText
+      )
+
+      throw new Error(
+        "Gemini API failed"
+      )
     }
 
-    console.log("[Assessment] Gemini result generation completed");
+    console.log(
+      "[Assessment] Gemini result generation completed"
+    )
 
-    const interactionData = await geminiResponse.json()
+    const interactionData =
+      await geminiResponse.json()
+
+    // =========================================================
+    // 9. EXTRACT MODEL OUTPUT
+    // Gemini Interactions API:
+    // steps[].content[].text
+    // =========================================================
     let aiOutputText = ""
 
-    // Extract text from model_output step
-    if (interactionData.steps && Array.isArray(interactionData.steps)) {
-      const modelOutputStep = [...interactionData.steps].reverse().find(step => step.type === "model_output")
-      if (modelOutputStep && modelOutputStep.text) {
-        aiOutputText = modelOutputStep.text
+    if (
+      Array.isArray(
+        interactionData?.steps
+      )
+    ) {
+      const modelOutputStep =
+        [...interactionData.steps]
+          .reverse()
+          .find(
+            (step: any) =>
+              step?.type ===
+              "model_output"
+          )
+
+      if (modelOutputStep) {
+        const textItem =
+          Array.isArray(
+            modelOutputStep.content
+          )
+            ? modelOutputStep.content.find(
+                (item: any) =>
+                  item?.type ===
+                    "text" &&
+                  typeof item?.text ===
+                    "string"
+              )
+            : null
+
+        if (
+          textItem?.text
+        ) {
+          aiOutputText =
+            textItem.text
+        }
       }
     }
 
     if (!aiOutputText) {
-      console.error('No model_output found in Gemini response:', interactionData)
-      throw new Error('Invalid AI response format')
+      console.error(
+        "[AI][Result] No text found in model_output.content"
+      )
+
+      throw new Error(
+        "Invalid AI response format"
+      )
     }
 
-    let aiResult
+    // =========================================================
+    // 10. CLEAN JSON
+    // =========================================================
+    aiOutputText =
+      aiOutputText.trim()
+
+    if (
+      aiOutputText.startsWith(
+        "```"
+      )
+    ) {
+      aiOutputText =
+        aiOutputText
+          .replace(
+            /^```json\s*/i,
+            ""
+          )
+          .replace(
+            /```\s*$/i,
+            ""
+          )
+          .trim()
+    }
+
+    let aiResult: any
+
     try {
-        aiResult = JSON.parse(aiOutputText)
-    } catch (e) {
-        console.error('Failed to parse Gemini JSON:', e, aiOutputText)
-        throw new Error('Invalid AI response format')
+      const jsonMatch =
+        aiOutputText.match(
+          /\{[\s\S]*\}/
+        )
+
+      const cleanJson =
+        jsonMatch
+          ? jsonMatch[0]
+          : aiOutputText
+
+      aiResult =
+        JSON.parse(
+          cleanJson
+        )
+    } catch (error) {
+      console.error(
+        "[AI][Result] JSON parse failed:",
+        error
+      )
+
+      throw new Error(
+        "Invalid AI response format"
+      )
     }
 
-    console.log("[Assessment] Gemini response parsed");
+    console.log(
+      "[Assessment] Gemini response parsed successfully"
+    )
 
-    // 7. Validate structured response
-    const validUrgencyLevels = ['emergency', 'urgent', 'moderate', 'routine', 'self_care']
-    if (!aiResult.summary || !validUrgencyLevels.includes(aiResult.urgency_level)) {
-        console.error('AI result basic validation failed:', aiResult)
-        throw new Error('AI result validation failed')
+    // =========================================================
+    // 11. VALIDATE RESULT
+    // =========================================================
+    const validUrgencyLevels = [
+      "emergency",
+      "urgent",
+      "moderate",
+      "routine",
+      "self_care",
+    ]
+
+    if (
+      typeof aiResult?.summary !==
+        "string" ||
+      aiResult.summary.trim()
+        .length === 0
+    ) {
+      throw new Error(
+        "AI result summary missing"
+      )
     }
 
-    // Risk score validation (0-100)
-    console.log(`[AI][Result] Generated risk score: ${aiResult.risk_score}`)
-    if (aiResult.risk_score === undefined || aiResult.risk_score === null || typeof aiResult.risk_score !== "number" || !Number.isFinite(aiResult.risk_score)) {
-        console.error('[AI][Result] ERROR: Invalid risk score type or missing:', aiResult.risk_score)
-        throw new Error("Invalid risk_score returned by AI")
+    if (
+      !validUrgencyLevels.includes(
+        aiResult.urgency_level
+      )
+    ) {
+      throw new Error(
+        `Invalid urgency level: ${aiResult.urgency_level}`
+      )
     }
 
-    const validatedRiskScore = Math.round(Math.max(0, Math.min(100, aiResult.risk_score)))
-    console.log(`[AI][Result] Validated risk score: ${validatedRiskScore}`)
+    // =========================================================
+    // 12. STRICT RISK SCORE
+    // =========================================================
+    const rawRiskScore =
+      aiResult?.risk_score
 
-    // 8. Save result (Upsert for idempotency)
-    console.log(`[AI][Result] Saving assessment result: ${assessmentId}`);
-    const { error: resultError } = await supabaseClient
-      .from('assessment_results')
-      .upsert({
-        assessment_id: assessmentId,
-        summary: aiResult.summary,
-        urgency_level: aiResult.urgency_level,
-        disclaimer: aiResult.disclaimer,
-        risk_score: validatedRiskScore,
-        possible_causes: aiResult.conditions?.map((c: any) => `${c.name} (${c.confidence}%)`) || [],
-        recommendations: aiResult.recommendation_items?.map((r: any) => r.title) || [],
-        warning_signs: aiResult.warning_signs || []
-      })
+    console.log(
+      `[AI][Result] Raw risk score: ${rawRiskScore} (type: ${typeof rawRiskScore})`
+    )
+
+    if (
+      typeof rawRiskScore !==
+        "number" ||
+      !Number.isFinite(
+        rawRiskScore
+      ) ||
+      !Number.isInteger(
+        rawRiskScore
+      ) ||
+      rawRiskScore < 0 ||
+      rawRiskScore > 100
+    ) {
+      console.error(
+        `[AI][Result] Invalid risk_score: ${rawRiskScore}`
+      )
+
+      throw new Error(
+        "Invalid risk_score returned by AI"
+      )
+    }
+
+    const riskScore =
+      rawRiskScore
+
+    console.log(
+      `[AI][Result] Final risk score to save: ${riskScore}`
+    )
+
+    // =========================================================
+    // 13. SAVE ONLY EXISTING DB COLUMNS
+    // =========================================================
+    console.log(
+      `[AI][Result] Saving assessment result for ${assessmentId}`
+    )
+
+    const {
+      data: savedResult,
+      error: resultError,
+    } =
+      await supabaseClient
+        .from(
+          "assessment_results"
+        )
+        .upsert(
+          {
+            assessment_id:
+              assessmentId,
+
+            summary:
+              aiResult.summary.trim(),
+
+            possible_causes:
+              Array.isArray(
+                aiResult.possible_causes
+              )
+                ? aiResult.possible_causes
+                : [],
+
+            recommendations:
+              Array.isArray(
+                aiResult.recommendations
+              )
+                ? aiResult.recommendations
+                : [],
+
+            warning_signs:
+              Array.isArray(
+                aiResult.warning_signs
+              )
+                ? aiResult.warning_signs
+                : [],
+
+            urgency_level:
+              aiResult.urgency_level,
+
+            disclaimer:
+              typeof aiResult.disclaimer ===
+              "string"
+                ? aiResult.disclaimer.trim()
+                : "This information is for general educational purposes only.",
+
+            risk_score:
+              riskScore,
+          },
+          {
+            onConflict:
+              "assessment_id",
+          }
+        )
+        .select()
+        .single()
 
     if (resultError) {
-        console.error('Database result save error:', resultError)
-        throw new Error('Failed to save assessment result')
+      console.error(
+        "[DB] Assessment result save error:",
+        resultError
+      )
+
+      throw new Error(
+        `Failed to save assessment result: ${resultError.message}`
+      )
     }
 
-    // 9. Mark assessment as completed with server timestamp
-    const { error: updateError } = await supabaseClient
-      .from('assessments')
-      .update({
-        status: 'completed',
-        completed_at: new Date().toISOString()
-      })
-      .eq('id', assessmentId)
+    // =========================================================
+    // 14. VERIFY SAVED SCORE
+    // =========================================================
+    if (
+      savedResult?.risk_score !==
+      riskScore
+    ) {
+      console.error(
+        "[DB] Risk score mismatch",
+        {
+          expected:
+            riskScore,
+          actual:
+            savedResult?.risk_score,
+        }
+      )
+
+      throw new Error(
+        "Risk score was not persisted correctly"
+      )
+    }
+
+    console.log(
+      `[AI][Result] Result persisted successfully`
+    )
+
+    // =========================================================
+    // 15. MARK AS COMPLETED
+    // =========================================================
+    const completedAt =
+      new Date().toISOString()
+
+    const {
+      error: updateError,
+    } =
+      await supabaseClient
+        .from("assessments")
+        .update({
+          status:
+            "completed",
+
+          completed_at:
+            completedAt,
+        })
+        .eq(
+          "id",
+          assessmentId
+        )
+        .eq(
+          "user_id",
+          user.id
+        )
 
     if (updateError) {
-        console.error('Database assessment update error:', updateError)
-        throw new Error('Failed to update assessment status')
+      console.error(
+        "[DB] Assessment update error"
+      )
+
+      throw new Error(
+        `Failed to update assessment status`
+      )
     }
 
-    console.log("[Assessment] Database update completed");
-    console.log(`[AI][Result] Saved risk score: ${validatedRiskScore}`);
-    console.log("[Assessment] HTTP response being returned");
+    console.log(
+      "[Assessment] Database update completed"
+    )
 
-    return new Response(JSON.stringify({ ...aiResult, risk_score: validatedRiskScore }), {
-      headers: { 'Content-Type': 'application/json' },
-    })
+    // =========================================================
+    // 16. FINAL ANDROID RESPONSE
+    // Only fields that actually exist in
+    // assessment_results + optional app-side fields.
+    // =========================================================
+    const finalResponse = {
+      id:
+        savedResult?.id ??
+        null,
 
-  } catch (err) {
-    console.error('Final result generation error:', err)
-    // 10. Generic error handling for client
-    return new Response(JSON.stringify({ error: 'Unable to generate assessment result. Please try again.' }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' }
-    })
+      assessment_id:
+        assessmentId,
+
+      summary:
+        savedResult?.summary ??
+        aiResult.summary,
+
+      possible_causes:
+        savedResult?.possible_causes ??
+        [],
+
+      recommendations:
+        savedResult?.recommendations ??
+        [],
+
+      warning_signs:
+        savedResult?.warning_signs ??
+        [],
+
+      urgency_level:
+        savedResult?.urgency_level ??
+        aiResult.urgency_level,
+
+      disclaimer:
+        savedResult?.disclaimer ??
+        aiResult.disclaimer,
+
+      risk_score:
+        savedResult?.risk_score ??
+        riskScore,
+    }
+
+    return jsonResponse(
+      finalResponse,
+      200
+    )
+  } catch (error) {
+    console.error(
+      "[AI][Result] Final result generation error:",
+      error
+    )
+
+    return jsonResponse(
+      {
+        error: "Unable to generate assessment result. Please try again.",
+      },
+      500
+    )
   }
 })

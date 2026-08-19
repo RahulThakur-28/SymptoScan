@@ -24,7 +24,6 @@ serve(async (req) => {
 
     // 2. Request Validation
     const rawBody = await req.text()
-    console.log(`Received raw body: ${rawBody}`)
 
     let body
     try {
@@ -120,13 +119,17 @@ Respond in the requested language: ${language === 'hi' ? 'Hindi' : 'English'}.`
       input: systemInstruction + "\n\nConversation history:\n" + JSON.stringify(messagesForGemini) + "\n\nUser message: " + message
     }
 
-    const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1/interactions", {
+    const geminiResponse = await fetch("https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=" + GEMINI_API_KEY, {
       method: "POST",
       headers: {
-        "Content-Type": "application/json",
-        "x-goog-api-key": GEMINI_API_KEY!
+        "Content-Type": "application/json"
       },
-      body: JSON.stringify(geminiBody)
+      body: JSON.stringify({
+        contents: messagesForGemini.concat([{
+            role: 'user',
+            parts: [{ text: message }]
+        }])
+      })
     })
 
     if (!geminiResponse.ok) {
@@ -135,26 +138,15 @@ Respond in the requested language: ${language === 'hi' ? 'Hindi' : 'English'}.`
       }
       const errorText = await geminiResponse.text()
       console.error(`Gemini API error (${geminiResponse.status}): ${errorText}`)
-
-      let safeMessage = "AI service is temporarily unavailable. Please try again later."
-      if (geminiResponse.status === 401 || geminiResponse.status === 403) {
-        safeMessage = "AI service authentication failed. Please try again later."
-      } else if (geminiResponse.status === 404) {
-        safeMessage = "AI service is temporarily unavailable."
-      }
-
-      return new Response(JSON.stringify({ error: 'AI_ERROR', message: safeMessage }), { status: geminiResponse.status >= 500 ? 503 : 400, headers: { 'Content-Type': 'application/json' } })
+      throw new Error('Gemini API failed')
     }
 
     const geminiData = await geminiResponse.json()
-    const modelOutputStep = geminiData.steps?.find((step: any) => step.type === "model_output")
-    if (!modelOutputStep) throw new Error("Invalid AI response")
+    const aiText = geminiData.candidates?.[0]?.content?.parts?.[0]?.text
 
-    const textContent = modelOutputStep.content?.find((item: any) => item.type === "text")
-    let aiText = textContent?.text
     if (!aiText) throw new Error("Invalid AI response text")
 
-    aiText = aiText.trim()
+    const cleanAiText = aiText.trim()
     if (aiText.startsWith("```")) {
       aiText = aiText.replace(/^```json\s*/, "").replace(/```$/, "").trim()
     }
@@ -186,7 +178,7 @@ Respond in the requested language: ${language === 'hi' ? 'Hindi' : 'English'}.`
 
   } catch (err) {
     console.error('Health assistant error:', err)
-    return new Response(JSON.stringify({ error: 'INTERNAL_ERROR', message: 'An unexpected error occurred.' }), {
+    return new Response(JSON.stringify({ error: 'INTERNAL_ERROR', message: 'Unable to get a response right now. Please try again.' }), {
       status: 500,
       headers: { 'Content-Type': 'application/json' }
     })

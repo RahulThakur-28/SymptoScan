@@ -20,7 +20,7 @@ class AssessmentReportViewModel(
             _uiState.update { it.copy(isLoading = true, error = null) }
             repository.getAssessmentReport(assessmentId)
                 .catch { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message ?: "Failed to load report") }
+                    _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
                 }
                 .collect { report ->
                     _uiState.update { it.copy(isLoading = false, report = report) }

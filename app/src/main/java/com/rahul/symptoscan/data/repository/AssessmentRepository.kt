@@ -8,6 +8,7 @@ import io.github.jan.supabase.postgrest.from
 import io.github.jan.supabase.postgrest.query.Columns
 import io.github.jan.supabase.postgrest.query.Order
 import io.ktor.client.call.body
+import io.ktor.client.statement.bodyAsText
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
@@ -104,7 +105,7 @@ class AssessmentRepository {
                 return@runCatching existing.sortedBy { it.questionOrder }
             }
 
-            android.util.Log.d("AssessmentRepository", "[AI][Questions] Gemini request started")
+            android.util.Log.d("AssessmentRepository", "[AI][Questions] Request started")
             functions.invoke(
                 function = "generate-assessment-questions",
                 body = buildJsonObject {
@@ -115,6 +116,7 @@ class AssessmentRepository {
             val requestEndTime = System.currentTimeMillis()
             android.util.Log.d("AssessmentRepository", "[AI][Questions] Request completed: ${requestEndTime - startTime} ms")
             
+            val fetchStartTime = System.currentTimeMillis()
             val questions = postgrest.from("assessment_questions")
                 .select() {
                     filter { eq("assessment_id", assessmentId) }
@@ -123,7 +125,7 @@ class AssessmentRepository {
                 .decodeList<DbAssessmentQuestion>()
             
             val totalTime = System.currentTimeMillis() - startTime
-            android.util.Log.d("AssessmentRepository", "[AI][Questions] Received ${questions.size} questions. Total: $totalTime ms")
+            android.util.Log.d("AssessmentRepository", "[AI][Questions] Total: $totalTime ms (Fetch: ${System.currentTimeMillis() - fetchStartTime} ms)")
             questions
         }
     }
@@ -145,37 +147,89 @@ class AssessmentRepository {
         assessmentId: String,
         context: CompleteAiAssessmentContext
     ): Result<DbAssessmentResult> = withContext(Dispatchers.IO) {
-        runCatching {
-            val startTime = System.currentTimeMillis()
-            android.util.Log.d("AssessmentRepository", "[AI][Result] Started for id: $assessmentId")
-            
-            // 1. Invoke Edge Function and get the FULL result back
-            val response = functions.invoke(
-                function = "generate-assessment-result",
-                body = buildJsonObject {
-                    put("assessmentId", assessmentId)
-                    put("completeContext", kotlinx.serialization.json.Json.encodeToJsonElement(CompleteAiAssessmentContext.serializer(), context))
-                }
-            )
-            
-            val requestEndTime = System.currentTimeMillis()
-            android.util.Log.d("AssessmentRepository", "[AI][Result] Request completed: ${requestEndTime - startTime} ms")
+        val startTime = System.currentTimeMillis()
+        android.util.Log.d("AssessmentRepository", "[AI][Result] Started for id: $assessmentId")
 
-            val result = response.body<DbAssessmentResult>()
+        runCatching {
+            // 1. Invoke Edge Function
+            val response = try {
+                functions.invoke(
+                    function = "generate-assessment-result",
+                    body = buildJsonObject {
+                        put("assessmentId", assessmentId)
+                        put("completeContext", kotlinx.serialization.json.Json.encodeToJsonElement(CompleteAiAssessmentContext.serializer(), context))
+                    }
+                )
+            } catch (e: Exception) {
+                if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                    android.util.Log.e("AssessmentRepository", "[AI][Result] Edge Function call failed: ${e.message}")
+                }
+                null
+            }
+
+            // 2. Try to decode the result from response
+            if (response != null) {
+                val requestEndTime = System.currentTimeMillis()
+                android.util.Log.d("AssessmentRepository", "[AI][Result] Request completed in ${requestEndTime - startTime} ms")
+
+                try {
+                    val result = response.body<DbAssessmentResult>()
+                    if (result.riskScore != null) {
+                        android.util.Log.d("AssessmentRepository", "[AI][Result] Decoded result successfully with riskScore=${result.riskScore}")
+                        updateAssessmentStatus(assessmentId)
+                        return@runCatching result
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("AssessmentRepository", "[AI][Result] Response decoding failed")
+                    try {
+                        if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                            val rawJson = response.bodyAsText()
+                            android.util.Log.d("AssessmentRepository", "[AI][Result] RAW JSON: $rawJson")
+                        }
+                    } catch (ignore: Exception) {}
+                }
+            }
+
+            // 3. Fallback: Edge Function failed OR Decoding failed OR riskScore missing
+            // Recover from DB because the backend work (Generation + Upsert) might have succeeded
+            android.util.Log.d("AssessmentRepository", "[AI][Result] Attempting DB recovery for assessmentId=$assessmentId")
             
-            val dbSaveStartTime = System.currentTimeMillis()
-            // The result is already saved by the Edge Function in the DB, 
-            // but we might want to ensure consistency or update status.
+            // Wait slightly for DB write consistency
+            kotlinx.coroutines.delay(1000)
+            
+            val dbResult = postgrest.from("assessment_results")
+                .select() {
+                    filter { eq("assessment_id", assessmentId) }
+                }
+                .decodeSingleOrNull<DbAssessmentResult>()
+            
+            if (dbResult != null && dbResult.riskScore != null) {
+                android.util.Log.d("AssessmentRepository", "[AI][Result] DB recovery success. riskScore=${dbResult.riskScore}")
+                updateAssessmentStatus(assessmentId)
+                return@runCatching dbResult
+            } else {
+                val errorMsg = if (dbResult == null) "No result found in DB" else "DB result found but riskScore is NULL"
+                if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                    android.util.Log.e("AssessmentRepository", "[AI][Result] DB recovery failed: $errorMsg")
+                }
+                throw Exception("Failed to recover assessment result")
+            }
+        }
+    }
+
+    private suspend fun updateAssessmentStatus(assessmentId: String) {
+        try {
             postgrest.from("assessments").update(buildJsonObject {
                 put("status", "completed")
                 put("completed_at", com.rahul.symptoscan.core.utils.DateUtils.getCurrentIsoTimestamp())
             }) {
                 filter { eq("id", assessmentId) }
             }
-
-            val totalTime = System.currentTimeMillis() - startTime
-            android.util.Log.d("AssessmentRepository", "[AI][Result] Database update: ${System.currentTimeMillis() - dbSaveStartTime} ms. Total: $totalTime ms")
-            result
+            android.util.Log.d("AssessmentRepository", "[AI][Result] Assessment status marked as completed")
+        } catch (e: Exception) {
+            if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                android.util.Log.e("AssessmentRepository", "[AI][Result] Failed to update assessment status: ${e.message}")
+            }
         }
     }
 
@@ -212,7 +266,9 @@ class AssessmentRepository {
                     )
                 }
         } catch (e: Exception) {
-            android.util.Log.e("AssessmentRepository", "[History] Error fetching history: ${e.message}", e)
+            if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                android.util.Log.e("AssessmentRepository", "[History] Error fetching history: ${e.message}", e)
+            }
             emptyList<AssessmentSummary>()
         }
         

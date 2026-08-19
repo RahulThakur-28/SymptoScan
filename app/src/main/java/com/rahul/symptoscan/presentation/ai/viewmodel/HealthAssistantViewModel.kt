@@ -82,7 +82,7 @@ class HealthAssistantViewModel(
                     _uiState.update { it.copy(conversations = conversations, isLoadingConversations = false) }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message, isLoadingConversations = false) }
+                    _uiState.update { it.copy(error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e), isLoadingConversations = false) }
                 }
         }
     }
@@ -117,7 +117,7 @@ class HealthAssistantViewModel(
                     _uiState.update { it.copy(messages = messages, isLoadingMessages = false) }
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(error = e.message, isLoadingMessages = false) }
+                    _uiState.update { it.copy(error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e), isLoadingMessages = false) }
                 }
         }
     }
@@ -165,7 +165,7 @@ class HealthAssistantViewModel(
                     
                     val newConv = result.getOrElse { e ->
                         android.util.Log.e("HealthAssistantVM", "Failed to create conversation", e)
-                        _uiState.update { it.copy(isSendingMessage = false, error = e.message) }
+                        _uiState.update { it.copy(isSendingMessage = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
                         return@launch
                     }
                     
@@ -230,7 +230,7 @@ class HealthAssistantViewModel(
                     }
                     savedStateHandle["conversation_id"] = null
                 } else {
-                    _uiState.update { it.copy(isSendingMessage = false, error = e.message) }
+                    _uiState.update { it.copy(isSendingMessage = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
                 }
             }
         }
@@ -260,7 +260,7 @@ class HealthAssistantViewModel(
                     }
                 }
             }.onFailure { e ->
-                _uiState.update { it.copy(error = e.message) }
+                _uiState.update { it.copy(error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
             }
         }
     }

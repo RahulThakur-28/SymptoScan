@@ -298,7 +298,8 @@ fun AppNavGraph(navController: NavHostController) {
             AiFollowUpScreen(
                 onNavigateBack = { navController.popBackStack() },
                 onComplete = { 
-                    navController.navigate("assessment_result") {
+                    val id = assessmentViewModel.uiState.value.assessmentId
+                    navController.navigate("assessment_result?id=$id") {
                         popUpTo(Screen.Main.route) { inclusive = false }
                     }
                 },

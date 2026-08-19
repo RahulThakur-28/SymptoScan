@@ -4,7 +4,6 @@ import io.github.jan.supabase.auth.parseSessionFromUrl
 import io.github.jan.supabase.auth.providers.builtin.Email
 import io.github.jan.supabase.auth.user.UserInfo
 import io.github.jan.supabase.exceptions.RestException
-import io.github.jan.supabase.exceptions.HttpRequestException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import kotlinx.serialization.json.buildJsonObject
@@ -31,8 +30,7 @@ class AuthService {
                 }
             }
             Unit
-        }.onFailure { it.printStackTrace() }
-            .mapError()
+        }.mapError()
     }
 
     /**
@@ -45,8 +43,7 @@ class AuthService {
                 this.password = password
             }
             Unit
-        }.onFailure { it.printStackTrace() }
-            .mapError()
+        }.mapError()
     }
 
     /**
@@ -55,8 +52,7 @@ class AuthService {
     suspend fun logout(): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             auth.signOut()
-        }.onFailure { it.printStackTrace() }
-            .mapError()
+        }.mapError()
     }
 
     /**
@@ -65,8 +61,7 @@ class AuthService {
     suspend fun sendPasswordReset(email: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
             auth.resetPasswordForEmail(email)
-        }.onFailure { it.printStackTrace() }
-            .mapError()
+        }.mapError()
     }
 
     /**
@@ -84,8 +79,7 @@ class AuthService {
         runCatching {
             auth.retrieveUserForCurrentSession(updateSession = true)
             Unit
-        }.onFailure { it.printStackTrace() }
-            .mapError()
+        }.mapError()
     }
 
     /**
@@ -104,8 +98,7 @@ class AuthService {
                 this.password = password
             }
             Unit
-        }.onFailure { it.printStackTrace() }
-            .mapError()
+        }.mapError()
     }
 
     /**
@@ -118,8 +111,7 @@ class AuthService {
             // Fetch the user data associated with the session to ensure metadata is fresh
             auth.retrieveUserForCurrentSession(updateSession = true)
             Unit
-        }.onFailure { it.printStackTrace() }
-            .mapError()
+        }.mapError()
     }
 
     /**
@@ -150,11 +142,10 @@ class AuthService {
                         errorBody.contains("signup_disabled", ignoreCase = true) -> 
                             "Sign up is currently disabled."
                             
-                        else -> exception.localizedMessage ?: "Server error: ${exception.error}"
+                        else -> com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(exception)
                     }
                 }
-                is HttpRequestException -> "Network error. Please check your internet connection."
-                else -> exception?.localizedMessage ?: "An unknown error occurred"
+                else -> com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(exception)
             }
             Result.failure(Exception(message))
         } else {

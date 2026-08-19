@@ -35,7 +35,7 @@ class HistoryViewModel(
             
             repository.getAssessmentHistory()
                 .catch { e ->
-                    _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Failed to load history") }
+                    _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
                 }
                 .collect { assessments ->
                     _uiState.update { state ->
@@ -104,7 +104,7 @@ class HistoryViewModel(
             }.onFailure { error ->
                 _uiState.update { it.copy(
                     isRefreshing = false,
-                    error = error.message ?: "Failed to delete assessment"
+                    error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(error)
                 ) }
             }
         }

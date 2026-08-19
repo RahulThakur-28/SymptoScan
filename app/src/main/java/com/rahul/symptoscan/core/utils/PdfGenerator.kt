@@ -11,7 +11,6 @@ import com.rahul.symptoscan.data.remote.model.DbAssessmentResult
 import java.io.File
 import java.io.FileInputStream
 import java.io.FileOutputStream
-import java.io.IOException
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -148,8 +147,7 @@ object PdfGenerator {
             pdfDocument.writeTo(FileOutputStream(file))
             pdfDocument.close()
             file
-        } catch (e: IOException) {
-            e.printStackTrace()
+        } catch (e: Exception) {
             pdfDocument.close()
             null
         }
@@ -216,7 +214,6 @@ object PdfGenerator {
                 true
             }
         } catch (e: Exception) {
-            e.printStackTrace()
             false
         }
     }

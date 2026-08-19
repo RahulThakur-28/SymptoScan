@@ -24,7 +24,6 @@ class HealthProfileRepository {
                 }
                 .decodeSingleOrNull<DbHealthProfile>()
         } catch (e: Exception) {
-            e.printStackTrace()
             null
         }
 
@@ -68,7 +67,9 @@ class HealthProfileRepository {
             android.util.Log.d("HealthProfile", "[HEALTH-SAVE-6] Upsert successful")
             Unit
         }.onFailure { e ->
-            android.util.Log.e("HealthProfile", "[HEALTH-SAVE-ERROR] Repository failure: ${e.message}", e)
+            if (com.rahul.symptoscan.BuildConfig.DEBUG) {
+                android.util.Log.e("HealthProfile", "[HEALTH-SAVE-ERROR] Repository failure: ${e.message}")
+            }
         }
     }
 

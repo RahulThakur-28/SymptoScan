@@ -28,3 +28,6 @@ object Dimens {
     val SubtitleSize = 16.sp
     val TitleLetterSpacing = 1.5.sp
 }
+
+val ButtonHeight = 56.dp
+val IllustrationSize = 280.dp

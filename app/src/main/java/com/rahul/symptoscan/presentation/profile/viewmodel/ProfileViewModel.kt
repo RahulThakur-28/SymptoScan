@@ -84,7 +84,7 @@ class ProfileViewModel(
                         .map { fullProfile to it }
                 }
             }.catch { e ->
-                _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = e.message ?: "Failed to load profile") }
+                _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
             }.collect { (fullProfile, achievements) ->
                 if (fullProfile == null) {
                     _uiState.update { it.copy(isLoading = false, isRefreshing = false, error = "Profile not found") }

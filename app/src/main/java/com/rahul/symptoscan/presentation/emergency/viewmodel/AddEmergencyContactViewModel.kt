@@ -35,7 +35,7 @@ class AddEmergencyContactViewModel(
                     _uiState.update { it.copy(isLoading = false) }
                 }
             }.onFailure { e ->
-                _uiState.update { it.copy(isLoading = false, error = e.message) }
+                _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
             }
         }
     }
@@ -74,7 +74,7 @@ class AddEmergencyContactViewModel(
                     onSuccess()
                 }
                 .onFailure { e ->
-                    _uiState.update { it.copy(isLoading = false, error = e.message) }
+                    _uiState.update { it.copy(isLoading = false, error = com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(e)) }
                 }
         }
     }
