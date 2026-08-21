@@ -438,8 +438,6 @@ Compose UI
 
 # 📸 Application Screenshots
 
-## 🚀 Authentication
-# 📸 Application Screenshots
 
 | Splash | Login | Registration |
 |:------:|:-----:|:------------:|
