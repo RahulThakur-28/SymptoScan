@@ -22,13 +22,22 @@ class AuthService {
      */
     suspend fun register(email: String, password: String, fullName: String): Result<Unit> = withContext(Dispatchers.IO) {
         runCatching {
-            auth.signUpWith(Email) {
+            val user = auth.signUpWith(Email) {
                 this.email = email
                 this.password = password
                 data = buildJsonObject {
                     put("full_name", fullName)
                 }
             }
+            
+            // Check if user already exists when enumeration protection is ON
+            // In this case, Supabase returns 200 OK but:
+            // identities list is empty if the email is already taken
+            val identities = user?.identities
+            if (identities != null && identities.isEmpty()) {
+                throw Exception("user_already_exists")
+            }
+
             Unit
         }.mapError()
     }
@@ -120,6 +129,12 @@ class AuthService {
     private fun <T> Result<T>.mapError(): Result<T> {
         return if (isFailure) {
             val exception = exceptionOrNull()
+            
+            // Check for explicit "user_already_exists" thrown from register()
+            if (exception?.message == "user_already_exists") {
+                return Result.failure(Exception("An account with this email already exists. Please log in instead."))
+            }
+
             val message = when (exception) {
                 is RestException -> {
                     val errorBody = exception.error

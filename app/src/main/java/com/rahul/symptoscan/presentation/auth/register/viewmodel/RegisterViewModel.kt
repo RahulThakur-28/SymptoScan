@@ -101,7 +101,7 @@ class RegisterViewModel(
             result.onSuccess {
                 _uiState.value = AuthUiState.Success(Unit)
             }.onFailure { error ->
-                _uiState.value = AuthUiState.Error(error.message ?: "Registration failed")
+                _uiState.value = AuthUiState.Error(com.rahul.symptoscan.core.utils.ErrorUtils.getUserFriendlyMessage(error))
             }
         }
     }
