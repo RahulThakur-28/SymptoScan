@@ -1,6 +1,6 @@
 <div align="center">
 
-<img src="screenshots/app_logo.png" width="170"/>
+<img src="./assets/screenshots/app_logo.png" width="170"/>
 
 # 🩺 SymptoScan
 
@@ -439,45 +439,27 @@ Compose UI
 # 📸 Application Screenshots
 
 ## 🚀 Authentication
-
-| Splash | Login | Registration |
-|:------:|:-----:|:------------:|
-| <img src="screenshots/splash.jpeg" width="220"/> | <img src="screenshots/Login.jpeg" width="220"/> | <img src="screenshots/registration.jpeg" width="220"/> |
-
-## 🩺 Assessment
 # 📸 Application Screenshots
 
-## 🚀 Authentication
-
 | Splash | Login | Registration |
 |:------:|:-----:|:------------:|
-| <img src="screenshots/splash.jpeg" width="220"/> | <img src="screenshots/Login.jpeg" width="220"/> | <img src="screenshots/registration.jpeg" width="220"/> |
+| <img src="./assets/screenshots/splash.jpeg" width="220"/> | <img src="./assets/screenshots/Login.jpeg" width="220"/> | <img src="./assets/screenshots/registeration.jpeg" width="220"/> |
 
-## 🩺 Assessment
+| Home | Assessment | Follow-up Questions |
+|:----:|:----------:|:-------------------:|
+| <img src="./assets/screenshots/home.jpeg" width="220"/> | <img src="./assets/screenshots/assesment.jpeg" width="220"/> | <img src="./assets/screenshots/ques.jpeg" width="220"/> |
 
-| Assessment | Follow-up Questions | Result |
-|:----------:|:-------------------:|:------:|
-| <img src="screenshots/assesment.jpeg" width="220"/> | <img src="screenshots/ques.jpeg" width="220"/> | <img src="screenshots/result.jpeg" width="220"/> |
+| Result | History | AI Assistant |
+|:------:|:-------:|:------------:|
+| <img src="./assets/screenshots/result.jpeg" width="220"/> | <img src="./assets/screenshots/his.jpeg" width="220"/> | <img src="./assets/screenshots/ai_ass.jpeg" width="220"/> |
 
-## 🏠 Main App
+| Profile | Settings | Generate Pdf  |
+|:-------:|:--------:|:------------------:|
+| <img src="./assets/screenshots/profile.jpeg" width="220"/> | <img src="./assets/screenshots/sett.jpeg" width="220"/> | <img src="./assets/screenshots/pdf.jpeg" width="220"/> |
 
-| Home | History | AI Assistant |
-|:----:|:-------:|:------------:|
-| <img src="screenshots/home.jpeg" width="220"/> | <img src="screenshots/his.jpeg" width="220"/> | <img src="screenshots/ai_ass.jpeg" width="220"/> |
-
-## 👤 Profile & Settings
-
-| Profile | Settings | Privacy / PDF |
-|:-------:|:--------:|:-------------:|
-| <img src="screenshots/profile.jpeg" width="220"/> | <img src="screenshots/sett.jpeg" width="220"/> | <img src="screenshots/pdf.jpeg" width="220"/> |
-
-## 🎨 Theme
-
-| Dark Theme | App Logo |
-|:----------:|:--------:|
-| <img src="screenshots/dark.jpeg" width="220"/> | <img src="screenshots/app_logo.png" width="180"/> |
----
-
+| Dark Theme |
+|:----------:|
+| <img src="./assets/screenshots/dark.jpeg" width="220"/> |
 # ⚙️ Getting Started
 
 ## Prerequisites
