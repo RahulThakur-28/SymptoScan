@@ -4,6 +4,7 @@
 
 # 🩺 SymptoScan
 
+
 ### **AI Health Assessment Platform for Android**
 
 *Structured symptom assessment, AI-generated follow-up questions, risk scoring, health guidance, assessment history, and an AI Health Assistant.*
