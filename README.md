@@ -105,7 +105,7 @@ Users can maintain relevant health information that can be used as assessment co
 - Height
 - Weight
 - Allergies
-- Existing medical conditions
+- Existing medicals conditions
 - Current medicines
 
 ---
